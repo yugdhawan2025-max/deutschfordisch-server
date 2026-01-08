@@ -112,7 +112,7 @@ void _onCheckTranslation() async {
 To ensure the best user experience and accurate data fetching:
 
 - **Robust JSON Parsing**: Always check for the `success` flag first. For AI endpoints (`/sentence`, `/evaluate`), access the nested `data` object to get the primary results.
-- **Request Timeouts**: AI models can take 2-5 seconds. Set a connection timeout of at least 10 seconds in your `http` client to avoid unexpected app freezes.
+- **Request Timeouts**: Set a connection timeout of **30 seconds**. While the AI is fast (<2s), Render servers can take time to wake up (cold start), so a longer timeout prevents app exceptions.
 - **Local Caching**: Cache dictionary results for the current session. If a user looks up "Haus" twice, the second result should come from a local `Map` or `box` (Hive) instead of a network call.
 ### Dictionary Lookup (`GET /dict`)
 Retrieves translations for a word or phrase.

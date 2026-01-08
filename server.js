@@ -469,7 +469,7 @@ app.get("/sentence", async (req, res) => {
         { role: "system", content: "You are a professional language tutor. Respond ONLY in valid JSON format." },
         { role: "user", content: `Generate a natural German sentence using the word "${queryWord}" for a ${level} level learner. Include an English translation. Format: {"german": "...", "english": "..."}` }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant", // Optimized for speed (prevent timeouts)
       response_format: { type: "json_object" }
     });
 
@@ -487,24 +487,30 @@ app.get("/sentence", async (req, res) => {
   }
 });
 
-/* -------------------- AI: EVALUATE -------------------- */
+/* -------------------- AI: EVALUATE TRANSLATION -------------------- */
 app.post("/evaluate", async (req, res) => {
   const { sentence, translation, level = "A1", from = "de", to = "en" } = req.body;
 
   if (!sentence || !translation) {
-    return res.status(400).json({ success: false, error: "Missing required fields" });
+    return res.status(400).json({ success: false, error: "Missing sentence or translation" });
   }
-
-  const fromLang = from === "de" ? "German" : "English";
-  const toLang = to === "en" ? "English" : "German";
 
   try {
     const completion = await groq.chat.completions.create({
       messages: [
-        { role: "system", content: "You are a strict language tutor. Respond ONLY in valid JSON format." },
-        { role: "user", content: `Evaluate this translation for a ${level} learner. ${fromLang}: "${sentence}", User Translation (${toLang}): "${translation}". Provide a score (0-100), feedback, and the correct translation. Format: {"score": 85, "feedback": "...", "correct": "..."}` }
+        { role: "system", content: "You are a supportive language tutor. Evaluate the user's translation. Respond ONLY in valid JSON." },
+        {
+          role: "user", content: `My ${from === 'de' ? 'German' : 'English'} sentence: "${sentence}"
+My translation attempt (${to === 'en' ? 'English' : 'German'}): "${translation}"
+Language Level: ${level}
+
+Evaluate this. Return JSON: {
+"correct": boolean,
+"feedback": "constructive feedback in English (max 2 sentences)",
+"improved": "better translation if applicable, else null"
+}` }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant", // Optimized for speed
       response_format: { type: "json_object" }
     });
 
