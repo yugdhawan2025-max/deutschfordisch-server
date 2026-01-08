@@ -278,23 +278,23 @@ async function handleDict(req, res) {
     const matches = data.matches || [];
 
     // Quality Filter: Remove long sentences when looking up words
-    // Term should not be a sentence itself for this filter to apply
     const isSingleWord = !queryTerm.trim().includes(" ");
 
     const filteredAlternates = matches
-      .slice(1, 10) // Take a larger pool to filter from
+      .slice(1, 15) // Pool from more matches
       .map(m => m.translation)
-      .filter(t => t !== primary)
+      .filter(t => t && t !== primary)
       .filter(t => {
+        const cleanT = t.trim();
         if (isSingleWord) {
-          // If searching for a single word, results should also be short (max 3 words)
-          const wordCount = t.trim().split(/\s+/).length;
-          return wordCount <= 3 && t.length < queryTerm.length * 4;
+          // STRICT: For words, alternates must be very short (max 2 words)
+          const words = cleanT.split(/\s+/);
+          return words.length <= 2 && cleanT.length < 30 && cleanT.length < queryTerm.length * 3;
         }
-        // For phrases/sentences, results should be within a reasonable length ratio
-        return t.length < queryTerm.length * 2.5;
+        // For phrases/sentences, keep it within 2x length
+        return cleanT.length < queryTerm.length * 2.5;
       })
-      .slice(0, 5); // Return top 5 clean results
+      .slice(0, 5);
 
     res.json({
       success: true,
