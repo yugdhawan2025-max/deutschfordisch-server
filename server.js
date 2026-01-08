@@ -560,8 +560,8 @@ Level Guidelines:
 
 Format: {
   "question": "German sentence",
-  "options": ["Option A", "Option B", "Option C", "Option D"],
-  "answer": "The correct option string",
+  "options": ["Option A (English)", "Option B (English)", "Option C (English)", "Option D (English)"],
+  "answer": "The correct option string (English)",
   "explanation": "Brief explanation in English (max 2 sentences): Why the answer is correct. Key grammar point or vocabulary."
 }`;
     }
