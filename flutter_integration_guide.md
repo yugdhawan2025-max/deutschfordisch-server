@@ -117,11 +117,14 @@ To ensure the best user experience and accurate data fetching:
 ### Dictionary Lookup (`GET /dict`)
 Retrieves translations for a word or phrase.
 
+> [!TIP]
+> **Smart Language Detection Active**
+> The backend now automatically detects if you send English when it expects German (or vice versa). It will prioritize returning a valid translation even if the `from` and `to` parameters are accidentally swapped.
+
 > [!IMPORTANT]
-> **Check your `from` and `to` parameters!**
+> **Recommended Parameters:**
 > - For English -> German: `from=en&to=de`
 > - For German -> English: `from=de&to=en`
-> If these are swapped, the API may return the same word you searched for.
 
 **Parameters:**
 - `term` (or `word`): The text to translate.
