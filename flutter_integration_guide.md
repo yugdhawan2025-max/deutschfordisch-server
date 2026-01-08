@@ -191,17 +191,17 @@ The user is given a German sentence and must select the correct English translat
 ```
 
 ### Validate Translation (`POST /evaluate`)
-Updated structure to support detailed AI feedback and 5-star rating.
+Updated structure to support detailed AI feedback with level-appropriate corrections.
 
 **Response Structure:**
 ```json
 {
   "success": true,
   "data": {
-    "correct": true,           // Boolean: strictly correct or acceptable?
-    "rating": 5,               // Integer: 1 to 5 stars
-    "feedback": "Perfect!",    // String: Explanation for the user
-    "suggestion": null         // String: Better way to say it (or null if perfect)
+    "user_answer": "The user's translation (echoed back)",
+    "corrected_answer": "The correct translation at their level",
+    "feedback": "Detailed educational feedback (3-4 sentences) explaining grammar, vocabulary, and improvements",
+    "b2_reference_answer": "A more advanced B2-level translation for comparison"
   }
 }
 ```

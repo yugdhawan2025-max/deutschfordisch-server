@@ -610,24 +610,23 @@ Original (${from === 'de' ? 'German' : 'English'}): "${sentence}"
 User's Translation (${to === 'en' ? 'English' : 'German'}): "${translation}"
 
 Provide educational feedback:
-1. If CORRECT: Explain what they did well (grammar, word choice).
-2. If INCORRECT: Explain the specific mistake (e.g., "You used Präsens instead of Perfekt", "'schnell' means 'fast', not 'slow'").
-3. Rating: 1=completely wrong, 3=partially correct, 5=perfect.
-4. Suggestion: Only if rating < 5, provide the correct translation.
+1. user_answer: Echo back the user's translation exactly as they wrote it.
+2. corrected_answer: The correct translation at their current level (${level}).
+3. feedback: Detailed constructive feedback (3-4 sentences). If correct, explain what they did well. If incorrect, explain the specific mistake (grammar, vocabulary, word order).
+4. b2_reference_answer: How a B2-level learner would translate this (more sophisticated vocabulary/grammar than A1/A2, but still clear).
 
 Return JSON: {
-  "correct": boolean,
-  "rating": number (1-5),
-  "feedback": "Detailed constructive feedback (3-4 sentences). Explain grammar rules and vocabulary.",
-  "suggestion": "Correct translation if needed, else null"
+  "user_answer": "${translation}",
+  "corrected_answer": "The correct translation for ${level} level",
+  "feedback": "Detailed educational feedback explaining grammar rules, vocabulary choices, and what to improve",
+  "b2_reference_answer": "A more advanced B2-level translation"
 }` }
       ],
-      model: "llama-3.1-8b-instant", // Optimized for speed
+      model: "llama-3.1-8b-instant",
       response_format: { type: "json_object" }
     });
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
-    // Wrap in "data" key for Flutter, while keeping flat keys for backward compatibility
     res.json({
       success: true,
       data,
