@@ -310,46 +310,61 @@ async function handleDict(req, res) {
 
     let primary = data.responseData.translatedText;
     const matches = data.matches || [];
+    let filteredAlternates = []; // Declare filteredAlternates here
 
-    // --- EN -> DE GENDER ENHANCEMENT ---
-    // If translating to German and it looks like a single word, use AI to add gender (der/die/das)
-    if (to === "de" && !queryTerm.trim().includes(" ") && !primary.includes(" ")) {
+    // --- EN -> DE ENHANCEMENT (JSON Refinement) ---
+    // If translating to German and it's a single word, use AI to generate high-quality primary + alternates
+    if (to === "de" && !queryTerm.trim().includes(" ")) {
       try {
-        const genderCheck = await groq.chat.completions.create({
+        const refinement = await groq.chat.completions.create({
           messages: [
-            { role: "system", content: "You are a German linguist. For a given German noun, respond ONLY with the noun preceded by its correct definite article (der, die, or das). If it is not a noun, respond with just the word." },
-            { role: "user", content: primary }
+            {
+              role: "system",
+              content: `You are a German linguist. Refine a translation for the English word '${queryTerm}'.
+Response MUST be valid JSON:
+{
+  "primary": "refined translation",
+  "alternates": ["alt1", "alt2"]
+}
+Rules:
+1. If it refers to a NOUN: 'primary' MUST ALWAYS start with the correct definite article ('der ', 'die ', or 'das '). Example: 'das Haus'.
+2. If it refers to an ADJECTIVE: 'primary' MUST contain exactly TWO distinct meanings separated by a comma (e.g., 'schnell, rasch').
+3. 'alternates' MUST be 2-3 strictly relevant synonyms. No garbage data.
+4. Respond ONLY with the JSON object.`
+            },
+            { role: "user", content: `Original translation from MyMemory: ${primary}` }
           ],
-          model: "llama-3.1-8b-instant", // Use a smaller, faster model for this quick check
-          max_tokens: 10
+          model: "llama-3.1-8b-instant",
+          response_format: { type: "json_object" }
         });
-        const aiResult = genderCheck.choices[0]?.message?.content?.trim();
-        if (aiResult && aiResult.toLowerCase() !== primary.toLowerCase()) {
-          primary = aiResult;
+
+        const aiData = JSON.parse(refinement.choices[0]?.message?.content || "{}");
+        if (aiData.primary) {
+          primary = aiData.primary;
+          filteredAlternates = aiData.alternates || [];
         }
       } catch (e) {
-        console.error("Gender detection failed:", e.message);
+        console.error("JSON Refinement failed:", e.message);
       }
+    } else {
+      // Original filtering logic for when AI refinement is not applied
+      const isSingleWord = !queryTerm.trim().includes(" ");
+      filteredAlternates = matches
+        .slice(1, 15) // Pool from more matches
+        .map(m => m.translation)
+        .filter(t => t && t !== primary)
+        .filter(t => {
+          const cleanT = t.trim();
+          if (isSingleWord) {
+            // STRICT: For words, alternates must be very short (max 2 words)
+            const words = cleanT.split(/\s+/);
+            return words.length <= 2 && cleanT.length < 30 && cleanT.length < queryTerm.length * 3;
+          }
+          // For phrases/sentences, keep it within 2x length
+          return cleanT.length < queryTerm.length * 2.5;
+        })
+        .slice(0, 5);
     }
-
-    // Quality Filter: Remove long sentences when looking up words
-    const isSingleWord = !queryTerm.trim().includes(" ");
-
-    const filteredAlternates = matches
-      .slice(1, 15) // Pool from more matches
-      .map(m => m.translation)
-      .filter(t => t && t !== primary)
-      .filter(t => {
-        const cleanT = t.trim();
-        if (isSingleWord) {
-          // STRICT: For words, alternates must be very short (max 2 words)
-          const words = cleanT.split(/\s+/);
-          return words.length <= 2 && cleanT.length < 30 && cleanT.length < queryTerm.length * 3;
-        }
-        // For phrases/sentences, keep it within 2x length
-        return cleanT.length < queryTerm.length * 2.5;
-      })
-      .slice(0, 5);
 
     res.json({
       success: true,
@@ -389,7 +404,12 @@ app.get("/sentence", async (req, res) => {
     });
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
-    res.json({ success: true, ...data });
+    // Wrap in "data" key for Flutter, while keeping flat keys for backward compatibility
+    res.json({
+      success: true,
+      data,
+      ...data
+    });
 
   } catch (err) {
     console.error("AI Sentence error:", err.message);
@@ -419,7 +439,12 @@ app.post("/evaluate", async (req, res) => {
     });
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
-    res.json({ success: true, ...data });
+    // Wrap in "data" key for Flutter, while keeping flat keys for backward compatibility
+    res.json({
+      success: true,
+      data,
+      ...data
+    });
 
   } catch (err) {
     console.error("AI Evaluation error:", err.message);
