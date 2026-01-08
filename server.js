@@ -320,21 +320,21 @@ async function handleDict(req, res) {
           messages: [
             {
               role: "system",
-              content: `You are a German linguist. Refine a translation for the English word '${queryTerm}'.
+              content: `You are a world-class German linguist. Refine a dictionary lookup for the English word '${queryTerm}'.
 Response MUST be valid JSON:
 {
   "primary": "refined translation",
-  "alternates": ["alt1", "alt2"]
+  "alternates": ["alt1", "alt2", "alt3"]
 }
 Rules:
-1. If it refers to a NOUN: 'primary' MUST ALWAYS start with the correct definite article ('der ', 'die ', or 'das '). Example: 'das Haus'.
-2. If it refers to an ADJECTIVE: 'primary' MUST contain exactly TWO distinct meanings separated by a comma (e.g., 'schnell, rasch').
-3. 'alternates' MUST be 2-3 strictly relevant synonyms. No garbage data.
+1. If the term is a NOUN: 'primary' MUST start with its definite article (der, die, das).
+2. If the term is an ADJECTIVE/VERB: 'primary' SHOULD include at least two distinct common German meanings separated by a comma.
+3. 'alternates' MUST be 2-3 strictly relevant synonyms or closely related words.
 4. Respond ONLY with the JSON object.`
             },
-            { role: "user", content: `Original translation from MyMemory: ${primary}` }
+            { role: "user", content: `Initial suggestion: ${primary}` }
           ],
-          model: "llama-3.1-8b-instant",
+          model: "llama-3.3-70b-versatile", // Use the more powerful model for accuracy
           response_format: { type: "json_object" }
         });
 
@@ -344,7 +344,7 @@ Rules:
           filteredAlternates = aiData.alternates || [];
         }
       } catch (e) {
-        console.error("JSON Refinement failed:", e.message);
+        console.error("Dictionary Refinement failed:", e.message);
       }
     } else {
       // Original filtering logic for when AI refinement is not applied
