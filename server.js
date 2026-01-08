@@ -514,6 +514,7 @@ app.get("/sentence", async (req, res) => {
     // Wrap in "data" key for Flutter, while keeping flat keys for backward compatibility
     res.json({
       success: true,
+      word: queryWord,
       data,
       ...data
     });
