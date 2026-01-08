@@ -400,15 +400,16 @@ Response MUST be valid JSON:
 }
 
 Direction Rules:
-- If translating to German (to=de): 'primary' must be the German translation.
-- If it's a NOUN: 'primary' MUST start with its definite article (der, die, das).
-- If it's an ADJECTIVE/VERB: 'primary' SHOULD include two distinct meanings (e.g., 'schnell, rasch').
-- If the user sent an English word but requested to=en, treat it as to=de if it makes more sense for a language learner.
-
-- If translating to English (to=en): 'primary' must be the English translation.
-- 'alternates' MUST be strictly relevant synonyms in the target language.`
+1. SMART DIRECTION: If the user sends an English word but asks for 'to=en', they made a MISTAKE. You MUST translate it to German instead.
+2. SMART DIRECTION: If the user sends a German word but asks for 'to=de', they made a MISTAKE. You MUST translate it to English instead.
+3. If the final result is German:
+   - For NOUNS: 'primary' MUST start with its definite article (der, die, das).
+   - For ADJECTIVES/VERBS: 'primary' SHOULD include two distinct meanings (e.g., 'schnell, rasch').
+4. If the final result is English:
+   - Provide the most common translation.
+5. 'alternates' MUST be strictly relevant synonyms in the same language as 'primary'.`
             },
-            { role: "user", content: `Translate/Refine '${queryTerm}' from ${from} to ${to}. (Initial suggestion: ${primary})` }
+            { role: "user", content: `Translate '${queryTerm}' (Requested from: ${from}, to: ${to}). Initial suggestion: ${primary}` }
           ],
           model: "llama-3.3-70b-versatile",
           response_format: { type: "json_object" }
