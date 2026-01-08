@@ -545,7 +545,7 @@ Level Guidelines:
 - B2: Complex grammar (subjunctive, passive), abstract topics. Max 15 words.
 - C1/C2: Advanced structures, nuanced vocabulary, literary style.
 
-Format: {"question": "The English sentence", "context": "Brief grammar hint (e.g., 'Use Perfekt tense')"}`;
+Format: {"question": "The English sentence", "context": "Brief English grammar hint (e.g., 'Use Perfekt tense')"}`;
     } else {
       // MODE 2: MCQ (DE -> EN)
       // User gets a German sentence, chooses right English meaning from 4 options
@@ -562,7 +562,7 @@ Format: {
   "question": "German sentence",
   "options": ["Option A", "Option B", "Option C", "Option D"],
   "answer": "The correct option string",
-  "explanation": "Brief explanation (max 2 sentences): Why the answer is correct. Key grammar point or vocabulary."
+  "explanation": "Brief explanation in English (max 2 sentences): Why the answer is correct. Key grammar point or vocabulary."
 }`;
     }
 
@@ -616,16 +616,16 @@ CRITICAL GERMAN GRAMMAR RULES (NEVER VIOLATE):
 - Verb conjugation: ich esse, du isst, er/sie/es isst, wir essen, ihr esst, sie essen
 - Word order: Subject-Verb-Object in main clauses
 
-Provide concise, encouraging feedback:
+Provide concise, encouraging feedback IN ENGLISH:
 1. user_answer: Echo back exactly what they wrote.
 2. corrected_answer: The GRAMMATICALLY PERFECT translation for ${level} level. Double-check all cases and articles!
-3. feedback: 2-3 sentences. If wrong, explain the SPECIFIC grammar rule violated (e.g., "Apfel is masculine, so accusative is 'einen', not 'ein'").
+3. feedback: 2-3 sentences max in English. If wrong, explain the SPECIFIC grammar rule violated in English (e.g., "Apfel is masculine, so accusative is 'einen', not 'ein'").
 4. b2_reference_answer: Advanced B2 translation (only if different).
 
 Return JSON: {
   "user_answer": "${translation}",
   "corrected_answer": "Grammatically perfect ${level} translation",
-  "feedback": "Brief feedback with specific grammar rule",
+  "feedback": "Brief English feedback with specific grammar rule",
   "b2_reference_answer": "Advanced B2 translation"
 }` }
       ],
