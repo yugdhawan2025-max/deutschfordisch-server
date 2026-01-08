@@ -609,17 +609,17 @@ app.post("/evaluate", async (req, res) => {
 Original (${from === 'de' ? 'German' : 'English'}): "${sentence}"
 User's Translation (${to === 'en' ? 'English' : 'German'}): "${translation}"
 
-Provide educational feedback:
-1. user_answer: Echo back the user's translation exactly as they wrote it.
-2. corrected_answer: The correct translation at their current level (${level}).
-3. feedback: Detailed constructive feedback (3-4 sentences). If correct, explain what they did well. If incorrect, explain the specific mistake (grammar, vocabulary, word order).
-4. b2_reference_answer: How a B2-level learner would translate this (more sophisticated vocabulary/grammar than A1/A2, but still clear).
+Provide concise, encouraging feedback:
+1. user_answer: Echo back exactly what they wrote.
+2. corrected_answer: The correct translation for ${level} level.
+3. feedback: 2-3 sentences max. If correct, praise what they did well. If wrong, explain the key mistake (grammar/vocabulary) in simple terms.
+4. b2_reference_answer: A more advanced B2 translation (only if different from corrected_answer).
 
 Return JSON: {
   "user_answer": "${translation}",
-  "corrected_answer": "The correct translation for ${level} level",
-  "feedback": "Detailed educational feedback explaining grammar rules, vocabulary choices, and what to improve",
-  "b2_reference_answer": "A more advanced B2-level translation"
+  "corrected_answer": "Correct ${level}-level translation",
+  "feedback": "Brief, encouraging feedback (2-3 sentences)",
+  "b2_reference_answer": "Advanced B2 translation"
 }` }
       ],
       model: "llama-3.1-8b-instant",
