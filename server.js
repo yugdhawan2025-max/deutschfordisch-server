@@ -277,13 +277,32 @@ async function handleDict(req, res) {
     const primary = data.responseData.translatedText;
     const matches = data.matches || [];
 
+    // Quality Filter: Remove long sentences when looking up words
+    // Term should not be a sentence itself for this filter to apply
+    const isSingleWord = !queryTerm.trim().includes(" ");
+
+    const filteredAlternates = matches
+      .slice(1, 10) // Take a larger pool to filter from
+      .map(m => m.translation)
+      .filter(t => t !== primary)
+      .filter(t => {
+        if (isSingleWord) {
+          // If searching for a single word, results should also be short (max 3 words)
+          const wordCount = t.trim().split(/\s+/).length;
+          return wordCount <= 3 && t.length < queryTerm.length * 4;
+        }
+        // For phrases/sentences, results should be within a reasonable length ratio
+        return t.length < queryTerm.length * 2.5;
+      })
+      .slice(0, 5); // Return top 5 clean results
+
     res.json({
       success: true,
       term: queryTerm,
       from,
       to,
       primary,
-      alternates: matches.slice(1, 5).map(m => m.translation).filter(t => t !== primary),
+      alternates: filteredAlternates,
       source: "mymemory"
     });
   } catch (err) {
