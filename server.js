@@ -525,6 +525,56 @@ app.get("/sentence", async (req, res) => {
   }
 });
 
+/* -------------------- AI: LEARNING MODE (PRACTICE) -------------------- */
+app.get("/learn/practice", async (req, res) => {
+  const { type = "en-de", level = "A1" } = req.query; // type: 'en-de' (written) or 'de-en' (mcq)
+
+  try {
+    let systemPrompt = "You are a professional language tutor. Respond ONLY in valid JSON format.";
+    let userPrompt = "";
+
+    if (type === "en-de") {
+      // MODE 1: Written Translation (EN -> DE)
+      // User gets an English sentence, translates it to German (validated later by /evaluate)
+      userPrompt = \`Generate a random simple English sentence for a \${level} German learner.
+Format: {"question": "The English sentence", "context": "Hint/Context if needed"}\`;
+    } else {
+      // MODE 2: MCQ (DE -> EN)
+      // User gets a German sentence, chooses right English meaning from 4 options
+      userPrompt = \`Generate a random German sentence for a \${level} learner and 4 English translation options (1 correct, 3 similar distractors).
+Format: {
+  "question": "German sentence",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "answer": "The correct option string",
+  "explanation": "Why this is correct and why others might be wrong (max 2 sentences)"
+}\`;
+    }
+
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      model: "llama-3.1-8b-instant",
+      response_format: { type: "json_object" }
+    });
+
+    const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
+    
+    res.json({
+      success: true,
+      type,
+      level,
+      data,
+      ...data
+    });
+
+  } catch (err) {
+    console.error("AI Learn error:", err.message);
+    res.status(500).json({ success: false, error: "Learning generation failed" });
+  }
+});
+
 /* -------------------- AI: EVALUATE TRANSLATION -------------------- */
 app.post("/evaluate", async (req, res) => {
   const { sentence, translation, level = "A1", from = "de", to = "en" } = req.body;
@@ -538,15 +588,16 @@ app.post("/evaluate", async (req, res) => {
       messages: [
         { role: "system", content: "You are a supportive language tutor. Evaluate the user's translation. Respond ONLY in valid JSON." },
         {
-          role: "user", content: `My ${from === 'de' ? 'German' : 'English'} sentence: "${sentence}"
-My translation attempt (${to === 'en' ? 'English' : 'German'}): "${translation}"
-Language Level: ${level}
+          role: "user", content: `My ${ from === 'de' ? 'German' : 'English' } sentence: "${sentence}"
+My translation attempt(${ to === 'en' ? 'English' : 'German'}): "${translation}"
+Language Level: ${ level }
 
-Evaluate this. Return JSON: {
-"correct": boolean,
-"feedback": "constructive feedback in English (max 2 sentences)",
-"improved": "better translation if applicable, else null"
-}` }
+Evaluate this.Return JSON: {
+  "correct": boolean,
+    "rating": number(1 - 5),
+      "feedback": "constructive feedback in English (max 2 sentences)",
+        "suggestion": "better translation if applicable, else null"
+} ` }
       ],
       model: "llama-3.1-8b-instant", // Optimized for speed
       response_format: { type: "json_object" }
@@ -568,5 +619,5 @@ Evaluate this. Return JSON: {
 
 /* -------------------- START -------------------- */
 app.listen(PORT, () => {
-  console.log(`Server live on port ${PORT}`);
+  console.log(`Server live on port ${ PORT } `);
 });

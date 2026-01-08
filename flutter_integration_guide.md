@@ -148,7 +148,60 @@ Retrieves translations for a word or phrase.
 - **Retry with Exponential Backoff**: For AI services, if you get a 500 or 429 error, wait 1 second before retrying. 
 - **Graceful Fallbacks**: If the API fails, fall back to the local vocabulary list. Never block the user from navigating the app because of a network error.
 
-## 5. Parameter Flexibility
-The backend now supports both `word` and `term` as parameters for consistency. 
 - **Dictionary**: `?term=word&from=de&to=en`
 - **Sentence**: `?word=word&level=A1` (or `?term=word`)
+
+## 6. AI Learning Features (New)
+
+### Start Practice Session (`GET /learn/practice`)
+Generates practice content based on the selected mode.
+
+**Parameters:**
+- `type`: `en-de` (Written Translation) OR `de-en` (Multiple Choice).
+- `level`: `A1` (default) to `C1`.
+
+#### Mode A: Written Translation (`type=en-de`)
+The user is given an English sentence and must write the German translation. You then send their input to `/evaluate`.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "question": "The dog sleeps.",
+    "context": "General statement"
+  }
+}
+```
+
+#### Mode B: Multiple Choice (`type=de-en`)
+The user is given a German sentence and must select the correct English translation from 4 options.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "question": "Der Hund schläft.",
+    "options": ["The dog runs.", "The dog sleeps.", "The cat sleeps.", "The dog barks."],
+    "answer": "The dog sleeps.",
+    "explanation": "Der Hund means 'The dog' and schläft means 'sleeps'."
+  }
+}
+```
+
+### Validate Translation (`POST /evaluate`)
+Updated structure to support detailed AI feedback and 5-star rating.
+
+**Response Structure:**
+```json
+{
+  "success": true,
+  "data": {
+    "correct": true,           // Boolean: strictly correct or acceptable?
+    "rating": 5,               // Integer: 1 to 5 stars
+    "feedback": "Perfect!",    // String: Explanation for the user
+    "suggestion": null         // String: Better way to say it (or null if perfect)
+  }
+}
+```
