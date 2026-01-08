@@ -114,6 +114,19 @@ To ensure the best user experience and accurate data fetching:
 - **Robust JSON Parsing**: Always check for the `success` flag first. For AI endpoints (`/sentence`, `/evaluate`), access the nested `data` object to get the primary results.
 - **Request Timeouts**: AI models can take 2-5 seconds. Set a connection timeout of at least 10 seconds in your `http` client to avoid unexpected app freezes.
 - **Local Caching**: Cache dictionary results for the current session. If a user looks up "Haus" twice, the second result should come from a local `Map` or `box` (Hive) instead of a network call.
+### Dictionary Lookup (`GET /dict`)
+Retrieves translations for a word or phrase.
+
+> [!IMPORTANT]
+> **Check your `from` and `to` parameters!**
+> - For English -> German: `from=en&to=de`
+> - For German -> English: `from=de&to=en`
+> If these are swapped, the API may return the same word you searched for.
+
+**Parameters:**
+- `term` (or `word`): The text to translate.
+- `from`: Source language code (`en` or `de`).
+- `to`: Target language code (`de` or `en`).
 - **Debouncing Search**: If implementing a "search as you type" feature for the dictionary, add a 300-500ms debounce to avoid spamming the API with every keystroke.
 - **Retry with Exponential Backoff**: For AI services, if you get a 500 or 429 error, wait 1 second before retrying. 
 - **Graceful Fallbacks**: If the API fails, fall back to the local vocabulary list. Never block the user from navigating the app because of a network error.

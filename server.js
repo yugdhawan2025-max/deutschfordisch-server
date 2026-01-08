@@ -382,29 +382,35 @@ async function handleDict(req, res) {
     const matches = data.matches || [];
     let filteredAlternates = []; // Declare filteredAlternates here
 
-    // --- EN -> DE ENHANCEMENT (JSON Refinement) ---
-    // If translating to German and it's a single word, use AI to generate high-quality primary + alternates
-    if (to === "de" && !queryTerm.trim().includes(" ")) {
+    // --- UNIVERSAL EN <-> DE ENHANCEMENT (AI Refinement) ---
+    // Single-word refinement using a world-class model for accuracy & direction correction
+    const isSingleWord = !queryTerm.trim().includes(" ");
+
+    if (isSingleWord) {
       try {
         const refinement = await groq.chat.completions.create({
           messages: [
             {
               role: "system",
-              content: `You are a world-class German linguist. Refine a dictionary lookup for the English word '${queryTerm}'.
+              content: `You are a world-class German-English linguist. You are tasked with providing the perfect translation for the word '${queryTerm}'.
 Response MUST be valid JSON:
 {
   "primary": "refined translation",
   "alternates": ["alt1", "alt2", "alt3"]
 }
-Rules:
-1. If the term is a NOUN: 'primary' MUST start with its definite article (der, die, das).
-2. If the term is an ADJECTIVE/VERB: 'primary' SHOULD include at least two distinct common German meanings separated by a comma.
-3. 'alternates' MUST be 2-3 strictly relevant synonyms or closely related words.
-4. Respond ONLY with the JSON object.`
+
+Direction Rules:
+- If translating to German (to=de): 'primary' must be the German translation.
+- If it's a NOUN: 'primary' MUST start with its definite article (der, die, das).
+- If it's an ADJECTIVE/VERB: 'primary' SHOULD include two distinct meanings (e.g., 'schnell, rasch').
+- If the user sent an English word but requested to=en, treat it as to=de if it makes more sense for a language learner.
+
+- If translating to English (to=en): 'primary' must be the English translation.
+- 'alternates' MUST be strictly relevant synonyms in the target language.`
             },
-            { role: "user", content: `Initial suggestion: ${primary}` }
+            { role: "user", content: `Translate/Refine '${queryTerm}' from ${from} to ${to}. (Initial suggestion: ${primary})` }
           ],
-          model: "llama-3.3-70b-versatile", // Use the more powerful model for accuracy
+          model: "llama-3.3-70b-versatile",
           response_format: { type: "json_object" }
         });
 
@@ -414,23 +420,16 @@ Rules:
           filteredAlternates = aiData.alternates || [];
         }
       } catch (e) {
-        console.error("Dictionary Refinement failed:", e.message);
+        console.error("AI Refinement failed:", e.message);
       }
     } else {
-      // Original filtering logic for when AI refinement is not applied
-      const isSingleWord = !queryTerm.trim().includes(" ");
+      // Original filtering logic for sentences/phrases
       filteredAlternates = matches
-        .slice(1, 15) // Pool from more matches
+        .slice(1, 15)
         .map(m => m.translation)
         .filter(t => t && t !== primary)
         .filter(t => {
           const cleanT = t.trim();
-          if (isSingleWord) {
-            // STRICT: For words, alternates must be very short (max 2 words)
-            const words = cleanT.split(/\s+/);
-            return words.length <= 2 && cleanT.length < 30 && cleanT.length < queryTerm.length * 3;
-          }
-          // For phrases/sentences, keep it within 2x length
           return cleanT.length < queryTerm.length * 2.5;
         })
         .slice(0, 5);
