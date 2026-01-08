@@ -1,19 +1,19 @@
 {
-  "name": "server",
+  "name": "deutschfordisch-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "AI backend for DeutschFordisch",
+  "main": "server.js",
+  "type": "module",
   "scripts": {
-  "start": "node server.js"
-}
-,
-  "keywords": [],
-  "author": "",
+    "start": "node server.js"
+  },
+  "author": "Yug Dhawan",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "cors": "^2.8.5",
+    "dictcc-js": "^1.0.0",
     "dotenv": "^17.2.3",
-    "express": "^5.2.1"
+    "express": "^4.19.2",
+    "node-fetch": "^3.3.2"
   }
 }
