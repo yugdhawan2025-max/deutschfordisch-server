@@ -308,8 +308,29 @@ async function handleDict(req, res) {
       throw new Error("Service rate-limit or error");
     }
 
-    const primary = data.responseData.translatedText;
+    let primary = data.responseData.translatedText;
     const matches = data.matches || [];
+
+    // --- EN -> DE GENDER ENHANCEMENT ---
+    // If translating to German and it looks like a single word, use AI to add gender (der/die/das)
+    if (to === "de" && !queryTerm.trim().includes(" ") && !primary.includes(" ")) {
+      try {
+        const genderCheck = await groq.chat.completions.create({
+          messages: [
+            { role: "system", content: "You are a German linguist. For a given German noun, respond ONLY with the noun preceded by its correct definite article (der, die, or das). If it is not a noun, respond with just the word." },
+            { role: "user", content: primary }
+          ],
+          model: "llama-3.1-8b-instant", // Use a smaller, faster model for this quick check
+          max_tokens: 10
+        });
+        const aiResult = genderCheck.choices[0]?.message?.content?.trim();
+        if (aiResult && aiResult.toLowerCase() !== primary.toLowerCase()) {
+          primary = aiResult;
+        }
+      } catch (e) {
+        console.error("Gender detection failed:", e.message);
+      }
+    }
 
     // Quality Filter: Remove long sentences when looking up words
     const isSingleWord = !queryTerm.trim().includes(" ");
