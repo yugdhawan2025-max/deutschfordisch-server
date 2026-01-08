@@ -175,7 +175,7 @@ app.get("/", (req, res) => {
                     </select>
                 </div>
                 <button onclick="runTest('sentence')">Generate AI</button>
-                <div id="sent-res" class="result-container"></div>
+                <div id="sentence-res" class="result-container"></div>
             </div>
 
             <!-- AI Evaluate -->
@@ -192,7 +192,7 @@ app.get("/", (req, res) => {
                     </div>
                 </div>
                 <button onclick="runTest('evaluate')">Validate with AI</button>
-                <div id="eval-res" class="result-container"></div>
+                <div id="evaluate-res" class="result-container"></div>
             </div>
         </div>
 
@@ -204,6 +204,7 @@ app.get("/", (req, res) => {
     <script>
         async function runTest(type) {
             const resDiv = document.getElementById(\`\${type}-res\`);
+            if (!resDiv) return console.error("Result div not found for type: " + type);
             resDiv.innerHTML = '<span style="color: var(--accent)">Processing...</span>';
             resDiv.classList.add('active');
 
@@ -316,17 +317,18 @@ app.post("/dict", handleDict); // Support for user's POST attempts
 
 /* -------------------- AI: GENERATE SENTENCE -------------------- */
 app.get("/sentence", async (req, res) => {
-  const { word, level = "A1" } = req.query;
+  const { word, term, level = "A1" } = req.query;
+  const queryWord = word || term;
 
-  if (!word) {
-    return res.status(400).json({ success: false, error: "Missing word" });
+  if (!queryWord) {
+    return res.status(400).json({ success: false, error: "Missing word/term" });
   }
 
   try {
     const completion = await groq.chat.completions.create({
       messages: [
         { role: "system", content: "You are a professional language tutor. Respond ONLY in valid JSON format." },
-        { role: "user", content: `Generate a natural German sentence using the word "${word}" for a ${level} level learner. Include an English translation. Format: {"german": "...", "english": "..."}` }
+        { role: "user", content: `Generate a natural German sentence using the word "${queryWord}" for a ${level} level learner. Include an English translation. Format: {"german": "...", "english": "..."}` }
       ],
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
