@@ -178,16 +178,31 @@ app.get("/", (req, res) => {
                 <div id="sentence-res" class="result-container"></div>
             </div>
 
-            <!-- AI Evaluate -->
             <div class="card" style="grid-column: span 1.5">
                 <h3>Translation Validator</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem;">
+                    <div class="input-group">
+                        <label>Base Language</label>
+                        <select id="eval-from" onchange="updateEvalPlaceholders()">
+                            <option value="de">German</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Target Language</label>
+                        <select id="eval-to">
+                            <option value="en">English</option>
+                            <option value="de">German</option>
+                        </select>
+                    </div>
+                </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                     <div class="input-group">
-                        <label>Target Sentence (DE)</label>
+                        <label id="label-from">Target Sentence (DE)</label>
                         <textarea id="eval-sent" placeholder="Der Hund schläft." rows="2"></textarea>
                     </div>
                     <div class="input-group">
-                        <label>User Translation (EN)</label>
+                        <label id="label-to">User Translation (Target)</label>
                         <textarea id="eval-user" placeholder="The dog is sleeping." rows="2"></textarea>
                     </div>
                 </div>
@@ -226,7 +241,9 @@ app.get("/", (req, res) => {
                 method = 'POST';
                 body = {
                     sentence: document.getElementById('eval-sent').value,
-                    translation: document.getElementById('eval-user').value
+                    translation: document.getElementById('eval-user').value,
+                    from: document.getElementById('eval-from').value,
+                    to: document.getElementById('eval-to').value
                 };
             }
 
@@ -240,6 +257,21 @@ app.get("/", (req, res) => {
                 resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
             } catch (err) {
                 resDiv.innerHTML = \`<span style="color: #ff4757">Error: \${err.message}</span>\`;
+            }
+        function updateEvalPlaceholders() {
+            const from = document.getElementById('eval-from').value;
+            const to = document.getElementById('eval-to');
+            const labelFrom = document.getElementById('label-from');
+            const areaFrom = document.getElementById('eval-sent');
+            
+            if (from === 'de') {
+                to.value = 'en';
+                labelFrom.innerText = 'Target Sentence (DE)';
+                areaFrom.placeholder = 'Der Hund schläft.';
+            } else {
+                to.value = 'de';
+                labelFrom.innerText = 'Target Sentence (EN)';
+                areaFrom.placeholder = 'The dog is sleeping.';
             }
         }
     </script>
@@ -345,17 +377,20 @@ app.get("/sentence", async (req, res) => {
 
 /* -------------------- AI: EVALUATE -------------------- */
 app.post("/evaluate", async (req, res) => {
-  const { sentence, translation, level = "A1" } = req.body;
+  const { sentence, translation, level = "A1", from = "de", to = "en" } = req.body;
 
   if (!sentence || !translation) {
     return res.status(400).json({ success: false, error: "Missing required fields" });
   }
 
+  const fromLang = from === "de" ? "German" : "English";
+  const toLang = to === "en" ? "English" : "German";
+
   try {
     const completion = await groq.chat.completions.create({
       messages: [
         { role: "system", content: "You are a strict language tutor. Respond ONLY in valid JSON format." },
-        { role: "user", content: `Evaluate this translation for a ${level} learner. German: "${sentence}", User Translation: "${translation}". provide a score (0-100), feedback, and the correct translation. Format: {"score": 85, "feedback": "...", "correct": "..."}` }
+        { role: "user", content: `Evaluate this translation for a ${level} learner. ${fromLang}: "${sentence}", User Translation (${toLang}): "${translation}". Provide a score (0-100), feedback, and the correct translation. Format: {"score": 85, "feedback": "...", "correct": "..."}` }
       ],
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
