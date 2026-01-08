@@ -258,6 +258,7 @@ app.get("/", (req, res) => {
             } catch (err) {
                 resDiv.innerHTML = \`<span style="color: #ff4757">Error: \${err.message}</span>\`;
             }
+        }
         function updateEvalPlaceholders() {
             const from = document.getElementById('eval-from').value;
             const to = document.getElementById('eval-to');
