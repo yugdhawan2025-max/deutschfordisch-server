@@ -8,13 +8,23 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.json({
-    status: "ok",
-    message: "DeutschForDich AI server running 🚀",
-  });
+/* =========================
+   HEALTH CHECK
+========================= */
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", time: new Date().toISOString() });
 });
 
+/* =========================
+   ROOT
+========================= */
+app.get("/", (req, res) => {
+  res.send("DeutschForDich API running");
+});
+
+/* =========================
+   START SERVER
+========================= */
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
