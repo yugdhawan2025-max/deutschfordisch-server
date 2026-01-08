@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: deutschfordisch-server
+    env: node
+    plan: free # or starter
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: GROQ_API_KEY
+        sync: false # User will need to add this manually in Render dashboard
+      - key: NODE_VERSION
+        value: 20.0.0
