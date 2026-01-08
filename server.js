@@ -545,7 +545,7 @@ Level Guidelines:
 - B2: Complex grammar (subjunctive, passive), abstract topics. Max 15 words.
 - C1/C2: Advanced structures, nuanced vocabulary, literary style.
 
-Format: {"question": "The English sentence", "context": "Brief English grammar hint (e.g., 'Use Perfekt tense')"}`;
+Format: {"question": "English sentence (Sentence case)", "context": "Brief English grammar hint (e.g., 'Use Perfekt tense')"}`;
     } else {
       // MODE 2: MCQ (DE -> EN)
       // User gets a German sentence, chooses right English meaning from 4 options
@@ -559,10 +559,10 @@ Level Guidelines:
 - C1/C2: Idiomatic expressions, complex syntax.
 
 Format: {
-  "question": "German sentence",
+  "question": "German sentence (Sentence case)",
   "options": ["Option A (English)", "Option B (English)", "Option C (English)", "Option D (English)"],
   "answer": "The correct option string (English)",
-  "explanation": "Brief explanation in English (max 2 sentences): Why the answer is correct. Key grammar point or vocabulary."
+  "explanation": "Standardized format: 'Correct! The sentence uses [grammar point] because [reason].' (Max 2 sentences, English only)"
 }`;
     }
 
