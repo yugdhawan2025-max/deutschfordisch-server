@@ -351,6 +351,43 @@ app.get("/", (req, res) => {
   `);
 });
 
+app.get("/test-ai", (req, res) => {
+  res.send(`
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+button { padding: 15px 30px; font-size: 18px; background: #00d2ff; border: none; border-radius: 8px; cursor: pointer; }
+#log { margin-top: 20px; font-family: monospace; color: #0f0; }
+</style>
+</head>
+<body>
+<h1>AI Speed Test</h1>
+<button onclick="testSpeed()">Run Test</button>
+<div id="log"></div>
+<script>
+async function testSpeed() {
+    const log = document.getElementById('log');
+    log.innerHTML = "Testing...";
+    const start = Date.now();
+    try {
+        const res = await fetch('/sentence?word=test&level=A1');
+        const data = await res.json();
+        const end = Date.now();
+        const duration = (end - start) / 1000;
+        log.innerHTML = \`Success!\nTime: \${duration}s\n\nResponse:\n\${JSON.stringify(data, null, 2)}\`;
+    } catch (e) {
+        log.innerHTML = "Error: " + e.message;
+    }
+}
+</script>
+</body>
+</html>
+  `);
+});
+
 /* -------------------- HEALTH -------------------- */
 app.get("/health", (req, res) => {
   res.json({
