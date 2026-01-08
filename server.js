@@ -562,7 +562,7 @@ Format: {
   "question": "German sentence",
   "options": ["Option A", "Option B", "Option C", "Option D"],
   "answer": "The correct option string",
-  "explanation": "Detailed explanation: (1) Grammar rule used, (2) Key vocabulary meanings, (3) Why distractors are wrong. Min 3 sentences."
+  "explanation": "Brief explanation (max 2 sentences): Why the answer is correct. Key grammar point or vocabulary."
 }`;
     }
 
