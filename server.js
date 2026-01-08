@@ -69,7 +69,7 @@ app.get("/", (req, res) => {
         .card:hover { transform: translateY(-8px); border-color: var(--accent); box-shadow: 0 15px 40px rgba(0, 210, 255, 0.15); }
         .card h3 { margin-bottom: 1.5rem; font-size: 1.4rem; color: #fff; background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 10px; margin-left: -1rem; margin-right: -1rem; margin-top: -1rem; }
         
-        .input-group { margin-bottom: 1.5rem; }
+        .input-group { margin-bottom: 1.5rem; position: relative; }
         label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.6rem; }
         input, select, textarea {
             width: 100%;
@@ -84,6 +84,52 @@ app.get("/", (req, res) => {
         }
         input:focus, select:focus, textarea:focus { border-color: var(--accent); background: rgba(0, 210, 255, 0.05); }
         
+        /* Language Toggle Switch */
+        .toggle-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            background: rgba(0,0,0,0.4);
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+            user-select: none;
+        }
+        .lang-label { font-weight: 600; font-size: 0.9rem; color: var(--text-muted); transition: color 0.3s; }
+        .lang-label.active { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 54px;
+            height: 28px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #2a2d3e;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(26px); }
+
         button {
             width: 100%;
             padding: 1rem;
@@ -116,9 +162,6 @@ app.get("/", (req, res) => {
             scrollbar-width: thin;
         }
         .result-container.active { display: block; animation: slideIn 0.3s ease-out; }
-        .json-key { color: #f97583; }
-        .json-string { color: #9ecbff; }
-        .json-number { color: #ffab70; }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -139,20 +182,21 @@ app.get("/", (req, res) => {
             <!-- Dictionary -->
             <div class="card">
                 <h3>Dictionary Lookup</h3>
+                
+                <div class="toggle-wrapper" title="Switch Translation Direction">
+                    <span id="dict-label-de" class="lang-label active">DE</span>
+                    <label class="switch">
+                        <input type="checkbox" id="dict-toggle" onchange="updateToggle('dict')">
+                        <span class="slider"></span>
+                    </label>
+                    <span id="dict-label-en" class="lang-label">EN</span>
+                </div>
+
                 <div class="input-group">
-                    <label>Query</label>
+                    <label id="dict-query-label">German Word</label>
                     <input type="text" id="dict-query" placeholder="e.g., Haus">
                 </div>
-                <div class="input-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div>
-                        <label>From</label>
-                        <select id="dict-from"><option value="de">German</option><option value="en">English</option></select>
-                    </div>
-                    <div>
-                        <label>To</label>
-                        <select id="dict-to"><option value="en">English</option><option value="de">German</option></select>
-                    </div>
-                </div>
+                
                 <button onclick="runTest('dict')">Search API</button>
                 <div id="dict-res" class="result-container"></div>
             </div>
@@ -180,29 +224,23 @@ app.get("/", (req, res) => {
 
             <div class="card" style="grid-column: span 1.5">
                 <h3>Translation Validator</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem;">
-                    <div class="input-group">
-                        <label>Base Language</label>
-                        <select id="eval-from" onchange="updateEvalPlaceholders()">
-                            <option value="de">German</option>
-                            <option value="en">English</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label>Target Language</label>
-                        <select id="eval-to">
-                            <option value="en">English</option>
-                            <option value="de">German</option>
-                        </select>
-                    </div>
+                
+                <div class="toggle-wrapper" style="width: fit-content; margin-inline: auto;">
+                    <span id="eval-label-de" class="lang-label active">DE → EN</span>
+                    <label class="switch">
+                        <input type="checkbox" id="eval-toggle" onchange="updateToggle('eval')">
+                        <span class="slider"></span>
+                    </label>
+                    <span id="eval-label-en" class="lang-label">EN → DE</span>
                 </div>
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                     <div class="input-group">
-                        <label id="label-from">Target Sentence (DE)</label>
+                        <label id="label-sentence">Source Sentence (DE)</label>
                         <textarea id="eval-sent" placeholder="Der Hund schläft." rows="2"></textarea>
                     </div>
                     <div class="input-group">
-                        <label id="label-to">User Translation (Target)</label>
+                        <label id="label-translation">User Translation (EN)</label>
                         <textarea id="eval-user" placeholder="The dog is sleeping." rows="2"></textarea>
                     </div>
                 </div>
@@ -212,11 +250,56 @@ app.get("/", (req, res) => {
         </div>
 
         <div class="status-footer">
-            <span class="indicator"></span> API Version 2.1.0 • Stateless Layer • Stateless Learning
+            <span class="indicator"></span> API Version 2.1.0 • Stateless Layer • AI Refinement Active
         </div>
     </div>
 
     <script>
+        function updateToggle(type) {
+            const isChecked = document.getElementById(\`\${type}-toggle\`).checked;
+            if (type === 'dict') {
+                const labelDe = document.getElementById('dict-label-de');
+                const labelEn = document.getElementById('dict-label-en');
+                const queryLabel = document.getElementById('dict-query-label');
+                const queryInput = document.getElementById('dict-query');
+                
+                if (isChecked) {
+                    labelDe.classList.remove('active');
+                    labelEn.classList.add('active');
+                    queryLabel.innerText = "English Word";
+                    queryInput.placeholder = "e.g., House";
+                } else {
+                    labelDe.classList.add('active');
+                    labelEn.classList.remove('active');
+                    queryLabel.innerText = "German Word";
+                    queryInput.placeholder = "e.g., Haus";
+                }
+            } else if (type === 'eval') {
+                const labelDe = document.getElementById('eval-label-de');
+                const labelEn = document.getElementById('eval-label-en');
+                const labelSent = document.getElementById('label-sentence');
+                const areaSent = document.getElementById('eval-sent');
+                const labelUser = document.getElementById('label-translation');
+                const areaUser = document.getElementById('eval-user');
+
+                if (isChecked) {
+                    labelDe.classList.remove('active');
+                    labelEn.classList.add('active');
+                    labelSent.innerText = "Source Sentence (EN)";
+                    areaSent.placeholder = "The dog is sleeping.";
+                    labelUser.innerText = "User Translation (DE)";
+                    areaUser.placeholder = "Der Hund schläft.";
+                } else {
+                    labelDe.classList.add('active');
+                    labelEn.classList.remove('active');
+                    labelSent.innerText = "Source Sentence (DE)";
+                    areaSent.placeholder = "Der Hund schläft.";
+                    labelUser.innerText = "User Translation (EN)";
+                    areaUser.placeholder = "The dog is sleeping.";
+                }
+            }
+        }
+
         async function runTest(type) {
             const resDiv = document.getElementById(\`\${type}-res\`);
             if (!resDiv) return console.error("Result div not found for type: " + type);
@@ -229,8 +312,9 @@ app.get("/", (req, res) => {
 
             if (type === 'dict') {
                 const q = document.getElementById('dict-query').value;
-                const f = document.getElementById('dict-from').value;
-                const t = document.getElementById('dict-to').value;
+                const isEnToDe = document.getElementById('dict-toggle').checked;
+                const f = isEnToDe ? "en" : "de";
+                const t = isEnToDe ? "de" : "en";
                 url = \`/dict?term=\${q}&from=\${f}&to=\${t}\`;
             } else if (type === 'sentence') {
                 const w = document.getElementById('sent-word').value;
@@ -239,11 +323,13 @@ app.get("/", (req, res) => {
             } else if (type === 'evaluate') {
                 url = '/evaluate';
                 method = 'POST';
+                const isEnToDe = document.getElementById('eval-toggle').checked;
                 body = {
                     sentence: document.getElementById('eval-sent').value,
                     translation: document.getElementById('eval-user').value,
-                    from: document.getElementById('eval-from').value,
-                    to: document.getElementById('eval-to').value
+                    from: isEnToDe ? "en" : "de",
+                    to: isEnToDe ? "de" : "en",
+                    level: "A1"
                 };
             }
 
@@ -257,22 +343,6 @@ app.get("/", (req, res) => {
                 resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
             } catch (err) {
                 resDiv.innerHTML = \`<span style="color: #ff4757">Error: \${err.message}</span>\`;
-            }
-        }
-        function updateEvalPlaceholders() {
-            const from = document.getElementById('eval-from').value;
-            const to = document.getElementById('eval-to');
-            const labelFrom = document.getElementById('label-from');
-            const areaFrom = document.getElementById('eval-sent');
-            
-            if (from === 'de') {
-                to.value = 'en';
-                labelFrom.innerText = 'Target Sentence (DE)';
-                areaFrom.placeholder = 'Der Hund schläft.';
-            } else {
-                to.value = 'de';
-                labelFrom.innerText = 'Target Sentence (EN)';
-                areaFrom.placeholder = 'The dog is sleeping.';
             }
         }
     </script>
