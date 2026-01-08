@@ -14,18 +14,30 @@ Create a file called `lib/services/api_service.dart` to handle all communication
 
 ```dart
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 
 class ApiService {
   // Use your Render URL for production
   static const String baseUrl = 'https://deutschfordisch-server.onrender.com';
+  
+  // Set explicit timeout to 30 seconds to handle server cold-starts
+  static const Duration timeoutDuration = Duration(seconds: 30);
+
+  // Helper method for authenticated requests with timeout
+  static Future<http.Response> _getWithTimeout(String url) async {
+    return http.get(Uri.parse(url)).timeout(
+      timeoutDuration,
+      onTimeout: () => throw TimeoutException('Server took too long to respond'),
+    );
+  }
 
   // 1. Dictionary Lookup
   static Future<Map<String, dynamic>?> lookupWord(String word) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/dict?term=$word&from=de&to=en'),
-      );
+      // Smart Direction: Just send simple params, backend will fix if wrong
+      final url = '$baseUrl/dict?term=$word&from=de&to=en';
+      final response = await _getWithTimeout(url);
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -39,9 +51,8 @@ class ApiService {
   // 2. AI Sentence Generation
   static Future<Map<String, dynamic>?> generateSentence(String word, String level) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/sentence?word=$word&level=$level'),
-      );
+      final url = '$baseUrl/sentence?word=$word&level=$level';
+      final response = await _getWithTimeout(url);
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -71,6 +82,9 @@ class ApiService {
           'from': from,
           'to': to,
         }),
+      ).timeout(
+        timeoutDuration,
+        onTimeout: () => throw TimeoutException('Server took too long to respond'),
       );
 
       if (response.statusCode == 200) {
