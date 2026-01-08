@@ -536,18 +536,18 @@ app.get("/learn/practice", async (req, res) => {
     if (type === "en-de") {
       // MODE 1: Written Translation (EN -> DE)
       // User gets an English sentence, translates it to German (validated later by /evaluate)
-      userPrompt = \`Generate a random simple English sentence for a \${level} German learner.
-Format: {"question": "The English sentence", "context": "Hint/Context if needed"}\`;
+      userPrompt = `Generate a random simple English sentence for a ${level} German learner.
+Format: {"question": "The English sentence", "context": "Hint/Context if needed"}`;
     } else {
       // MODE 2: MCQ (DE -> EN)
       // User gets a German sentence, chooses right English meaning from 4 options
-      userPrompt = \`Generate a random German sentence for a \${level} learner and 4 English translation options (1 correct, 3 similar distractors).
+      userPrompt = `Generate a random German sentence for a ${level} learner and 4 English translation options (1 correct, 3 similar distractors).
 Format: {
   "question": "German sentence",
   "options": ["Option A", "Option B", "Option C", "Option D"],
   "answer": "The correct option string",
   "explanation": "Why this is correct and why others might be wrong (max 2 sentences)"
-}\`;
+}`;
     }
 
     const completion = await groq.chat.completions.create({
@@ -560,7 +560,7 @@ Format: {
     });
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
-    
+
     res.json({
       success: true,
       type,
@@ -588,9 +588,9 @@ app.post("/evaluate", async (req, res) => {
       messages: [
         { role: "system", content: "You are a supportive language tutor. Evaluate the user's translation. Respond ONLY in valid JSON." },
         {
-          role: "user", content: `My ${ from === 'de' ? 'German' : 'English' } sentence: "${sentence}"
-My translation attempt(${ to === 'en' ? 'English' : 'German'}): "${translation}"
-Language Level: ${ level }
+          role: "user", content: `My ${from === 'de' ? 'German' : 'English'} sentence: "${sentence}"
+My translation attempt(${to === 'en' ? 'English' : 'German'}): "${translation}"
+Language Level: ${level}
 
 Evaluate this.Return JSON: {
   "correct": boolean,
@@ -619,5 +619,5 @@ Evaluate this.Return JSON: {
 
 /* -------------------- START -------------------- */
 app.listen(PORT, () => {
-  console.log(`Server live on port ${ PORT } `);
+  console.log(`Server live on port ${PORT} `);
 });
