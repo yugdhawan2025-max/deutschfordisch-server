@@ -602,27 +602,34 @@ app.post("/evaluate", async (req, res) => {
   try {
     const completion = await groq.chat.completions.create({
       messages: [
-        { role: "system", content: "You are a supportive language tutor. Evaluate the user's translation. Respond ONLY in valid JSON." },
+        { role: "system", content: "You are a strict German grammar expert. You MUST follow all German grammar rules perfectly. Respond ONLY in valid JSON." },
         {
           role: "user", content: `Evaluate this ${level} CEFR learner's translation.
 
 Original (${from === 'de' ? 'German' : 'English'}): "${sentence}"
 User's Translation (${to === 'en' ? 'English' : 'German'}): "${translation}"
 
+CRITICAL GERMAN GRAMMAR RULES (NEVER VIOLATE):
+- Akkusativ (direct object): der→den, ein→einen (masc), das→das, ein→ein (neut), die→die, eine→eine (fem)
+- Example: "Ich esse einen Apfel" (NOT "ein Apfel" - Apfel is masculine accusative!)
+- Dativ (indirect object): der→dem, ein→einem (masc), das→dem, ein→einem (neut), die→der, eine→einer (fem)
+- Verb conjugation: ich esse, du isst, er/sie/es isst, wir essen, ihr esst, sie essen
+- Word order: Subject-Verb-Object in main clauses
+
 Provide concise, encouraging feedback:
 1. user_answer: Echo back exactly what they wrote.
-2. corrected_answer: The correct translation for ${level} level.
-3. feedback: 2-3 sentences max. If correct, praise what they did well. If wrong, explain the key mistake (grammar/vocabulary) in simple terms.
-4. b2_reference_answer: A more advanced B2 translation (only if different from corrected_answer).
+2. corrected_answer: The GRAMMATICALLY PERFECT translation for ${level} level. Double-check all cases and articles!
+3. feedback: 2-3 sentences. If wrong, explain the SPECIFIC grammar rule violated (e.g., "Apfel is masculine, so accusative is 'einen', not 'ein'").
+4. b2_reference_answer: Advanced B2 translation (only if different).
 
 Return JSON: {
   "user_answer": "${translation}",
-  "corrected_answer": "Correct ${level}-level translation",
-  "feedback": "Brief, encouraging feedback (2-3 sentences)",
+  "corrected_answer": "Grammatically perfect ${level} translation",
+  "feedback": "Brief feedback with specific grammar rule",
   "b2_reference_answer": "Advanced B2 translation"
 }` }
       ],
-      model: "llama-3.1-8b-instant",
+      model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
     });
 
