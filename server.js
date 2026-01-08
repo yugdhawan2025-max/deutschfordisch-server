@@ -536,17 +536,33 @@ app.get("/learn/practice", async (req, res) => {
     if (type === "en-de") {
       // MODE 1: Written Translation (EN -> DE)
       // User gets an English sentence, translates it to German (validated later by /evaluate)
-      userPrompt = `Generate a random simple English sentence for a ${level} German learner.
-Format: {"question": "The English sentence", "context": "Hint/Context if needed"}`;
+      userPrompt = `Generate a level-appropriate English sentence for a ${level} CEFR German learner to translate.
+
+Level Guidelines:
+- A1: Simple present tense, basic vocabulary (family, food, colors). Max 5 words.
+- A2: Present/past tense, everyday topics. Max 8 words.
+- B1: Multiple tenses, common idioms, longer sentences. Max 12 words.
+- B2: Complex grammar (subjunctive, passive), abstract topics. Max 15 words.
+- C1/C2: Advanced structures, nuanced vocabulary, literary style.
+
+Format: {"question": "The English sentence", "context": "Brief grammar hint (e.g., 'Use Perfekt tense')"}`;
     } else {
       // MODE 2: MCQ (DE -> EN)
       // User gets a German sentence, chooses right English meaning from 4 options
-      userPrompt = `Generate a random German sentence for a ${level} learner and 4 English translation options (1 correct, 3 similar distractors).
+      userPrompt = `Generate a level-appropriate German sentence for a ${level} CEFR learner with 4 English MCQ options.
+
+Level Guidelines:
+- A1: Basic vocabulary, simple present. Example: "Der Hund ist groß."
+- A2: Common verbs, past tense. Example: "Ich habe gestern Fußball gespielt."
+- B1: Modal verbs, subordinate clauses. Example: "Obwohl es regnet, gehe ich spazieren."
+- B2: Subjunctive, passive voice. Example: "Das Buch wurde von einem berühmten Autor geschrieben."
+- C1/C2: Idiomatic expressions, complex syntax.
+
 Format: {
   "question": "German sentence",
   "options": ["Option A", "Option B", "Option C", "Option D"],
   "answer": "The correct option string",
-  "explanation": "Why this is correct and why others might be wrong (max 2 sentences)"
+  "explanation": "Detailed explanation: (1) Grammar rule used, (2) Key vocabulary meanings, (3) Why distractors are wrong. Min 3 sentences."
 }`;
     }
 
@@ -588,16 +604,23 @@ app.post("/evaluate", async (req, res) => {
       messages: [
         { role: "system", content: "You are a supportive language tutor. Evaluate the user's translation. Respond ONLY in valid JSON." },
         {
-          role: "user", content: `My ${from === 'de' ? 'German' : 'English'} sentence: "${sentence}"
-My translation attempt(${to === 'en' ? 'English' : 'German'}): "${translation}"
-Language Level: ${level}
+          role: "user", content: `Evaluate this ${level} CEFR learner's translation.
 
-Evaluate this.Return JSON: {
+Original (${from === 'de' ? 'German' : 'English'}): "${sentence}"
+User's Translation (${to === 'en' ? 'English' : 'German'}): "${translation}"
+
+Provide educational feedback:
+1. If CORRECT: Explain what they did well (grammar, word choice).
+2. If INCORRECT: Explain the specific mistake (e.g., "You used Präsens instead of Perfekt", "'schnell' means 'fast', not 'slow'").
+3. Rating: 1=completely wrong, 3=partially correct, 5=perfect.
+4. Suggestion: Only if rating < 5, provide the correct translation.
+
+Return JSON: {
   "correct": boolean,
-    "rating": number(1 - 5),
-      "feedback": "constructive feedback in English (max 2 sentences)",
-        "suggestion": "better translation if applicable, else null"
-} ` }
+  "rating": number (1-5),
+  "feedback": "Detailed constructive feedback (3-4 sentences). Explain grammar rules and vocabulary.",
+  "suggestion": "Correct translation if needed, else null"
+}` }
       ],
       model: "llama-3.1-8b-instant", // Optimized for speed
       response_format: { type: "json_object" }
