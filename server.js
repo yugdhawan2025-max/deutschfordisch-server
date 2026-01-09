@@ -3,6 +3,13 @@ import cors from "cors";
 import dotenv from "dotenv";
 import fetch from "node-fetch";
 import Groq from "groq-sdk";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -16,6 +23,33 @@ const PORT = process.env.PORT || 3000;
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY
 });
+
+/* -------------------- STORAGE CONFIG -------------------- */
+// Use persistent storage if provided (Render), otherwise default to local 'uploads'
+const STORAGE_ROOT = process.env.STORAGE_PATH || path.join(__dirname, "uploads");
+const MANIFEST_PATH = path.join(STORAGE_ROOT, "release_manifest.json");
+
+// Ensure storage directory exists
+if (!fs.existsSync(STORAGE_ROOT)) {
+  fs.mkdirSync(STORAGE_ROOT, { recursive: true });
+  console.log(`Created storage directory at: ${STORAGE_ROOT}`);
+}
+
+// Configure Multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, STORAGE_ROOT);
+  },
+  filename: (req, file, cb) => {
+    // Save as 'app-[version].apk' or similar to avoid collisions
+    const version = req.body.version || "unknown";
+    cb(null, `app-${version}.apk`);
+  }
+});
+const upload = multer({ storage });
+
+// Serve static files from storage root (to allow downloading APKs)
+app.use("/uploads", express.static(STORAGE_ROOT));
 
 /* -------------------- ROOT: PREMIUM DASHBOARD -------------------- */
 app.get("/", (req, res) => {
@@ -646,22 +680,103 @@ Return JSON: {
   }
 });
 
+
 /* -------------------- APP VERSION CHECK -------------------- */
 app.get("/app_version.json", (req, res) => {
+  // Try to read dynamic manifest, otherwise fallback to default
+  try {
+    if (fs.existsSync(MANIFEST_PATH)) {
+      const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
+      return res.json(manifest);
+    }
+  } catch (err) {
+    console.error("Error reading manifest:", err);
+  }
+
+  // Fallback default
   res.json({
     android: {
       version: "1.0.0",
-      url: "https://your-domain.com/downloads/app-release.apk", // Replace with actual URL
+      url: "",
       force_update: false,
-      changelog: "Initial release"
+      changelog: "No release found"
     },
     ios: {
       version: "1.0.0",
-      url: "https://apps.apple.com/app/id123456789", // Replace with App Store URL
+      url: "",
       force_update: false,
-      changelog: "Initial release"
+      changelog: "No release found"
     }
   });
+});
+
+/* -------------------- ADMIN: UPLOAD RELEASE -------------------- */
+app.post("/admin/upload_release", upload.single("file"), (req, res) => {
+  const apiKey = req.headers["x-api-key"];
+  const ADMIN_KEY = process.env.ADMIN_API_KEY;
+
+  // 1. Security Check
+  if (!ADMIN_KEY || apiKey !== ADMIN_KEY) {
+    return res.status(403).json({ success: false, error: "Unauthorized" });
+  }
+
+  // 2. Validate Request
+  if (!req.file) {
+    return res.status(400).json({ success: false, error: "No file uploaded" });
+  }
+
+  const { version, platform = "android", changelog = "" } = req.body;
+  if (!version) {
+    return res.status(400).json({ success: false, error: "Version is required" });
+  }
+
+  // 3. Generate Public URL
+  // Assuming the server is hosted at root, constructing URL protocol + host + /uploads/filename
+  const protocol = req.protocol;
+  const host = req.get("host");
+  const publicUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+
+  try {
+    // 4. Update Manifest JSON
+    let manifest = {
+      android: { version: "0.0.0", url: "", force_update: false, changelog: "" },
+      ios: { version: "0.0.0", url: "", force_update: false, changelog: "" }
+    };
+
+    if (fs.existsSync(MANIFEST_PATH)) {
+      manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
+    }
+
+    // Update specific platform info
+    if (platform.toLowerCase() === "android") {
+      manifest.android = {
+        version,
+        url: publicUrl,
+        force_update: false,
+        changelog
+      };
+    } else {
+      // iOS doesn't usually allow direct IPA downloads this way, but we update metadata
+      manifest.ios = {
+        version,
+        url: "https://apps.apple.com/app/id123456789", // Placeholder for logic
+        force_update: false,
+        changelog
+      };
+    }
+
+    fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
+
+    res.json({
+      success: true,
+      url: publicUrl,
+      message: `Version ${version} published successfully.`
+    });
+
+  } catch (err) {
+    console.error("Release update failed:", err);
+    res.status(500).json({ success: false, error: "Failed to update manifest" });
+  }
 });
 
 /* -------------------- START -------------------- */
