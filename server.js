@@ -599,10 +599,11 @@ async function handleDict(req, res) {
         
         Rules:
         1. Identify the 'best' translation.
-        2. If the German term is a noun, you MUST include the definite article (der/die/das) and capitalize it (e.g., 'der Hund').
-        3. Even if source is German, ensure 'german_full' is the explicit Article + Noun form.
-        4. Provide gender (m/f/n) for German nouns.
-        5. Provide 2-3 common alternate translations.
+        2. If Source or Target is 'auto', you must detect the languages yourself (specifically between English and German).
+        3. If the German term is a noun, you MUST include the definite article (der/die/das) and capitalize it (e.g., 'der Hund').
+        4. Even if source is German, ensure 'german_full' is the explicit Article + Noun form.
+        5. Provide gender (m/f/n) for German nouns.
+        6. Provide 2-3 common alternate translations.
 
         Return JSON: {
           "primary": "Main translation (e.g. 'der Hund' or 'dog')",
@@ -610,7 +611,9 @@ async function handleDict(req, res) {
           "english_full": "English form (e.g. 'dog')",
           "gender": "m/f/n/null",
           "category": "noun/verb/adjective etc.",
-          "alternates": ["alt1", "alt2"]
+          "alternates": ["alt1", "alt2"],
+          "detected_from": "en or de",
+          "detected_to": "en or de"
         }` }
       ],
       model: "llama-3.3-70b-versatile",
@@ -622,8 +625,8 @@ async function handleDict(req, res) {
     res.json({
       success: true,
       term: queryTerm,
-      from,
-      to,
+      from: aiData.detected_from || from,
+      to: aiData.detected_to || to,
       primary: aiData.primary,
       data: {
         german_full: aiData.german_full,
