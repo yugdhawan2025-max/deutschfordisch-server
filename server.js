@@ -453,9 +453,6 @@ app.get("/", (req, res) => {
                 });
                 const data = await response.json();
                 resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
-            } catch (err) {
-                resDiv.innerHTML = \`<span style="color: #ff4757">Error: \${err.message}</span>\`;
-            }
             }
         }
 
