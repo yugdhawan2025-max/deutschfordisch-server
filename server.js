@@ -603,11 +603,11 @@ app.get("/learn/practice", async (req, res) => {
       userPrompt = `Generate a level-appropriate English sentence for a ${level} CEFR German learner to translate.
 
 Level Guidelines:
-- A1: Simple present tense, basic vocabulary (family, food, colors). Max 5 words.
-- A2: Present/past tense, everyday topics. Max 8 words.
-- B1: Multiple tenses, common idioms, longer sentences. Max 12 words.
-- B2: Complex grammar (subjunctive, passive), abstract topics. Max 15 words.
-- C1/C2: Advanced structures, nuanced vocabulary, literary style.
+- A1: Simple present tense, basic vocabulary (family, food, colors). Max ${aiConfig.word_counts.A1 || 5} words.
+- A2: Present/past tense, everyday topics. Max ${aiConfig.word_counts.A2 || 8} words.
+- B1: Multiple tenses, common idioms, longer sentences. Max ${aiConfig.word_counts.B1 || 12} words.
+- B2: Complex grammar (subjunctive, passive), abstract topics. Max ${aiConfig.word_counts.B2 || 15} words.
+- C1/C2: Advanced structures, nuanced vocabulary, literary style. Max ${aiConfig.word_counts.C1 || 15} words.
 
 Format: {"question": "English sentence (Sentence case)", "context": "Brief English grammar hint (e.g., 'Use Perfekt tense')"}`;
     } else {
@@ -666,7 +666,7 @@ app.post("/evaluate", async (req, res) => {
   try {
     const completion = await groq.chat.completions.create({
       messages: [
-        { role: "system", content: "You are a strict German grammar expert. You MUST follow all German grammar rules perfectly. Respond ONLY in valid JSON." },
+        { role: "system", content: `${aiConfig.system_role}. Tone: ${aiConfig.tone}. Respond ONLY in valid JSON.` },
         {
           role: "user", content: `Evaluate this ${level} CEFR learner's translation.
 
@@ -684,13 +684,12 @@ Provide concise, encouraging feedback IN ENGLISH:
 1. user_answer: Echo back exactly what they wrote.
 2. corrected_answer: The GRAMMATICALLY PERFECT translation for ${level} level. Double-check all cases and articles!
 3. feedback: 2-3 sentences max in English. If wrong, explain the SPECIFIC grammar rule violated in English (e.g., "Apfel is masculine, so accusative is 'einen', not 'ein'").
-4. b2_reference_answer: Advanced B2 translation (only if different).
+${aiConfig.goethe_ref ? '4. b2_reference_answer: Advanced B2 translation (only if different).' : ''}
 
 Return JSON: {
   "user_answer": "${translation}",
   "corrected_answer": "Grammatically perfect ${level} translation",
-  "feedback": "Brief English feedback with specific grammar rule",
-  "b2_reference_answer": "Advanced B2 translation"
+  "feedback": "Brief English feedback with specific grammar rule"${aiConfig.goethe_ref ? ',\n  "b2_reference_answer": "Advanced B2 translation"' : ''}
 }` }
       ],
       model: "llama-3.3-70b-versatile",
