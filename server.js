@@ -479,12 +479,20 @@ app.get("/", (req, res) => {
 
         async function saveConfig() {
             const resDiv = document.getElementById('config-res');
-            resDiv.innerHTML = 'Saving...';
+            const btn = document.querySelector('button[onclick="saveConfig()"]');
+            
+            // 1. Show immediate feedback
+            btn.innerHTML = "Saving...";
+            btn.disabled = true;
+            resDiv.style.display = 'block'; // Ensure visibility
+            resDiv.innerHTML = '<span style="color: var(--accent)">Connecting to server...</span>';
             resDiv.classList.add('active');
             
             const key = document.getElementById('cfg-key').value;
             if (!key) {
-                resDiv.innerHTML = '<span style="color: #ff4757">Error: Admin Key Required</span>';
+                resDiv.innerHTML = '<span style="color: #ff4757">⚠️ Error: Admin Key is required!</span>';
+                btn.innerHTML = "Save AI Settings";
+                btn.disabled = false;
                 return;
             }
 
@@ -511,13 +519,18 @@ app.get("/", (req, res) => {
                     body: JSON.stringify(body)
                 });
                 const data = await res.json();
+                
                 if (data.success) {
-                    resDiv.innerHTML = '<span style="color: #00ff88">Settings Saved Successfully!</span>';
+                    const time = new Date().toLocaleTimeString();
+                    resDiv.innerHTML = \`<span style="color: #00ff88; font-weight: bold;">✅ Saved Successfully at \${time}!</span><br><span style="font-size:0.8em; color: #ccc">Configuration updated on persistent storage.</span>\`;
                 } else {
-                    resDiv.innerHTML = \`<span style="color: #ff4757">Error: \${data.error}</span>\`;
+                    resDiv.innerHTML = \`<span style="color: #ff4757">❌ Error: \${data.error}</span>\`;
                 }
             } catch (err) {
-                resDiv.innerHTML = \`<span style="color: #ff4757">Error: \${err.message}</span>\`;
+                resDiv.innerHTML = \`<span style="color: #ff4757">❌ Network Error: \${err.message}</span>\`;
+            } finally {
+                btn.innerHTML = "Save AI Settings";
+                btn.disabled = false;
             }
         }
 
