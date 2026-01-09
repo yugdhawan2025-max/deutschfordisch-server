@@ -58,7 +58,8 @@ const DEFAULT_AI_CONFIG = {
   goethe_ref: true,
   word_counts: {
     "A1": 5, "A2": 8, "B1": 12, "B2": 15, "C1": 15, "C2": 20
-  }
+  },
+  tuning_instructions: "" // Custom fine-tuning for content generation
 };
 
 // Load Config with Fallback
@@ -343,12 +344,17 @@ app.get("/", (req, res) => {
                 </div>
 
                 <label>Max Word Counts (per level)</label>
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
                     <input type="number" id="wc-a1" placeholder="A1" style="width: 60px;">
                     <input type="number" id="wc-a2" placeholder="A2" style="width: 60px;">
                     <input type="number" id="wc-b1" placeholder="B1" style="width: 60px;">
                     <input type="number" id="wc-b2" placeholder="B2" style="width: 60px;">
                     <input type="number" id="wc-c1" placeholder="C1" style="width: 60px;">
+                </div>
+
+                <div class="input-group">
+                    <label>Content Fine-Tuning Instructions (Expert Mode)</label>
+                    <textarea id="cfg-tuning" placeholder="e.g., Focus on B1 relative clauses. Avoid repeating simple verbs like 'gehen'." rows="3"></textarea>
                 </div>
 
                 <div class="input-group" style="display: none;">
@@ -474,6 +480,7 @@ app.get("/", (req, res) => {
                     document.getElementById('wc-b2').value = cfg.word_counts.B2 || 15;
                     document.getElementById('wc-c1').value = cfg.word_counts.C1 || 15;
                 }
+                document.getElementById('cfg-tuning').value = cfg.tuning_instructions || '';
             } catch (err) {
                 console.error("Failed to load config", err);
             }
@@ -500,7 +507,8 @@ app.get("/", (req, res) => {
                     B1: parseInt(document.getElementById('wc-b1').value) || 12,
                     B2: parseInt(document.getElementById('wc-b2').value) || 15,
                     C1: parseInt(document.getElementById('wc-c1').value) || 15
-                }
+                },
+                tuning_instructions: document.getElementById('cfg-tuning').value
             };
 
             try {
@@ -688,25 +696,27 @@ app.get("/learn/practice", async (req, res) => {
     let systemPrompt = "You are a professional language tutor. Respond ONLY in valid JSON format.";
     let userPrompt = "";
 
+    const tuning = aiConfig.tuning_instructions ? `\n\nExtra Focus/Fine-Tuning: ${aiConfig.tuning_instructions}` : "";
+
     if (type === "en-de") {
       // MODE 1: Written Translation (EN -> DE)
       // User gets an English sentence, translates it to German (validated later by /evaluate)
-      userPrompt = `Generate a level - appropriate English sentence for a ${level} CEFR German learner to translate.
-
-Level Guidelines:
-  - A1: Simple present tense, basic vocabulary(family, food, colors).Max ${aiConfig.word_counts.A1 || 5} words.
-- A2: Present / past tense, everyday topics.Max ${aiConfig.word_counts.A2 || 8} words.
-- B1: Multiple tenses, common idioms, longer sentences.Max ${aiConfig.word_counts.B1 || 12} words.
-- B2: Complex grammar(subjunctive, passive), abstract topics.Max ${aiConfig.word_counts.B2 || 15} words.
-- C1 / C2: Advanced structures, nuanced vocabulary, literary style.Max ${aiConfig.word_counts.C1 || 15} words.
-
-    Format: { "question": "English sentence (Sentence case)", "context": "Brief English grammar hint (e.g., 'Use Perfekt tense')" } `;
+      userPrompt = `Generate a level - appropriate English sentence for a ${level} CEFR German learner to translate.${tuning}
+ 
+ Level Guidelines:
+   - A1: Simple present tense, basic vocabulary(family, food, colors).Max ${aiConfig.word_counts.A1 || 5} words.
+ - A2: Present / past tense, everyday topics.Max ${aiConfig.word_counts.A2 || 8} words.
+ - B1: Multiple tenses, common idioms, longer sentences.Max ${aiConfig.word_counts.B1 || 12} words.
+ - B2: Complex grammar(subjunctive, passive), abstract topics.Max ${aiConfig.word_counts.B2 || 15} words.
+ - C1 / C2: Advanced structures, nuanced vocabulary, literary style.Max ${aiConfig.word_counts.C1 || 15} words.
+ 
+     Format: { "question": "English sentence (Sentence case)", "context": "Brief English grammar hint (e.g., 'Use Perfekt tense')" } `;
     } else {
       // MODE 2: MCQ (DE -> EN)
       // User gets a German sentence, chooses right English meaning from 4 options
-      userPrompt = `Generate a level - appropriate German sentence for a ${level} CEFR learner with 4 English MCQ options.
-
-Level Guidelines:
+      userPrompt = `Generate a level - appropriate German sentence for a ${level} CEFR learner with 4 English MCQ options.${tuning}
+ 
+ Level Guidelines:
   - A1: Basic vocabulary, simple present.Example: "Der Hund ist groß."
     - A2: Common verbs, past tense.Example: "Ich habe gestern Fußball gespielt."
       - B1: Modal verbs, subordinate clauses.Example: "Obwohl es regnet, gehe ich spazieren."
@@ -717,7 +727,7 @@ Level Guidelines:
     "question": "German sentence (Sentence case)",
       "options": ["Option A (English)", "Option B (English)", "Option C (English)", "Option D (English)"],
         "answer": "The correct option string (English)",
-          "explanation": "Standardized format: 'Correct! The sentence uses [grammar point] because [reason].' (Max 2 sentences, English only)"
+          "explanation": "Standardized format: 'Why its Correct : ) The sentence uses [grammar point] because [reason].' (Max 2 sentences, English only)"
   } `;
     }
 
