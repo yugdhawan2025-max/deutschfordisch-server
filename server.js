@@ -588,46 +588,20 @@ async function handleDict(req, res) {
   }
 
   try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(queryTerm)}&langpair=${from}|${to}`;
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (data.status === 403 || !data.responseData) {
-      throw new Error("Service rate-limit or error");
-    }
-
-    let primary = data.responseData.translatedText;
-    const matches = data.matches || [];
-    let filteredAlternates = []; // Declare filteredAlternates here
-
-    // --- UNIVERSAL EN <-> DE ENHANCEMENT (AI Refinement) ---
-    // Single-word refinement using a world-class model for accuracy & direction correction
-    const isSingleWord = !queryTerm.trim().includes(" ");
-
-    if (isSingleWord) {
-      try {
-        const refinement = await groq.chat.completions.create({
-          messages: [
-            {
-              role: "system",
-              content: `You are a world-class German-English linguist. You are tasked with providing the perfect translation for the word '${queryTerm}'.
-Response MUST be valid JSON:
-{
-  "primary": "refined translation",
-  "alternates": ["alt1", "alt2", "alt3"]
-}
+    "alternates": ["alt1", "alt2", "alt3"]
+  }
 
 Direction Rules:
-1. SMART DIRECTION: If the user sends an English word but asks for 'to=en', they made a MISTAKE. You MUST translate it to German instead.
-2. SMART DIRECTION: If the user sends a German word but asks for 'to=de', they made a MISTAKE. You MUST translate it to English instead.
+  1. SMART DIRECTION: If the user sends an English word but asks for 'to=en', they made a MISTAKE.You MUST translate it to German instead.
+2. SMART DIRECTION: If the user sends a German word but asks for 'to=de', they made a MISTAKE.You MUST translate it to English instead.
 3. If the final result is German:
-   - For NOUNS: 'primary' MUST start with its definite article (der, die, das).
-   - For ADJECTIVES/VERBS: 'primary' SHOULD include two distinct meanings (e.g., 'schnell, rasch').
+  - For NOUNS: 'primary' MUST start with its definite article(der, die, das).
+   - For ADJECTIVES / VERBS: 'primary' SHOULD include two distinct meanings(e.g., 'schnell, rasch').
 4. If the final result is English:
-   - Provide the most common translation.
+  - Provide the most common translation.
 5. 'alternates' MUST be strictly relevant synonyms in the same language as 'primary'.`
             },
-            { role: "user", content: `Translate '${queryTerm}' (Requested from: ${from}, to: ${to}). Initial suggestion: ${primary}` }
+            { role: "user", content: `Translate '${queryTerm}'(Requested from: ${ from }, to: ${ to }).Initial suggestion: ${ primary } ` }
           ],
           model: "llama-3.3-70b-versatile",
           response_format: { type: "json_object" }
@@ -685,7 +659,7 @@ app.get("/sentence", async (req, res) => {
     const completion = await groq.chat.completions.create({
       messages: [
         { role: "system", content: "You are a professional language tutor. Respond ONLY in valid JSON format." },
-        { role: "user", content: `Generate a natural German sentence using the word "${queryWord}" for a ${level} level learner. Include an English translation. Format: {"german": "...", "english": "..."}` }
+        { role: "user", content: `Generate a natural German sentence using the word "${queryWord}" for a ${ level } level learner.Include an English translation.Format: { "german": "...", "english": "..." } ` }
       ],
       model: "llama-3.1-8b-instant", // Optimized for speed (prevent timeouts)
       response_format: { type: "json_object" }
@@ -717,34 +691,34 @@ app.get("/learn/practice", async (req, res) => {
     if (type === "en-de") {
       // MODE 1: Written Translation (EN -> DE)
       // User gets an English sentence, translates it to German (validated later by /evaluate)
-      userPrompt = `Generate a level-appropriate English sentence for a ${level} CEFR German learner to translate.
+      userPrompt = `Generate a level - appropriate English sentence for a ${ level } CEFR German learner to translate.
 
 Level Guidelines:
-- A1: Simple present tense, basic vocabulary (family, food, colors). Max ${aiConfig.word_counts.A1 || 5} words.
-- A2: Present/past tense, everyday topics. Max ${aiConfig.word_counts.A2 || 8} words.
-- B1: Multiple tenses, common idioms, longer sentences. Max ${aiConfig.word_counts.B1 || 12} words.
-- B2: Complex grammar (subjunctive, passive), abstract topics. Max ${aiConfig.word_counts.B2 || 15} words.
-- C1/C2: Advanced structures, nuanced vocabulary, literary style. Max ${aiConfig.word_counts.C1 || 15} words.
+  - A1: Simple present tense, basic vocabulary(family, food, colors).Max ${ aiConfig.word_counts.A1 || 5 } words.
+- A2: Present / past tense, everyday topics.Max ${ aiConfig.word_counts.A2 || 8 } words.
+- B1: Multiple tenses, common idioms, longer sentences.Max ${ aiConfig.word_counts.B1 || 12 } words.
+- B2: Complex grammar(subjunctive, passive), abstract topics.Max ${ aiConfig.word_counts.B2 || 15 } words.
+- C1 / C2: Advanced structures, nuanced vocabulary, literary style.Max ${ aiConfig.word_counts.C1 || 15 } words.
 
-Format: {"question": "English sentence (Sentence case)", "context": "Brief English grammar hint (e.g., 'Use Perfekt tense')"}`;
+    Format: { "question": "English sentence (Sentence case)", "context": "Brief English grammar hint (e.g., 'Use Perfekt tense')" } `;
     } else {
       // MODE 2: MCQ (DE -> EN)
       // User gets a German sentence, chooses right English meaning from 4 options
-      userPrompt = `Generate a level-appropriate German sentence for a ${level} CEFR learner with 4 English MCQ options.
+      userPrompt = `Generate a level - appropriate German sentence for a ${ level } CEFR learner with 4 English MCQ options.
 
 Level Guidelines:
-- A1: Basic vocabulary, simple present. Example: "Der Hund ist groß."
-- A2: Common verbs, past tense. Example: "Ich habe gestern Fußball gespielt."
-- B1: Modal verbs, subordinate clauses. Example: "Obwohl es regnet, gehe ich spazieren."
-- B2: Subjunctive, passive voice. Example: "Das Buch wurde von einem berühmten Autor geschrieben."
-- C1/C2: Idiomatic expressions, complex syntax.
+  - A1: Basic vocabulary, simple present.Example: "Der Hund ist groß."
+    - A2: Common verbs, past tense.Example: "Ich habe gestern Fußball gespielt."
+      - B1: Modal verbs, subordinate clauses.Example: "Obwohl es regnet, gehe ich spazieren."
+        - B2: Subjunctive, passive voice.Example: "Das Buch wurde von einem berühmten Autor geschrieben."
+          - C1 / C2: Idiomatic expressions, complex syntax.
 
-Format: {
-  "question": "German sentence (Sentence case)",
-  "options": ["Option A (English)", "Option B (English)", "Option C (English)", "Option D (English)"],
-  "answer": "The correct option string (English)",
-  "explanation": "Standardized format: 'Correct! The sentence uses [grammar point] because [reason].' (Max 2 sentences, English only)"
-}`;
+            Format: {
+    "question": "German sentence (Sentence case)",
+      "options": ["Option A (English)", "Option B (English)", "Option C (English)", "Option D (English)"],
+        "answer": "The correct option string (English)",
+          "explanation": "Standardized format: 'Correct! The sentence uses [grammar point] because [reason].' (Max 2 sentences, English only)"
+  } `;
     }
 
     const completion = await groq.chat.completions.create({
@@ -783,31 +757,31 @@ app.post("/evaluate", async (req, res) => {
   try {
     const completion = await groq.chat.completions.create({
       messages: [
-        { role: "system", content: `${aiConfig.system_role}. Tone: ${aiConfig.tone}. Respond ONLY in valid JSON.` },
+        { role: "system", content: `${ aiConfig.system_role }.Tone: ${ aiConfig.tone }. Respond ONLY in valid JSON.` },
         {
-          role: "user", content: `Evaluate this ${level} CEFR learner's translation.
+          role: "user", content: `Evaluate this ${ level } CEFR learner's translation.
 
-Original (${from === 'de' ? 'German' : 'English'}): "${sentence}"
+  Original(${ from === 'de' ? 'German' : 'English'}): "${sentence}"
 User's Translation (${to === 'en' ? 'English' : 'German'}): "${translation}"
 
-CRITICAL GERMAN GRAMMAR RULES (NEVER VIOLATE):
-- Akkusativ (direct object): der→den, ein→einen (masc), das→das, ein→ein (neut), die→die, eine→eine (fem)
-- Example: "Ich esse einen Apfel" (NOT "ein Apfel" - Apfel is masculine accusative!)
-- Dativ (indirect object): der→dem, ein→einem (masc), das→dem, ein→einem (neut), die→der, eine→einer (fem)
-- Verb conjugation: ich esse, du isst, er/sie/es isst, wir essen, ihr esst, sie essen
-- Word order: Subject-Verb-Object in main clauses
+CRITICAL GERMAN GRAMMAR RULES(NEVER VIOLATE):
+- Akkusativ(direct object): der→den, ein→einen(masc), das→das, ein→ein(neut), die→die, eine→eine(fem)
+  - Example: "Ich esse einen Apfel"(NOT "ein Apfel" - Apfel is masculine accusative!)
+    - Dativ(indirect object): der→dem, ein→einem(masc), das→dem, ein→einem(neut), die→der, eine→einer(fem)
+      - Verb conjugation: ich esse, du isst, er / sie / es isst, wir essen, ihr esst, sie essen
+        - Word order: Subject - Verb - Object in main clauses
 
 Provide concise, encouraging feedback IN ENGLISH:
 1. user_answer: Echo back exactly what they wrote.
-2. corrected_answer: The GRAMMATICALLY PERFECT translation for ${level} level. Double-check all cases and articles!
-3. feedback: 2-3 sentences max in English. If wrong, explain the SPECIFIC grammar rule violated in English (e.g., "Apfel is masculine, so accusative is 'einen', not 'ein'").
-${aiConfig.goethe_ref ? '4. b2_reference_answer: Advanced B2 translation (only if different).' : ''}
+2. corrected_answer: The GRAMMATICALLY PERFECT translation for ${ level } level.Double - check all cases and articles!
+3. feedback: 2 - 3 sentences max in English.If wrong, explain the SPECIFIC grammar rule violated in English(e.g., "Apfel is masculine, so accusative is 'einen', not 'ein'").
+  ${ aiConfig.goethe_ref ? '4. b2_reference_answer: Advanced B2 translation (only if different).' : '' }
 
 Return JSON: {
   "user_answer": "${translation}",
-  "corrected_answer": "Grammatically perfect ${level} translation",
-  "feedback": "Brief English feedback with specific grammar rule"${aiConfig.goethe_ref ? ',\n  "b2_reference_answer": "Advanced B2 translation"' : ''}
-}` }
+    "corrected_answer": "Grammatically perfect ${level} translation",
+      "feedback": "Brief English feedback with specific grammar rule"${ aiConfig.goethe_ref ? ',\n  "b2_reference_answer": "Advanced B2 translation"' : '' }
+} ` }
       ],
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
@@ -880,49 +854,49 @@ app.post("/admin/upload_release", upload.single("file"), (req, res) => {
   // Assuming the server is hosted at root, constructing URL protocol + host + /uploads/filename
   const protocol = req.protocol;
   const host = req.get("host");
-  const publicUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+  const publicUrl = `${ protocol }://${host}/uploads/${req.file.filename}`;
 
-  try {
-    // 4. Update Manifest JSON
-    let manifest = {
-      android: { version: "0.0.0", url: "", force_update: false, changelog: "" },
-      ios: { version: "0.0.0", url: "", force_update: false, changelog: "" }
-    };
+try {
+  // 4. Update Manifest JSON
+  let manifest = {
+    android: { version: "0.0.0", url: "", force_update: false, changelog: "" },
+    ios: { version: "0.0.0", url: "", force_update: false, changelog: "" }
+  };
 
-    if (fs.existsSync(MANIFEST_PATH)) {
-      manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
-    }
-
-    // Update specific platform info
-    if (platform.toLowerCase() === "android") {
-      manifest.android = {
-        version,
-        url: publicUrl,
-        force_update: false,
-        changelog
-      };
-    } else {
-      // iOS doesn't usually allow direct IPA downloads this way, but we update metadata
-      manifest.ios = {
-        version,
-        url: "https://apps.apple.com/app/id123456789", // Placeholder for logic
-        force_update: false,
-        changelog
-      };
-    }
-
-    fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
-
-    res.json({
-      success: true,
-      url: publicUrl,
-      message: `Version ${version} published successfully.`
-    });
-
-  } catch (err) {
-    console.error("Release update failed:", err);
-    res.status(500).json({ success: false, error: "Failed to update manifest" });
+  if (fs.existsSync(MANIFEST_PATH)) {
+    manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
   }
+
+  // Update specific platform info
+  if (platform.toLowerCase() === "android") {
+    manifest.android = {
+      version,
+      url: publicUrl,
+      force_update: false,
+      changelog
+    };
+  } else {
+    // iOS doesn't usually allow direct IPA downloads this way, but we update metadata
+    manifest.ios = {
+      version,
+      url: "https://apps.apple.com/app/id123456789", // Placeholder for logic
+      force_update: false,
+      changelog
+    };
+  }
+
+  fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
+
+  res.json({
+    success: true,
+    url: publicUrl,
+    message: `Version ${version} published successfully.`
+  });
+
+} catch (err) {
+  console.error("Release update failed:", err);
+  res.status(500).json({ success: false, error: "Failed to update manifest" });
+}
 });
 
 /* -------------------- ADMIN: AI CONFIG -------------------- */
