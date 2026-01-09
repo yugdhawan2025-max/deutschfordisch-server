@@ -646,6 +646,24 @@ Return JSON: {
   }
 });
 
+/* -------------------- APP VERSION CHECK -------------------- */
+app.get("/app_version.json", (req, res) => {
+  res.json({
+    android: {
+      version: "1.0.0",
+      url: "https://your-domain.com/downloads/app-release.apk", // Replace with actual URL
+      force_update: false,
+      changelog: "Initial release"
+    },
+    ios: {
+      version: "1.0.0",
+      url: "https://apps.apple.com/app/id123456789", // Replace with App Store URL
+      force_update: false,
+      changelog: "Initial release"
+    }
+  });
+});
+
 /* -------------------- START -------------------- */
 app.listen(PORT, () => {
   console.log(`Server live on port ${PORT} `);
