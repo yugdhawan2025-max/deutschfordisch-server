@@ -351,9 +351,9 @@ app.get("/", (req, res) => {
                     <input type="number" id="wc-c1" placeholder="C1" style="width: 60px;">
                 </div>
 
-                <div class="input-group">
-                    <label style="color: var(--accent);">Admin API Key (Required to Save)</label>
-                    <input type="password" id="cfg-key" placeholder="Enter ADMIN_API_KEY">
+                <div class="input-group" style="display: none;">
+                    <label style="color: var(--accent);">Admin API Key (Disabled)</label>
+                    <input type="password" id="cfg-key" disabled value="no-key-needed">
                 </div>
 
                 <button onclick="saveConfig()">Save AI Settings</button>
@@ -489,14 +489,6 @@ app.get("/", (req, res) => {
             resDiv.innerHTML = '<span style="color: var(--accent)">Connecting to server...</span>';
             resDiv.classList.add('active');
             
-            const key = document.getElementById('cfg-key').value;
-            if (!key) {
-                resDiv.innerHTML = '<span style="color: #ff4757">⚠️ Error: Admin Key is required!</span>';
-                btn.innerHTML = "Save AI Settings";
-                btn.disabled = false;
-                return;
-            }
-
             const body = {
                 system_role: document.getElementById('cfg-role').value,
                 tone: document.getElementById('cfg-tone').value,
@@ -514,8 +506,7 @@ app.get("/", (req, res) => {
                 const res = await fetch('/admin/ai_config', {
                     method: 'POST',
                     headers: { 
-                        'Content-Type': 'application/json',
-                        'x-api-key': key
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(body)
                 });
@@ -837,13 +828,7 @@ app.get("/app_version.json", (req, res) => {
 
 /* -------------------- ADMIN: UPLOAD RELEASE -------------------- */
 app.post("/admin/upload_release", upload.single("file"), (req, res) => {
-  const apiKey = req.headers["x-api-key"];
-  const ADMIN_KEY = process.env.ADMIN_API_KEY;
-
-  // 1. Security Check
-  if (!ADMIN_KEY || apiKey !== ADMIN_KEY) {
-    return res.status(403).json({ success: false, error: "Unauthorized" });
-  }
+  // Authentication Removed per user request
 
   // 2. Validate Request
   if (!req.file) {
@@ -910,13 +895,7 @@ app.get("/admin/ai_config", (req, res) => {
 });
 
 app.post("/admin/ai_config", (req, res) => {
-  const apiKey = req.headers["x-api-key"];
-  const ADMIN_KEY = process.env.ADMIN_API_KEY;
-
-  if (!ADMIN_KEY || apiKey !== ADMIN_KEY) {
-    return res.status(403).json({ success: false, error: "Unauthorized" });
-  }
-
+  // Authentication Removed per user request
   const newConfig = req.body;
   // Basic validation could go here
   aiConfig = { ...aiConfig, ...newConfig };
