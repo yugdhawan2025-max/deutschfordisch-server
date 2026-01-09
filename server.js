@@ -48,6 +48,36 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+/* -------------------- AI CONFIGURATION -------------------- */
+const AI_CONFIG_PATH = path.join(STORAGE_ROOT, "ai_config.json");
+
+// Default Configuration
+const DEFAULT_AI_CONFIG = {
+  system_role: "strict German grammar expert",
+  tone: "supportive", // "strict", "funny", "supportive"
+  goethe_ref: true,
+  word_counts: {
+    "A1": 5, "A2": 8, "B1": 12, "B2": 15, "C1": 15, "C2": 20
+  }
+};
+
+// Load Config with Fallback
+let aiConfig = { ...DEFAULT_AI_CONFIG };
+if (fs.existsSync(AI_CONFIG_PATH)) {
+  try {
+    const savedConfig = JSON.parse(fs.readFileSync(AI_CONFIG_PATH, "utf8"));
+    aiConfig = { ...DEFAULT_AI_CONFIG, ...savedConfig }; // Merge to ensure new keys exist
+    console.log("Loaded AI Config from storage.");
+  } catch (err) {
+    console.error("Failed to load AI config, using defaults:", err);
+  }
+}
+
+// Helper to save config
+function saveAiConfig() {
+  fs.writeFileSync(AI_CONFIG_PATH, JSON.stringify(aiConfig, null, 2));
+}
+
 // Serve static files from storage root (to allow downloading APKs)
 app.use("/uploads", express.static(STORAGE_ROOT));
 
@@ -777,6 +807,27 @@ app.post("/admin/upload_release", upload.single("file"), (req, res) => {
     console.error("Release update failed:", err);
     res.status(500).json({ success: false, error: "Failed to update manifest" });
   }
+});
+
+/* -------------------- ADMIN: AI CONFIG -------------------- */
+app.get("/admin/ai_config", (req, res) => {
+  res.json(aiConfig);
+});
+
+app.post("/admin/ai_config", (req, res) => {
+  const apiKey = req.headers["x-api-key"];
+  const ADMIN_KEY = process.env.ADMIN_API_KEY;
+
+  if (!ADMIN_KEY || apiKey !== ADMIN_KEY) {
+    return res.status(403).json({ success: false, error: "Unauthorized" });
+  }
+
+  const newConfig = req.body;
+  // Basic validation could go here
+  aiConfig = { ...aiConfig, ...newConfig };
+  saveAiConfig();
+
+  res.json({ success: true, message: "AI Configuration updated", config: aiConfig });
 });
 
 /* -------------------- START -------------------- */
