@@ -310,6 +310,54 @@ app.get("/", (req, res) => {
                 </div>
                 <button onclick="runTest('evaluate')">Validate with AI</button>
                 <div id="evaluate-res" class="result-container"></div>
+                <div id="evaluate-res" class="result-container"></div>
+            </div>
+
+            <!-- AI Config Settings -->
+            <div class="card" style="grid-column: span 1.5">
+                <h3>AI Config Settings</h3>
+                <div class="input-group">
+                    <label>System Role (Personality)</label>
+                    <input type="text" id="cfg-role" placeholder="e.g., Strict Grammar Expert">
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label>Tone</label>
+                        <select id="cfg-tone">
+                            <option value="strict">Strict</option>
+                            <option value="supportive">Supportive</option>
+                            <option value="funny">Funny</option>
+                            <option value="professional">Professional</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Include B2 Reference?</label>
+                        <div class="toggle-wrapper" style="padding: 0.5rem 1rem; margin: 0;">
+                            <label class="switch">
+                                <input type="checkbox" id="cfg-goethe">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <label>Max Word Counts (per level)</label>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
+                    <input type="number" id="wc-a1" placeholder="A1" style="width: 60px;">
+                    <input type="number" id="wc-a2" placeholder="A2" style="width: 60px;">
+                    <input type="number" id="wc-b1" placeholder="B1" style="width: 60px;">
+                    <input type="number" id="wc-b2" placeholder="B2" style="width: 60px;">
+                    <input type="number" id="wc-c1" placeholder="C1" style="width: 60px;">
+                </div>
+
+                <div class="input-group">
+                    <label style="color: var(--accent);">Admin API Key (Required to Save)</label>
+                    <input type="password" id="cfg-key" placeholder="Enter ADMIN_API_KEY">
+                </div>
+
+                <button onclick="saveConfig()">Save AI Settings</button>
+                <div id="config-res" class="result-container"></div>
             </div>
         </div>
 
@@ -408,7 +456,76 @@ app.get("/", (req, res) => {
             } catch (err) {
                 resDiv.innerHTML = \`<span style="color: #ff4757">Error: \${err.message}</span>\`;
             }
+            }
         }
+
+        async function loadConfig() {
+            try {
+                const res = await fetch('/admin/ai_config');
+                const cfg = await res.json();
+                
+                document.getElementById('cfg-role').value = cfg.system_role || '';
+                document.getElementById('cfg-tone').value = cfg.tone || 'supportive';
+                document.getElementById('cfg-goethe').checked = cfg.goethe_ref || false;
+                
+                if (cfg.word_counts) {
+                    document.getElementById('wc-a1').value = cfg.word_counts.A1 || 5;
+                    document.getElementById('wc-a2').value = cfg.word_counts.A2 || 8;
+                    document.getElementById('wc-b1').value = cfg.word_counts.B1 || 12;
+                    document.getElementById('wc-b2').value = cfg.word_counts.B2 || 15;
+                    document.getElementById('wc-c1').value = cfg.word_counts.C1 || 15;
+                }
+            } catch (err) {
+                console.error("Failed to load config", err);
+            }
+        }
+
+        async function saveConfig() {
+            const resDiv = document.getElementById('config-res');
+            resDiv.innerHTML = 'Saving...';
+            resDiv.classList.add('active');
+            
+            const key = document.getElementById('cfg-key').value;
+            if (!key) {
+                resDiv.innerHTML = '<span style="color: #ff4757">Error: Admin Key Required</span>';
+                return;
+            }
+
+            const body = {
+                system_role: document.getElementById('cfg-role').value,
+                tone: document.getElementById('cfg-tone').value,
+                goethe_ref: document.getElementById('cfg-goethe').checked,
+                word_counts: {
+                    A1: parseInt(document.getElementById('wc-a1').value) || 5,
+                    A2: parseInt(document.getElementById('wc-a2').value) || 8,
+                    B1: parseInt(document.getElementById('wc-b1').value) || 12,
+                    B2: parseInt(document.getElementById('wc-b2').value) || 15,
+                    C1: parseInt(document.getElementById('wc-c1').value) || 15
+                }
+            };
+
+            try {
+                const res = await fetch('/admin/ai_config', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-api-key': key
+                    },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    resDiv.innerHTML = '<span style="color: #00ff88">Settings Saved Successfully!</span>';
+                } else {
+                    resDiv.innerHTML = \`<span style="color: #ff4757">Error: \${data.error}</span>\`;
+                }
+            } catch (err) {
+                resDiv.innerHTML = \`<span style="color: #ff4757">Error: \${err.message}</span>\`;
+            }
+        }
+
+        // Load config on startup
+        window.addEventListener('DOMContentLoaded', loadConfig);
     </script>
 </body>
 </html>
