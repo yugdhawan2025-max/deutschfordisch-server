@@ -1,14 +1,17 @@
 services:
   - type: web
     name: deutschfordisch-server
-    env: node
-    plan: free # or starter
+    runtime: node
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node server.js
     envVars:
-      - key: PORT
-        value: 3000
       - key: GROQ_API_KEY
-        sync: false # User will need to add this manually in Render dashboard
+        sync: false # Requires manual entry in Render Dashboard for security
+      - key: STORAGE_PATH
+        value: /var/lib/data
       - key: NODE_VERSION
-        value: 20.0.0
+        value: 18.0.0
+    disk:
+      name: uploads-data
+      mountPath: /var/lib/data
+      sizeGB: 1
