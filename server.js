@@ -612,14 +612,26 @@ async function handleDict(req, res) {
         4. Even if source is German, ensure 'german_full' is the explicit Article + Noun form.
         5. Provide gender (m/f/n) for German nouns.
         6. Provide 2-3 common alternate translations.
+        7. For German words, provide additional grammar data:
+           - artikel: "der", "die", or "das" (if noun)
+           - plural: Plural form (if noun, e.g., "die Hunde")
+           - perfekt: Partizip II form (if verb, e.g., "ist gegangen")
+           - praeteritum: Simple past form (if verb, e.g., "ging")
+           - case: Dativ/Akkusativ usage if applicable (if preposition or verb)
+           - synonyms: list of 2-3 synonyms
+           - example: A natural example sentence in German.
 
         Return JSON: {
-          "primary": "Main translation (e.g. 'der Hund' or 'dog')",
-          "german_full": "Full German form with article (e.g. 'der Hund')",
-          "english_full": "English form (e.g. 'dog')",
-          "gender": "m/f/n/null",
-          "category": "noun/verb/adjective etc.",
-          "alternates": ["alt1", "alt2"],
+          "translation": "Main translation (English)",
+          "data": {
+            "artikel": "der/die/das or N/A",
+            "plural": "Plural form or N/A",
+            "perfekt": "Perfekt form or N/A",
+            "praeteritum": "Präteritum form or N/A",
+            "case": "Dativ/Akkusativ or N/A",
+            "synonyms": ["syn1", "syn2"],
+            "example": "Example sentence."
+          },
           "detected_from": "en or de",
           "detected_to": "en or de"
         }` }
@@ -633,17 +645,16 @@ async function handleDict(req, res) {
     res.json({
       success: true,
       term: queryTerm,
-      from: aiData.detected_from || from,
-      to: aiData.detected_to || to,
-      primary: aiData.primary,
+      translation: aiData.translation,
       data: {
-        german_full: aiData.german_full,
-        english_full: aiData.english_full,
-        category: aiData.category,
-        gender: aiData.gender
-      },
-      alternates: aiData.alternates || [],
-      source: "ai-70b" // Updated source indicator
+        artikel: aiData.data?.artikel || "N/A",
+        plural: aiData.data?.plural || "N/A",
+        perfekt: aiData.data?.perfekt || "N/A",
+        praeteritum: aiData.data?.praeteritum || "N/A",
+        case: aiData.data?.case || "N/A",
+        synonyms: aiData.data?.synonyms || [],
+        example: aiData.data?.example || ""
+      }
     });
   } catch (err) {
     console.error("Dict error:", err.message);
