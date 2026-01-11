@@ -151,8 +151,44 @@ function resolveGrammar(term) {
   return null;
 }
 
+/* -------------------- AI USAGE TRACKING -------------------- */
+const STATS_PATH = path.join(STORAGE_ROOT, "usage_stats.json");
+let usageStats = {
+  total_requests: 0,
+  endpoints: {},
+  models: {},
+  last_request: null
+};
+
+if (fs.existsSync(STATS_PATH)) {
+  try {
+    const savedStats = JSON.parse(fs.readFileSync(STATS_PATH, "utf8"));
+    usageStats = { ...usageStats, ...savedStats };
+  } catch (err) {
+    console.error("Failed to load usage stats:", err);
+  }
+}
+
+function logAiUsage(endpoint, model) {
+  usageStats.total_requests++;
+  usageStats.last_request = new Date().toISOString();
+
+  usageStats.endpoints[endpoint] = (usageStats.endpoints[endpoint] || 0) + 1;
+  usageStats.models[model] = (usageStats.models[model] || 0) + 1;
+
+  try {
+    fs.writeFileSync(STATS_PATH, JSON.stringify(usageStats, null, 2));
+  } catch (err) {
+    console.error("Failed to save usage stats:", err);
+  }
+}
+
 // Serve static files from storage root (to allow downloading APKs)
 app.use("/uploads", express.static(STORAGE_ROOT));
+
+app.get("/api/usage", (req, res) => {
+  res.json({ success: true, stats: usageStats });
+});
 
 /* -------------------- ROOT: PREMIUM DASHBOARD -------------------- */
 app.get("/", (req, res) => {
@@ -176,6 +212,13 @@ app.get("/", (req, res) => {
             --card-bg: rgba(20, 24, 31, 0.8);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        .stats-display { display: flex; flex-direction: column; gap: 1rem; }
+        .stat-item { text-align: center; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid var(--border); }
+        .stat-value { font-size: 2.5rem; font-weight: 600; font-family: 'Outfit'; color: var(--accent); line-height: 1; display: block; }
+        .endpoint-row { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 0.4rem 0; border-bottom: 1px solid var(--border); }
+        .endpoint-row:last-child { border-bottom: none; }
+        .endpoint-name { color: var(--text-muted); }
+        .endpoint-count { font-weight: 600; color: var(--accent); }
         body {
             font-family: 'Inter', sans-serif;
             background: radial-gradient(circle at top right, #1a1e2e, #0a0c10);
@@ -383,7 +426,19 @@ app.get("/", (req, res) => {
                 </div>
                 <button onclick="runTest('evaluate')">Validate with AI</button>
                 <div id="evaluate-res" class="result-container"></div>
-                <div id="evaluate-res" class="result-container"></div>
+            </div>
+
+            <!-- Live AI Tracking -->
+            <div class="card" id="usage-card">
+                <h3>Live AI Usage</h3>
+                <div class="stats-display">
+                    <div class="stat-item">
+                        <span class="stat-value" id="total-req">0</span>
+                        <label>Total AI Requests</label>
+                    </div>
+                    <div id="endpoint-stats" style="margin-top: 0.5rem;"></div>
+                </div>
+                <div id="usage-last-update" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 1rem; text-align: right;">Last updated: Never</div>
             </div>
 
             <!-- AI Config Settings -->
@@ -608,7 +663,39 @@ app.get("/", (req, res) => {
         }
 
         // Load config on startup
-        window.addEventListener('DOMContentLoaded', loadConfig);
+        async function updateUsageStats() {
+            try {
+                const res = await fetch('/api/usage');
+                const data = await res.json();
+                if (data.success && data.stats) {
+                    const stats = data.stats;
+                    document.getElementById('total-req').innerText = stats.total_requests || 0;
+                    
+                    const endpointDiv = document.getElementById('endpoint-stats');
+                    endpointDiv.innerHTML = '';
+                    
+                    for (const [name, count] of Object.entries(stats.endpoints || {})) {
+                        endpointDiv.innerHTML += \`
+                            <div class="endpoint-row">
+                                <span class="endpoint-name">\${name}</span>
+                                <span class="endpoint-count">\${count}</span>
+                            </div>
+                        \`;
+                    }
+                    
+                    if (stats.last_request) {
+                        const date = new Date(stats.last_request);
+                        document.getElementById('usage-last-update').innerText = 'Last: ' + date.toLocaleTimeString();
+                    }
+                }
+            } catch (e) { console.error("Stats poll failed", e); }
+        }
+
+        window.onload = () => {
+            loadConfig();
+            updateUsageStats();
+            setInterval(updateUsageStats, 2000);
+        };
     </script>
 </body>
 </html>
@@ -727,6 +814,8 @@ async function handleDict(req, res) {
       response_format: { type: "json_object" }
     });
 
+    logAiUsage("/dict", "llama-3.1-8b-instant");
+
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
     // APPLY DETERMINISTIC OVERRIDES
@@ -799,6 +888,8 @@ app.get("/sentence", async (req, res) => {
       response_format: { type: "json_object" }
     });
 
+    logAiUsage("/sentence", "llama-3.1-8b-instant");
+
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
     // Wrap in "data" key for Flutter, while keeping flat keys for backward compatibility
     res.json({
@@ -866,6 +957,8 @@ app.get("/learn/practice", async (req, res) => {
       response_format: { type: "json_object" }
     });
 
+    logAiUsage("/learn/practice", "llama-3.1-8b-instant");
+
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
     res.json({
@@ -927,6 +1020,8 @@ Return JSON: {
       model: "llama-3.1-8b-instant",
       response_format: { type: "json_object" }
     });
+
+    logAiUsage("/evaluate", "llama-3.1-8b-instant");
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
     res.json({
