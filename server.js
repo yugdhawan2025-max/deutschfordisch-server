@@ -80,7 +80,7 @@ function saveAiConfig() {
 }
 
 /* -------------------- DICTIONARY CACHE -------------------- */
-const DICT_CACHE_PATH = path.join(STORAGE_ROOT, "dict_cache.json");
+const DICT_CACHE_PATH = path.join(STORAGE_ROOT, "dict_cache_v2.json");
 let dictCache = {};
 
 if (fs.existsSync(DICT_CACHE_PATH)) {
