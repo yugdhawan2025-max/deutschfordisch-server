@@ -100,6 +100,57 @@ function saveDictCache() {
   }
 }
 
+/* -------------------- GRAMMAR DATA SERVICE -------------------- */
+const GRAMMAR_DATA_PATH = path.join(__dirname, "grammar_data.json");
+let grammarData = { verbs: {} };
+
+if (fs.existsSync(GRAMMAR_DATA_PATH)) {
+  try {
+    grammarData = JSON.parse(fs.readFileSync(GRAMMAR_DATA_PATH, "utf8"));
+    console.log(`Loaded ${Object.keys(grammarData.verbs).length} irregular verbs.`);
+  } catch (err) {
+    console.error("Failed to load grammar data:", err);
+  }
+}
+
+/**
+ * Deterministically resolves grammar for a German term.
+ * Supports smart matching for compound verbs (e.g., aufstehen -> stehen).
+ */
+function resolveGrammar(term) {
+  if (!term) return null;
+  const cleanTerm = term.toLowerCase().trim();
+
+  // 1. Exact Match
+  if (grammarData.verbs[cleanTerm]) {
+    return { lemma: cleanTerm, ...grammarData.verbs[cleanTerm] };
+  }
+
+  // 2. Smart Matching (Compound Verbs)
+  // Check for common separable prefixes
+  const prefixes = [
+    "ab", "an", "auf", "aus", "bei", "durch", "ein", "ent", "er", "fern",
+    "fest", "her", "hin", "los", "mit", "nach", "um", "unter", "vor", "weg",
+    "weiter", "wider", "zer", "zu", "zurück", "zusammen"
+  ];
+
+  for (const prefix of prefixes) {
+    if (cleanTerm.startsWith(prefix) && cleanTerm.length > prefix.length) {
+      const stem = cleanTerm.substring(prefix.length);
+      if (grammarData.verbs[stem]) {
+        return {
+          lemma: cleanTerm,
+          base_verb: stem,
+          ...grammarData.verbs[stem],
+          is_compound: true
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
 // Serve static files from storage root (to allow downloading APKs)
 app.use("/uploads", express.static(STORAGE_ROOT));
 
@@ -626,6 +677,9 @@ async function handleDict(req, res) {
     return res.json({ success: true, ...dictCache[cacheKey], cached: true });
   }
 
+  // Pre-lookup: Check Deterministic Grammar
+  const grammarInfo = resolveGrammar(queryTerm);
+
   try {
     const completion = await groq.chat.completions.create({
       messages: [
@@ -674,20 +728,36 @@ async function handleDict(req, res) {
 
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
+    // APPLY DETERMINISTIC OVERRIDES
+    let finalData = {
+      artikel: aiData.data?.artikel || "N/A",
+      plural: aiData.data?.plural || "N/A",
+      perfekt: aiData.data?.perfekt || "N/A",
+      praeteritum: aiData.data?.praeteritum || "N/A",
+      case: aiData.data?.case || "N/A",
+      vowel_change: aiData.data?.vowel_change || "N/A",
+      extra_info: aiData.data?.extra_info || "N/A",
+      synonyms: aiData.data?.synonyms || [],
+      example: aiData.data?.example || ""
+    };
+
+    if (grammarInfo) {
+      // It's a known verb - enforce deterministic facts
+      finalData.artikel = "N/A";
+      finalData.plural = "N/A";
+      finalData.vowel_change = grammarInfo.vowel_change;
+      finalData.perfekt = grammarInfo.perfekt;
+      finalData.praeteritum = grammarInfo.praeteritum;
+      finalData.extra_info = `Irregular verb (3rd pers: ${grammarInfo.third_person})`;
+      if (grammarInfo.is_compound) {
+        finalData.extra_info += `; Compound of '${grammarInfo.base_verb}'`;
+      }
+    }
+
     const result = {
       term: queryTerm,
       translation: aiData.translation,
-      data: {
-        artikel: aiData.data?.artikel || "N/A",
-        plural: aiData.data?.plural || "N/A",
-        perfekt: aiData.data?.perfekt || "N/A",
-        praeteritum: aiData.data?.praeteritum || "N/A",
-        case: aiData.data?.case || "N/A",
-        vowel_change: aiData.data?.vowel_change || "N/A",
-        extra_info: aiData.data?.extra_info || "N/A",
-        synonyms: aiData.data?.synonyms || [],
-        example: aiData.data?.example || ""
-      }
+      data: finalData
     };
 
     // Save to Cache

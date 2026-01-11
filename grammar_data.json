@@ -1,0 +1,1054 @@
+{
+    "verbs": {
+        "backen": {
+            "vowel_change": "a -> ä",
+            "third_person": "bäckt",
+            "perfekt": "hat gebacken",
+            "praeteritum": "backte/buk"
+        },
+        "befehlen": {
+            "vowel_change": "e -> ie",
+            "third_person": "befiehlt",
+            "perfekt": "hat befohlen",
+            "praeteritum": "befahl"
+        },
+        "beginnen": {
+            "vowel_change": "N/A",
+            "third_person": "beginnt",
+            "perfekt": "hat begonnen",
+            "praeteritum": "begann"
+        },
+        "beißen": {
+            "vowel_change": "N/A",
+            "third_person": "beißt",
+            "perfekt": "hat gebissen",
+            "praeteritum": "biss"
+        },
+        "bergen": {
+            "vowel_change": "e -> i",
+            "third_person": "birgt",
+            "perfekt": "hat geborgen",
+            "praeteritum": "barg"
+        },
+        "bersten": {
+            "vowel_change": "e -> i",
+            "third_person": "birst",
+            "perfekt": "ist geborsten",
+            "praeteritum": "barst"
+        },
+        "bewegen": {
+            "vowel_change": "N/A",
+            "third_person": "bewegt",
+            "perfekt": "hat bewogen",
+            "praeteritum": "bewog"
+        },
+        "biegen": {
+            "vowel_change": "N/A",
+            "third_person": "biegt",
+            "perfekt": "hat gebogen",
+            "praeteritum": "bog"
+        },
+        "bieten": {
+            "vowel_change": "N/A",
+            "third_person": "bietet",
+            "perfekt": "hat geboten",
+            "praeteritum": "bot"
+        },
+        "binden": {
+            "vowel_change": "N/A",
+            "third_person": "bindet",
+            "perfekt": "hat gebunden",
+            "praeteritum": "band"
+        },
+        "bitten": {
+            "vowel_change": "N/A",
+            "third_person": "bittet",
+            "perfekt": "hat gebeten",
+            "praeteritum": "bat"
+        },
+        "blasen": {
+            "vowel_change": "a -> ä",
+            "third_person": "bläst",
+            "perfekt": "hat geblasen",
+            "praeteritum": "blies"
+        },
+        "bleiben": {
+            "vowel_change": "N/A",
+            "third_person": "bleibt",
+            "perfekt": "ist geblieben",
+            "praeteritum": "blieb"
+        },
+        "braten": {
+            "vowel_change": "a -> ä",
+            "third_person": "brät",
+            "perfekt": "hat gebraten",
+            "praeteritum": "briet"
+        },
+        "brechen": {
+            "vowel_change": "e -> i",
+            "third_person": "bricht",
+            "perfekt": "hat gebrochen",
+            "praeteritum": "brach"
+        },
+        "brennen": {
+            "vowel_change": "N/A",
+            "third_person": "brennt",
+            "perfekt": "hat gebrannt",
+            "praeteritum": "brannte"
+        },
+        "bringen": {
+            "vowel_change": "N/A",
+            "third_person": "bringt",
+            "perfekt": "hat gebracht",
+            "praeteritum": "brachte"
+        },
+        "denken": {
+            "vowel_change": "N/A",
+            "third_person": "denkt",
+            "perfekt": "hat gedacht",
+            "praeteritum": "dachte"
+        },
+        "dreschen": {
+            "vowel_change": "e -> i",
+            "third_person": "drischt",
+            "perfekt": "hat gedroschen",
+            "praeteritum": "drosch"
+        },
+        "dringen": {
+            "vowel_change": "N/A",
+            "third_person": "dringt",
+            "perfekt": "ist gedrungen",
+            "praeteritum": "drang"
+        },
+        "dürfen": {
+            "vowel_change": "ü -> a",
+            "third_person": "darf",
+            "perfekt": "hat gedurft",
+            "praeteritum": "durfte"
+        },
+        "empfehlen": {
+            "vowel_change": "e -> ie",
+            "third_person": "empfiehlt",
+            "perfekt": "hat empfohlen",
+            "praeteritum": "empfahl"
+        },
+        "erlöschen": {
+            "vowel_change": "ö -> i",
+            "third_person": "erlischt",
+            "perfekt": "ist erloschen",
+            "praeteritum": "erlosch"
+        },
+        "erschrecken": {
+            "vowel_change": "e -> i",
+            "third_person": "erschrickt",
+            "perfekt": "ist erschrocken",
+            "praeteritum": "erschrak"
+        },
+        "essen": {
+            "vowel_change": "e -> i",
+            "third_person": "isst",
+            "perfekt": "hat gegessen",
+            "praeteritum": "aß"
+        },
+        "fahren": {
+            "vowel_change": "a -> ä",
+            "third_person": "fährt",
+            "perfekt": "ist gefahren",
+            "praeteritum": "fuhr"
+        },
+        "fallen": {
+            "vowel_change": "a -> ä",
+            "third_person": "fällt",
+            "perfekt": "ist gefallen",
+            "praeteritum": "fiel"
+        },
+        "fangen": {
+            "vowel_change": "a -> ä",
+            "third_person": "fängt",
+            "perfekt": "hat gefangen",
+            "praeteritum": "fing"
+        },
+        "fechten": {
+            "vowel_change": "e -> i",
+            "third_person": "ficht",
+            "perfekt": "hat gefochten",
+            "praeteritum": "focht"
+        },
+        "finden": {
+            "vowel_change": "N/A",
+            "third_person": "findet",
+            "perfekt": "hat gefunden",
+            "praeteritum": "fand"
+        },
+        "flechten": {
+            "vowel_change": "e -> i",
+            "third_person": "flicht",
+            "perfekt": "hat geflochten",
+            "praeteritum": "flocht"
+        },
+        "fliegen": {
+            "vowel_change": "N/A",
+            "third_person": "fliegt",
+            "perfekt": "ist geflogen",
+            "praeteritum": "flog"
+        },
+        "fliehen": {
+            "vowel_change": "N/A",
+            "third_person": "flieht",
+            "perfekt": "ist geflohen",
+            "praeteritum": "floh"
+        },
+        "fließen": {
+            "vowel_change": "N/A",
+            "third_person": "fließt",
+            "perfekt": "ist geflossen",
+            "praeteritum": "floss"
+        },
+        "fressen": {
+            "vowel_change": "e -> i",
+            "third_person": "frisst",
+            "perfekt": "hat gefressen",
+            "praeteritum": "fraß"
+        },
+        "frieren": {
+            "vowel_change": "N/A",
+            "third_person": "friert",
+            "perfekt": "hat gefroren",
+            "praeteritum": "fror"
+        },
+        "gären": {
+            "vowel_change": "N/A",
+            "third_person": "gärt",
+            "perfekt": "hat gegoren",
+            "praeteritum": "gor"
+        },
+        "gebären": {
+            "vowel_change": "ä -> ie",
+            "third_person": "gebiert",
+            "perfekt": "hat geboren",
+            "praeteritum": "gebar"
+        },
+        "geben": {
+            "vowel_change": "e -> i",
+            "third_person": "gibt",
+            "perfekt": "hat gegeben",
+            "praeteritum": "gab"
+        },
+        "gedeihen": {
+            "vowel_change": "N/A",
+            "third_person": "gedeiht",
+            "perfekt": "ist gediehen",
+            "praeteritum": "gedieh"
+        },
+        "gehen": {
+            "vowel_change": "N/A",
+            "third_person": "geht",
+            "perfekt": "ist gegangen",
+            "praeteritum": "ging"
+        },
+        "gelingen": {
+            "vowel_change": "N/A",
+            "third_person": "gelingt",
+            "perfekt": "ist gelungen",
+            "praeteritum": "gelang"
+        },
+        "gelten": {
+            "vowel_change": "e -> i",
+            "third_person": "gilt",
+            "perfekt": "hat gegolten",
+            "praeteritum": "galt"
+        },
+        "genesen": {
+            "vowel_change": "N/A",
+            "third_person": "genest",
+            "perfekt": "ist genesen",
+            "praeteritum": "genas"
+        },
+        "genießen": {
+            "vowel_change": "N/A",
+            "third_person": "genießt",
+            "perfekt": "hat genossen",
+            "praeteritum": "genoss"
+        },
+        "geschehen": {
+            "vowel_change": "e -> ie",
+            "third_person": "geschieht",
+            "perfekt": "ist geschehen",
+            "praeteritum": "geschah"
+        },
+        "gewinnen": {
+            "vowel_change": "N/A",
+            "third_person": "gewinnt",
+            "perfekt": "hat gewonnen",
+            "praeteritum": "gewann"
+        },
+        "gießen": {
+            "vowel_change": "N/A",
+            "third_person": "gießt",
+            "perfekt": "hat gegossen",
+            "praeteritum": "goss"
+        },
+        "gleichen": {
+            "vowel_change": "N/A",
+            "third_person": "gleicht",
+            "perfekt": "hat geglichen",
+            "praeteritum": "glich"
+        },
+        "gleiten": {
+            "vowel_change": "N/A",
+            "third_person": "gleitet",
+            "perfekt": "ist geglitten",
+            "praeteritum": "glitt"
+        },
+        "glimmen": {
+            "vowel_change": "N/A",
+            "third_person": "glimmt",
+            "perfekt": "hat geglommen",
+            "praeteritum": "glomm"
+        },
+        "graben": {
+            "vowel_change": "a -> ä",
+            "third_person": "gräbt",
+            "perfekt": "hat gegraben",
+            "praeteritum": "grub"
+        },
+        "greifen": {
+            "vowel_change": "N/A",
+            "third_person": "greift",
+            "perfekt": "hat gegriffen",
+            "praeteritum": "griff"
+        },
+        "haben": {
+            "vowel_change": "a -> N/A",
+            "third_person": "hat",
+            "perfekt": "hat gehabt",
+            "praeteritum": "hatte"
+        },
+        "halten": {
+            "vowel_change": "a -> ä",
+            "third_person": "hält",
+            "perfekt": "hat gehalten",
+            "praeteritum": "hielt"
+        },
+        "hängen": {
+            "vowel_change": "N/A",
+            "third_person": "hängt",
+            "perfekt": "hat gehangen",
+            "praeteritum": "hing"
+        },
+        "hauen": {
+            "vowel_change": "N/A",
+            "third_person": "haut",
+            "perfekt": "hat gehauen",
+            "praeteritum": "hieb/haute"
+        },
+        "heben": {
+            "vowel_change": "N/A",
+            "third_person": "hebt",
+            "perfekt": "hat gehoben",
+            "praeteritum": "hob"
+        },
+        "heißen": {
+            "vowel_change": "N/A",
+            "third_person": "heißt",
+            "perfekt": "hat geheißen",
+            "praeteritum": "hieß"
+        },
+        "helfen": {
+            "vowel_change": "e -> i",
+            "third_person": "hilft",
+            "perfekt": "hat geholfen",
+            "praeteritum": "half"
+        },
+        "kennen": {
+            "vowel_change": "N/A",
+            "third_person": "kennt",
+            "perfekt": "hat gekannt",
+            "praeteritum": "kannte"
+        },
+        "klimmen": {
+            "vowel_change": "N/A",
+            "third_person": "klimmt",
+            "perfekt": "ist geklommen",
+            "praeteritum": "klomm"
+        },
+        "klingen": {
+            "vowel_change": "N/A",
+            "third_person": "klingt",
+            "perfekt": "hat geklungen",
+            "praeteritum": "klang"
+        },
+        "kneifen": {
+            "vowel_change": "N/A",
+            "third_person": "kneift",
+            "perfekt": "hat gekniffen",
+            "praeteritum": "kniff"
+        },
+        "kommen": {
+            "vowel_change": "N/A",
+            "third_person": "kommt",
+            "perfekt": "ist gekommen",
+            "praeteritum": "kam"
+        },
+        "können": {
+            "vowel_change": "ö -> a",
+            "third_person": "kann",
+            "perfekt": "hat gekonnt",
+            "praeteritum": "konnte"
+        },
+        "kriechen": {
+            "vowel_change": "N/A",
+            "third_person": "kriecht",
+            "perfekt": "ist gekrochen",
+            "praeteritum": "kroch"
+        },
+        "laden": {
+            "vowel_change": "a -> ä",
+            "third_person": "lädt",
+            "perfekt": "hat geladen",
+            "praeteritum": "lud"
+        },
+        "lassen": {
+            "vowel_change": "a -> ä",
+            "third_person": "lässt",
+            "perfekt": "hat gelassen",
+            "praeteritum": "ließ"
+        },
+        "laufen": {
+            "vowel_change": "au -> äu",
+            "third_person": "läuft",
+            "perfekt": "ist gelaufen",
+            "praeteritum": "lief"
+        },
+        "leiden": {
+            "vowel_change": "N/A",
+            "third_person": "leidet",
+            "perfekt": "hat gelitten",
+            "praeteritum": "litt"
+        },
+        "leihen": {
+            "vowel_change": "N/A",
+            "third_person": "leiht",
+            "perfekt": "hat geliehen",
+            "praeteritum": "lieh"
+        },
+        "lesen": {
+            "vowel_change": "e -> ie",
+            "third_person": "liest",
+            "perfekt": "hat gelesen",
+            "praeteritum": "las"
+        },
+        "liegen": {
+            "vowel_change": "N/A",
+            "third_person": "liegt",
+            "perfekt": "hat gelegen",
+            "praeteritum": "lag"
+        },
+        "lügen": {
+            "vowel_change": "N/A",
+            "third_person": "lügt",
+            "perfekt": "hat gelogen",
+            "praeteritum": "log"
+        },
+        "meiden": {
+            "vowel_change": "N/A",
+            "third_person": "meidet",
+            "perfekt": "hat gemieden",
+            "praeteritum": "mied"
+        },
+        "melken": {
+            "vowel_change": "e -> i",
+            "third_person": "milkt",
+            "perfekt": "hat gemolken",
+            "praeteritum": "molk"
+        },
+        "messen": {
+            "vowel_change": "e -> i",
+            "third_person": "misst",
+            "perfekt": "hat gemessen",
+            "praeteritum": "maß"
+        },
+        "misslingen": {
+            "vowel_change": "N/A",
+            "third_person": "misslingt",
+            "perfekt": "ist misslungen",
+            "praeteritum": "misslang"
+        },
+        "mögen": {
+            "vowel_change": "ö -> a",
+            "third_person": "mag",
+            "perfekt": "hat gemocht",
+            "praeteritum": "mochte"
+        },
+        "müssen": {
+            "vowel_change": "ü -> u",
+            "third_person": "muss",
+            "perfekt": "hat gemusst",
+            "praeteritum": "musste"
+        },
+        "nehmen": {
+            "vowel_change": "e -> i",
+            "third_person": "nimmt",
+            "perfekt": "hat genommen",
+            "praeteritum": "nahm"
+        },
+        "nennen": {
+            "vowel_change": "N/A",
+            "third_person": "nennt",
+            "perfekt": "hat genannt",
+            "praeteritum": "nannte"
+        },
+        "pfeifen": {
+            "vowel_change": "N/A",
+            "third_person": "pfeift",
+            "perfekt": "hat gepfiffen",
+            "praeteritum": "pfiff"
+        },
+        "preisen": {
+            "vowel_change": "N/A",
+            "third_person": "preist",
+            "perfekt": "hat gepriesen",
+            "praeteritum": "pries"
+        },
+        "quellen": {
+            "vowel_change": "e -> i",
+            "third_person": "quillt",
+            "perfekt": "ist gequollen",
+            "praeteritum": "quoll"
+        },
+        "raten": {
+            "vowel_change": "a -> ä",
+            "third_person": "rät",
+            "perfekt": "hat geraten",
+            "praeteritum": "riet"
+        },
+        "reiben": {
+            "vowel_change": "N/A",
+            "third_person": "reibt",
+            "perfekt": "hat gerieben",
+            "praeteritum": "rieb"
+        },
+        "reißen": {
+            "vowel_change": "N/A",
+            "third_person": "reißt",
+            "perfekt": "hat gerissen",
+            "praeteritum": "riss"
+        },
+        "reiten": {
+            "vowel_change": "N/A",
+            "third_person": "reitet",
+            "perfekt": "ist geritten",
+            "praeteritum": "ritt"
+        },
+        "rennen": {
+            "vowel_change": "N/A",
+            "third_person": "rennt",
+            "perfekt": "ist gerannt",
+            "praeteritum": "rannte"
+        },
+        "riechen": {
+            "vowel_change": "N/A",
+            "third_person": "riecht",
+            "perfekt": "hat gerochen",
+            "praeteritum": "roch"
+        },
+        "ringen": {
+            "vowel_change": "N/A",
+            "third_person": "ringt",
+            "perfekt": "hat gerungen",
+            "praeteritum": "rang"
+        },
+        "rinnen": {
+            "vowel_change": "N/A",
+            "third_person": "rinnt",
+            "perfekt": "ist geronnen",
+            "praeteritum": "rann"
+        },
+        "rufen": {
+            "vowel_change": "N/A",
+            "third_person": "ruft",
+            "perfekt": "hat gerufen",
+            "praeteritum": "rief"
+        },
+        "salzen": {
+            "vowel_change": "N/A",
+            "third_person": "salzt",
+            "perfekt": "hat gesalzen",
+            "praeteritum": "salzte"
+        },
+        "saufen": {
+            "vowel_change": "au -> äu",
+            "third_person": "säuft",
+            "perfekt": "hat gesoffen",
+            "praeteritum": "soff"
+        },
+        "saugen": {
+            "vowel_change": "N/A",
+            "third_person": "saugt",
+            "perfekt": "hat gesogen",
+            "praeteritum": "sog"
+        },
+        "schaffen": {
+            "vowel_change": "N/A",
+            "third_person": "schafft",
+            "perfekt": "hat geschaffen",
+            "praeteritum": "schuf"
+        },
+        "scheiden": {
+            "vowel_change": "N/A",
+            "third_person": "scheidet",
+            "perfekt": "ist geschieden",
+            "praeteritum": "schied"
+        },
+        "scheinen": {
+            "vowel_change": "N/A",
+            "third_person": "scheint",
+            "perfekt": "hat geschienen",
+            "praeteritum": "schien"
+        },
+        "scheißen": {
+            "vowel_change": "N/A",
+            "third_person": "scheißt",
+            "perfekt": "hat geschissen",
+            "praeteritum": "schiss"
+        },
+        "schelten": {
+            "vowel_change": "e -> i",
+            "third_person": "schilt",
+            "perfekt": "hat gescholten",
+            "praeteritum": "schalt"
+        },
+        "scheren": {
+            "vowel_change": "N/A",
+            "third_person": "schert",
+            "perfekt": "hat geschoren",
+            "praeteritum": "schor"
+        },
+        "schieben": {
+            "vowel_change": "N/A",
+            "third_person": "schiebt",
+            "perfekt": "hat geschoben",
+            "praeteritum": "schob"
+        },
+        "schießen": {
+            "vowel_change": "N/A",
+            "third_person": "schießt",
+            "perfekt": "hat geschossen",
+            "praeteritum": "schoss"
+        },
+        "schlafen": {
+            "vowel_change": "a -> ä",
+            "third_person": "schläft",
+            "perfekt": "hat geschlafen",
+            "praeteritum": "schlief"
+        },
+        "schlagen": {
+            "vowel_change": "a -> ä",
+            "third_person": "schlägt",
+            "perfekt": "hat geschlagen",
+            "praeteritum": "schlug"
+        },
+        "schleichen": {
+            "vowel_change": "N/A",
+            "third_person": "schleicht",
+            "perfekt": "ist geschlichen",
+            "praeteritum": "schlich"
+        },
+        "schleifen": {
+            "vowel_change": "N/A",
+            "third_person": "schleift",
+            "perfekt": "hat geschliffen",
+            "praeteritum": "schliff"
+        },
+        "schließen": {
+            "vowel_change": "N/A",
+            "third_person": "schließt",
+            "perfekt": "hat geschlossen",
+            "praeteritum": "schloss"
+        },
+        "schlingen": {
+            "vowel_change": "N/A",
+            "third_person": "schlingt",
+            "perfekt": "hat geschlungen",
+            "praeteritum": "schlang"
+        },
+        "schmeißen": {
+            "vowel_change": "N/A",
+            "third_person": "schmeißt",
+            "perfekt": "hat geschmissen",
+            "praeteritum": "schmiss"
+        },
+        "schmelzen": {
+            "vowel_change": "e -> i",
+            "third_person": "schmilzt",
+            "perfekt": "ist geschmolzen",
+            "praeteritum": "schmolz"
+        },
+        "schneiden": {
+            "vowel_change": "N/A",
+            "third_person": "schneidet",
+            "perfekt": "hat geschnitten",
+            "praeteritum": "schnitt"
+        },
+        "schreiben": {
+            "vowel_change": "N/A",
+            "third_person": "schreibt",
+            "perfekt": "hat geschrieben",
+            "praeteritum": "schrieb"
+        },
+        "schreien": {
+            "vowel_change": "N/A",
+            "third_person": "schreit",
+            "perfekt": "hat geschrien",
+            "praeteritum": "schrie"
+        },
+        "schreiten": {
+            "vowel_change": "N/A",
+            "third_person": "schreitet",
+            "perfekt": "ist geschritten",
+            "praeteritum": "schritt"
+        },
+        "schweigen": {
+            "vowel_change": "N/A",
+            "third_person": "schweigt",
+            "perfekt": "hat geschwiegen",
+            "praeteritum": "schwieg"
+        },
+        "schwellen": {
+            "vowel_change": "e -> i",
+            "third_person": "schwillt",
+            "perfekt": "ist geschwollen",
+            "praeteritum": "schwoll"
+        },
+        "schwimmen": {
+            "vowel_change": "N/A",
+            "third_person": "schwimmt",
+            "perfekt": "ist geschwommen",
+            "praeteritum": "schwamm"
+        },
+        "schwingen": {
+            "vowel_change": "N/A",
+            "third_person": "schwingt",
+            "perfekt": "hat geschwungen",
+            "praeteritum": "schwang"
+        },
+        "schwören": {
+            "vowel_change": "N/A",
+            "third_person": "schwört",
+            "perfekt": "hat geschworen",
+            "praeteritum": "schwor"
+        },
+        "sehen": {
+            "vowel_change": "e -> ie",
+            "third_person": "sieht",
+            "perfekt": "hat gesehen",
+            "praeteritum": "sah"
+        },
+        "sein": {
+            "vowel_change": "N/A",
+            "third_person": "ist",
+            "perfekt": "ist gewesen",
+            "praeteritum": "war"
+        },
+        "senden": {
+            "vowel_change": "N/A",
+            "third_person": "sendet",
+            "perfekt": "hat gesandt/gesendet",
+            "praeteritum": "sandte"
+        },
+        "singen": {
+            "vowel_change": "N/A",
+            "third_person": "singt",
+            "perfekt": "hat gesungen",
+            "praeteritum": "sang"
+        },
+        "sinken": {
+            "vowel_change": "N/A",
+            "third_person": "sinkt",
+            "perfekt": "ist gesunken",
+            "praeteritum": "sank"
+        },
+        "sinnen": {
+            "vowel_change": "N/A",
+            "third_person": "sinnt",
+            "perfekt": "hat gesonnen",
+            "praeteritum": "sann"
+        },
+        "sitzen": {
+            "vowel_change": "N/A",
+            "third_person": "sitzt",
+            "perfekt": "hat gesessen",
+            "praeteritum": "saß"
+        },
+        "sollen": {
+            "vowel_change": "N/A",
+            "third_person": "soll",
+            "perfekt": "hat gesollt",
+            "praeteritum": "sollte"
+        },
+        "spalten": {
+            "vowel_change": "N/A",
+            "third_person": "spaltet",
+            "perfekt": "hat gespalten",
+            "praeteritum": "spaltete"
+        },
+        "speien": {
+            "vowel_change": "N/A",
+            "third_person": "speit",
+            "perfekt": "hat gespien",
+            "praeteritum": "spie"
+        },
+        "spinnen": {
+            "vowel_change": "N/A",
+            "third_person": "spinnt",
+            "perfekt": "hat gesponnen",
+            "praeteritum": "spann"
+        },
+        "sprechen": {
+            "vowel_change": "e -> i",
+            "third_person": "spricht",
+            "perfekt": "hat gesprochen",
+            "praeteritum": "sprach"
+        },
+        "sprießen": {
+            "vowel_change": "N/A",
+            "third_person": "sprießt",
+            "perfekt": "ist gesprossen",
+            "praeteritum": "spross"
+        },
+        "springen": {
+            "vowel_change": "N/A",
+            "third_person": "springt",
+            "perfekt": "ist gesprungen",
+            "praeteritum": "sprang"
+        },
+        "stechen": {
+            "vowel_change": "e -> i",
+            "third_person": "sticht",
+            "perfekt": "hat gestochen",
+            "praeteritum": "stach"
+        },
+        "stecken": {
+            "vowel_change": "N/A",
+            "third_person": "steckt",
+            "perfekt": "hat gesteckt",
+            "praeteritum": "stak"
+        },
+        "stehen": {
+            "vowel_change": "N/A",
+            "third_person": "steht",
+            "perfekt": "ist gestanden",
+            "praeteritum": "stand"
+        },
+        "stehlen": {
+            "vowel_change": "e -> ie",
+            "third_person": "stiehlt",
+            "perfekt": "hat gestohlen",
+            "praeteritum": "stahl"
+        },
+        "steigen": {
+            "vowel_change": "N/A",
+            "third_person": "steigt",
+            "perfekt": "ist gestiegen",
+            "praeteritum": "stieg"
+        },
+        "sterben": {
+            "vowel_change": "e -> i",
+            "third_person": "stirbt",
+            "perfekt": "ist gestorben",
+            "praeteritum": "starb"
+        },
+        "stinken": {
+            "vowel_change": "N/A",
+            "third_person": "stinkt",
+            "perfekt": "hat gestunken",
+            "praeteritum": "stank"
+        },
+        "stoßen": {
+            "vowel_change": "o -> ö",
+            "third_person": "stößt",
+            "perfekt": "hat gestoßen",
+            "praeteritum": "stieß"
+        },
+        "streichen": {
+            "vowel_change": "N/A",
+            "third_person": "streicht",
+            "perfekt": "hat gestrichen",
+            "praeteritum": "strich"
+        },
+        "streiten": {
+            "vowel_change": "N/A",
+            "third_person": "streitet",
+            "perfekt": "hat gestritten",
+            "praeteritum": "stritt"
+        },
+        "tragen": {
+            "vowel_change": "a -> ä",
+            "third_person": "trägt",
+            "perfekt": "hat getragen",
+            "praeteritum": "trug"
+        },
+        "treffen": {
+            "vowel_change": "e -> i",
+            "third_person": "trifft",
+            "perfekt": "hat getroffen",
+            "praeteritum": "traf"
+        },
+        "treiben": {
+            "vowel_change": "N/A",
+            "third_person": "treibt",
+            "perfekt": "hat getrieben",
+            "praeteritum": "trieb"
+        },
+        "treten": {
+            "vowel_change": "e -> i",
+            "third_person": "tritt",
+            "perfekt": "hat getreten",
+            "praeteritum": "trat"
+        },
+        "trinken": {
+            "vowel_change": "N/A",
+            "third_person": "trinkt",
+            "perfekt": "hat getrunken",
+            "praeteritum": "trank"
+        },
+        "trügen": {
+            "vowel_change": "N/A",
+            "third_person": "trügt",
+            "perfekt": "hat getrogen",
+            "praeteritum": "trog"
+        },
+        "tun": {
+            "vowel_change": "N/A",
+            "third_person": "tut",
+            "perfekt": "hat getan",
+            "praeteritum": "tat"
+        },
+        "verbergen": {
+            "vowel_change": "e -> i",
+            "third_person": "verbirgt",
+            "perfekt": "hat verborgen",
+            "praeteritum": "verbarg"
+        },
+        "verderben": {
+            "vowel_change": "e -> i",
+            "third_person": "verdirbt",
+            "perfekt": "hat verdorben",
+            "praeteritum": "verdarb"
+        },
+        "vergessen": {
+            "vowel_change": "e -> i",
+            "third_person": "vergisst",
+            "perfekt": "hat vergessen",
+            "praeteritum": "vergaß"
+        },
+        "verlieren": {
+            "vowel_change": "N/A",
+            "third_person": "verliert",
+            "perfekt": "hat verloren",
+            "praeteritum": "verlor"
+        },
+        "verschwinden": {
+            "vowel_change": "N/A",
+            "third_person": "verschwindet",
+            "perfekt": "ist verschwunden",
+            "praeteritum": "verschwand"
+        },
+        "verzeihen": {
+            "vowel_change": "N/A",
+            "third_person": "verzeiht",
+            "perfekt": "hat verziehen",
+            "praeteritum": "verzieh"
+        },
+        "wachsen": {
+            "vowel_change": "a -> ä",
+            "third_person": "wächst",
+            "perfekt": "ist gewachsen",
+            "praeteritum": "wuchs"
+        },
+        "waschen": {
+            "vowel_change": "a -> ä",
+            "third_person": "wäscht",
+            "perfekt": "hat gewaschen",
+            "praeteritum": "wusch"
+        },
+        "weichen": {
+            "vowel_change": "N/A",
+            "third_person": "weicht",
+            "perfekt": "ist gewichen",
+            "praeteritum": "wich"
+        },
+        "weisen": {
+            "vowel_change": "N/A",
+            "third_person": "weist",
+            "perfekt": "hat gewiesen",
+            "praeteritum": "wies"
+        },
+        "wenden": {
+            "vowel_change": "N/A",
+            "third_person": "wendet",
+            "perfekt": "hat gewandt/gewendet",
+            "praeteritum": "wandte"
+        },
+        "werben": {
+            "vowel_change": "e -> i",
+            "third_person": "wirbt",
+            "perfekt": "hat geworben",
+            "praeteritum": "warb"
+        },
+        "werden": {
+            "vowel_change": "e -> i",
+            "third_person": "wird",
+            "perfekt": "ist geworden",
+            "praeteritum": "wurde"
+        },
+        "werfen": {
+            "vowel_change": "e -> i",
+            "third_person": "wirft",
+            "perfekt": "hat geworfen",
+            "praeteritum": "warf"
+        },
+        "wiegen": {
+            "vowel_change": "N/A",
+            "third_person": "wiegt",
+            "perfekt": "hat gewogen",
+            "praeteritum": "wog"
+        },
+        "winden": {
+            "vowel_change": "N/A",
+            "third_person": "windet",
+            "perfekt": "hat gewunden",
+            "praeteritum": "wand"
+        },
+        "wissen": {
+            "vowel_change": "i -> ei",
+            "third_person": "weiß",
+            "perfekt": "hat gewusst",
+            "praeteritum": "wusste"
+        },
+        "wollen": {
+            "vowel_change": "o -> i",
+            "third_person": "will",
+            "perfekt": "hat gewollt",
+            "praeteritum": "wollte"
+        },
+        "wringen": {
+            "vowel_change": "N/A",
+            "third_person": "wringt",
+            "perfekt": "hat gewrungen",
+            "praeteritum": "wrang"
+        },
+        "ziehen": {
+            "vowel_change": "N/A",
+            "third_person": "zieht",
+            "perfekt": "hat gezogen",
+            "praeteritum": "zog"
+        },
+        "zwingen": {
+            "vowel_change": "N/A",
+            "third_person": "zwingt",
+            "perfekt": "hat gezwungen",
+            "praeteritum": "zwang"
+        }
+    }
+}
