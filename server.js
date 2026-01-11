@@ -713,6 +713,7 @@ async function handleDict(req, res) {
             "perfekt": "Perfekt form or N/A",
             "praeteritum": "Präteritum form or N/A",
             "case": "Dativ/Akkusativ or N/A",
+            "gender": "m/f/n/N/A",
             "vowel_change": "vowel shift or N/A",
             "extra_info": "additional notes or N/A",
             "synonyms": ["syn1", "syn2"],
@@ -735,6 +736,7 @@ async function handleDict(req, res) {
       perfekt: aiData.data?.perfekt || "N/A",
       praeteritum: aiData.data?.praeteritum || "N/A",
       case: aiData.data?.case || "N/A",
+      gender: aiData.data?.gender || "N/A",
       vowel_change: aiData.data?.vowel_change || "N/A",
       extra_info: aiData.data?.extra_info || "N/A",
       synonyms: aiData.data?.synonyms || [],
@@ -748,6 +750,7 @@ async function handleDict(req, res) {
       finalData.vowel_change = grammarInfo.vowel_change;
       finalData.perfekt = grammarInfo.perfekt;
       finalData.praeteritum = grammarInfo.praeteritum;
+      finalData.gender = "N/A";
       finalData.extra_info = `Irregular verb (3rd pers: ${grammarInfo.third_person})`;
       if (grammarInfo.is_compound) {
         finalData.extra_info += `; Compound of '${grammarInfo.base_verb}'`;
