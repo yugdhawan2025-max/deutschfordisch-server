@@ -53,8 +53,8 @@ const AI_CONFIG_PATH = path.join(STORAGE_ROOT, "ai_config.json");
 
 // Default Configuration
 const DEFAULT_AI_CONFIG = {
-  system_role: "strict German grammar expert",
-  tone: "supportive", // "strict", "funny", "supportive"
+  system_role: "You are a professional human German tutor. Your goal is to help learners understand German naturally and clearly. You prioritize learner understanding and natural usage over academic grammar rules.",
+  tone: "calm, friendly, and teacher-like", // "strict", "funny", "supportive"
   goethe_ref: true,
   word_counts: {
     "A1": 5, "A2": 8, "B1": 12, "B2": 15, "C1": 15, "C2": 20
@@ -601,7 +601,7 @@ async function handleDict(req, res) {
   try {
     const completion = await groq.chat.completions.create({
       messages: [
-        { role: "system", content: "You are a professional dictionary API. Respond ONLY in valid JSON." },
+        { role: "system", content: "You are a German Grammar Expert and professional dictionary API. Respond ONLY in valid JSON." },
         {
           role: "user", content: `Lookup "${queryTerm}" (Source: ${from}, Target: ${to}).
         
@@ -620,6 +620,8 @@ async function handleDict(req, res) {
            - case: Dativ/Akkusativ usage if applicable (if preposition or verb)
            - synonyms: list of 2-3 synonyms
            - example: A natural example sentence in German.
+           - vowel_change: For irregular verbs with vowel shifts in 2nd/3rd person singular, specify it (e.g., "e -> ie" for "sehen" or "a -> ä" for "fahren"). If regular, return "N/A".
+           - extra_info: Essential notes (e.g., "Irregular verb; vowel change in 2nd/3rd person singular" or "Separable verb"). If regular, return "Regular verb".
 
         Return JSON: {
           "translation": "Main translation (English)",
@@ -629,6 +631,8 @@ async function handleDict(req, res) {
             "perfekt": "Perfekt form or N/A",
             "praeteritum": "Präteritum form or N/A",
             "case": "Dativ/Akkusativ or N/A",
+            "vowel_change": "vowel shift or N/A",
+            "extra_info": "additional notes or N/A",
             "synonyms": ["syn1", "syn2"],
             "example": "Example sentence."
           },
@@ -652,6 +656,8 @@ async function handleDict(req, res) {
         perfekt: aiData.data?.perfekt || "N/A",
         praeteritum: aiData.data?.praeteritum || "N/A",
         case: aiData.data?.case || "N/A",
+        vowel_change: aiData.data?.vowel_change || "N/A",
+        extra_info: aiData.data?.extra_info || "N/A",
         synonyms: aiData.data?.synonyms || [],
         example: aiData.data?.example || ""
       }
@@ -712,33 +718,33 @@ app.get("/learn/practice", async (req, res) => {
     if (type === "en-de") {
       // MODE 1: Written Translation (EN -> DE)
       // User gets an English sentence, translates it to German (validated later by /evaluate)
-      userPrompt = `Generate a level - appropriate English sentence for a ${level} CEFR German learner to translate.${tuning}
+      userPrompt = `Generate a level-appropriate English sentence for a ${level} CEFR German learner to translate.${tuning}
  
  Level Guidelines:
    - A1: Simple present tense, basic vocabulary(family, food, colors).Max ${aiConfig.word_counts.A1 || 5} words.
- - A2: Present / past tense, everyday topics.Max ${aiConfig.word_counts.A2 || 8} words.
- - B1: Multiple tenses, common idioms, longer sentences.Max ${aiConfig.word_counts.B1 || 12} words.
- - B2: Complex grammar(subjunctive, passive), abstract topics.Max ${aiConfig.word_counts.B2 || 15} words.
- - C1 / C2: Advanced structures, nuanced vocabulary, literary style.Max ${aiConfig.word_counts.C1 || 15} words.
+   - A2: Present / past tense, everyday topics.Max ${aiConfig.word_counts.A2 || 8} words.
+   - B1: Multiple tenses, common idioms, longer sentences.Max ${aiConfig.word_counts.B1 || 12} words.
+   - B2: Complex grammar(subjunctive, passive), abstract topics.Max ${aiConfig.word_counts.B2 || 15} words.
+   - C1: Advanced structures, nuanced vocabulary, literary style.Max ${aiConfig.word_counts.C1 || 15} words.
  
-     Format: { "question": "English sentence (Sentence case)", "context": "Brief English grammar hint (e.g., 'Use Perfekt tense')" } `;
+      Format: { "question": "English sentence (Sentence case)", "context": "Brief English grammar hint (e.g., 'Use Perfekt tense')" } `;
     } else {
       // MODE 2: MCQ (DE -> EN)
       // User gets a German sentence, chooses right English meaning from 4 options
-      userPrompt = `Generate a level - appropriate German sentence for a ${level} CEFR learner with 4 English MCQ options.${tuning}
+      userPrompt = `Generate a level-appropriate German sentence for a ${level} CEFR learner with 4 English MCQ options.${tuning}
  
  Level Guidelines:
-  - A1: Basic vocabulary, simple present.Example: "Der Hund ist groß."
-    - A2: Common verbs, past tense.Example: "Ich habe gestern Fußball gespielt."
-      - B1: Modal verbs, subordinate clauses.Example: "Obwohl es regnet, gehe ich spazieren."
-        - B2: Subjunctive, passive voice.Example: "Das Buch wurde von einem berühmten Autor geschrieben."
-          - C1 / C2: Idiomatic expressions, complex syntax.
-
+   - A1: Basic vocabulary, simple present. Example: "Der Hund ist groß."
+   - A2: Common verbs, past tense. Example: "Ich habe gestern Fußball gespielt."
+   - B1: Modal verbs, subordinate clauses. Example: "Obwohl es regnet, gehe ich spazieren."
+   - B2: Subjunctive, passive voice. Example: "Das Buch wurde von einem berühmten Autor geschrieben."
+   - C1: Idiomatic expressions, complex syntax.
+ 
             Format: {
     "question": "German sentence (Sentence case)",
       "options": ["Option A (English)", "Option B (English)", "Option C (English)", "Option D (English)"],
         "answer": "The correct option string (English)",
-          "explanation": "Standardized format: 'Why its Correct : ) The sentence uses [grammar point] because [reason].' (Max 2 sentences, English only)"
+          "explanation": "Brief level-appropriate explanation in English (2-4 sentences). Follow the tutor persona: calm, friendly, and focused on meaning first."
   } `;
     }
 
@@ -778,31 +784,36 @@ app.post("/evaluate", async (req, res) => {
   try {
     const completion = await groq.chat.completions.create({
       messages: [
-        { role: "system", content: `${aiConfig.system_role}.Tone: ${aiConfig.tone}. Respond ONLY in valid JSON.` },
+        {
+          role: "system",
+          content: `${aiConfig.system_role}. Tone: ${aiConfig.tone}. 
+          
+          TEACHING RULES PER LEVEL:
+          - A1: Very short (1-2 points), ZERO grammar terms (no "accusative", "cases", etc.). Use patterns instead (e.g., "esse -> isst because he").
+          - A2: Short (2-3 points), gentle grammar intro, meaning-first.
+          - B1: Clear (3-4 points), simple grammar terms allowed.
+          - B2: Explain structure/usage, compare forms, focus on nuance/style.
+          - C1: Deeper explanations, formal vs informal, stylistic control.
+          
+          Respond ONLY in valid JSON.`
+        },
         {
           role: "user", content: `Evaluate this ${level} CEFR learner's translation.
-
-  Original(${from === 'de' ? 'German' : 'English'}): "${sentence}"
+          
+Original (${from === 'de' ? 'German' : 'English'}): "${sentence}"
 User's Translation (${to === 'en' ? 'English' : 'German'}): "${translation}"
 
-CRITICAL GERMAN GRAMMAR RULES(NEVER VIOLATE):
-- Akkusativ(direct object): der→den, ein→einen(masc), das→das, ein→ein(neut), die→die, eine→eine(fem)
-  - Example: "Ich esse einen Apfel"(NOT "ein Apfel" - Apfel is masculine accusative!)
-    - Dativ(indirect object): der→dem, ein→einem(masc), das→dem, ein→einem(neut), die→der, eine→einer(fem)
-      - Verb conjugation: ich esse, du isst, er / sie / es isst, wir essen, ihr esst, sie essen
-        - Word order: Subject - Verb - Object in main clauses
-
-Provide concise, encouraging feedback IN ENGLISH:
-1. user_answer: Echo back exactly what they wrote.
-2. corrected_answer: The GRAMMATICALLY PERFECT translation for ${level} level.Double - check all cases and articles!
-3. feedback: 2 - 3 sentences max in English.If wrong, explain the SPECIFIC grammar rule violated in English(e.g., "Apfel is masculine, so accusative is 'einen', not 'ein'").
-  ${aiConfig.goethe_ref ? '4. b2_reference_answer: Advanced B2 translation (only if different).' : ''}
+MANDATORY RESPONSE STRUCTURE:
+1. corrected_answer: The FULLY CORRECTED sentence first. Proper capitalization, no explanation here.
+2. feedback: 2-5 lines in simple English. Explain what changed and why. Meaning first, grammar second. Use level-appropriate rules (e.g. A1 MUST NOT use grammar terms).
+3. b2_reference_answer: Optional advanced version. ONLY if it adds real value (time, reason, contrast, emphasis) and is natural. For A1/A2, NEVER show if confusing.
 
 Return JSON: {
   "user_answer": "${translation}",
-    "corrected_answer": "Grammatically perfect ${level} translation",
-      "feedback": "Brief English feedback with specific grammar rule"${aiConfig.goethe_ref ? ',\n  "b2_reference_answer": "Advanced B2 translation"' : ''}
-} ` }
+  "corrected_answer": "...",
+  "feedback": "...",
+  "b2_reference_answer": "..." (or null if not adding value or for low levels)
+}` }
       ],
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
