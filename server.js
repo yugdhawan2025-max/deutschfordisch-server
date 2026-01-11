@@ -830,16 +830,17 @@ async function handleDict(req, res) {
   try {
     const completion = await groq.chat.completions.create({
       messages: [
-        { role: "system", content: "You are a precise German-English dictionary API. You provide the most common, direct translation. Respond ONLY in valid JSON." },
-        { role: "user", content: `Lookup "cat" (Source: en, Target: de).` },
-        { role: "assistant", content: `{"translation": "Katze", "data": {"artikel": "die", "plural": "die Katzen", "perfekt": "N/A", "praeteritum": "N/A", "case": "N/A", "gender": "f", "vowel_change": "N/A", "extra_info": "Regular noun", "synonyms": ["Kater", "Stubentiger"], "example": "Die Katze schläft auf dem Sofa."}}` },
+        { role: "system", content: "You are a German Grammar Expert and professional dictionary API. Respond ONLY in valid JSON." },
         {
           role: "user", content: `Lookup "${queryTerm}" (Source: ${from}, Target: ${to}).
         
         Rules:
-        1. Identify the 'best', most common translation. Do NOT use obscure words.
-        2. If Source or Target is 'auto', you must detect the languages yourself.
-        3. If the German term is a noun, you MUST include the definite article (der/die/das).
+        1. Identify the 'best' translation.
+        2. If Source or Target is 'auto', you must detect the languages yourself (specifically between English and German).
+        3. If the German term is a noun, you MUST include the definite article (der/die/das) and capitalize it (e.g., 'der Hund').
+        4. Even if source is German, ensure 'german_full' is the explicit Article + Noun form.
+        5. Provide gender (m/f/n) for German nouns.
+        6. Provide 2-3 common alternate translations.
         4. Provide gender (m/f/n) for German nouns.
         5. For German words, provide additional grammar data:
            - artikel: "der", "die", or "das" (if noun)
@@ -862,11 +863,11 @@ async function handleDict(req, res) {
           "detected_to": "${to}"
         }` }
       ],
-      model: "llama-3.1-8b-instant",
+      model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/dict", "llama-3.1-8b-instant");
+    logAiUsage("/dict", "llama-3.3-70b-versatile");
 
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
