@@ -79,6 +79,27 @@ function saveAiConfig() {
   fs.writeFileSync(AI_CONFIG_PATH, JSON.stringify(aiConfig, null, 2));
 }
 
+/* -------------------- DICTIONARY CACHE -------------------- */
+const DICT_CACHE_PATH = path.join(STORAGE_ROOT, "dict_cache.json");
+let dictCache = {};
+
+if (fs.existsSync(DICT_CACHE_PATH)) {
+  try {
+    dictCache = JSON.parse(fs.readFileSync(DICT_CACHE_PATH, "utf8"));
+    console.log(`Loaded ${Object.keys(dictCache).length} cached translations.`);
+  } catch (err) {
+    console.error("Failed to load dict cache:", err);
+  }
+}
+
+function saveDictCache() {
+  try {
+    fs.writeFileSync(DICT_CACHE_PATH, JSON.stringify(dictCache, null, 2));
+  } catch (err) {
+    console.error("Failed to save dict cache:", err);
+  }
+}
+
 // Serve static files from storage root (to allow downloading APKs)
 app.use("/uploads", express.static(STORAGE_ROOT));
 
@@ -598,6 +619,13 @@ async function handleDict(req, res) {
     return res.status(400).json({ success: false, error: "Missing term" });
   }
 
+  // Check Cache
+  const cacheKey = `${from}-${to}-${queryTerm.toLowerCase().trim()}`;
+  if (dictCache[cacheKey]) {
+    console.log(`Cache Hit: ${cacheKey}`);
+    return res.json({ success: true, ...dictCache[cacheKey], cached: true });
+  }
+
   try {
     const completion = await groq.chat.completions.create({
       messages: [
@@ -646,8 +674,7 @@ async function handleDict(req, res) {
 
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
-    res.json({
-      success: true,
+    const result = {
       term: queryTerm,
       translation: aiData.translation,
       data: {
@@ -661,6 +688,15 @@ async function handleDict(req, res) {
         synonyms: aiData.data?.synonyms || [],
         example: aiData.data?.example || ""
       }
+    };
+
+    // Save to Cache
+    dictCache[cacheKey] = result;
+    saveDictCache();
+
+    res.json({
+      success: true,
+      ...result
     });
   } catch (err) {
     console.error("Dict error:", err.message);
