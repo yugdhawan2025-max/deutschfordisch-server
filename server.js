@@ -183,6 +183,29 @@ function logAiUsage(endpoint, model) {
   }
 }
 
+/**
+ * Gets a sample of German words from the dictionary cache.
+ */
+function getVocabSample(count = 5) {
+  const keys = Object.keys(dictCache);
+  if (keys.length === 0) return "";
+
+  // Extract German terms (handle de-en-word or en-de-word)
+  const deTerms = keys
+    .filter(k => k.startsWith('de-') || k.includes('-de-'))
+    .map(k => {
+      const entry = dictCache[k];
+      return entry.term || entry.data?.german_full || "";
+    })
+    .filter(t => t.length > 0);
+
+  if (deTerms.length === 0) return "";
+
+  // Shuffle and pick
+  const shuffled = deTerms.sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count).join(", ");
+}
+
 // Serve static files from storage root (to allow downloading APKs)
 app.use("/uploads", express.static(STORAGE_ROOT));
 
@@ -761,7 +784,18 @@ async function handleDict(req, res) {
   const cacheKey = `${from}-${to}-${queryTerm.toLowerCase().trim()}`;
   if (dictCache[cacheKey]) {
     console.log(`Cache Hit: ${cacheKey}`);
-    return res.json({ success: true, ...dictCache[cacheKey], cached: true });
+
+    // Mature the entry
+    dictCache[cacheKey].hit_count = (dictCache[cacheKey].hit_count || 0) + 1;
+    dictCache[cacheKey].last_queried = new Date().toISOString();
+    saveDictCache();
+
+    return res.json({
+      success: true,
+      ...dictCache[cacheKey],
+      cached: true,
+      already_in_vocab: true
+    });
   }
 
   // Pre-lookup: Check Deterministic Grammar
@@ -849,7 +883,10 @@ async function handleDict(req, res) {
     const result = {
       term: queryTerm,
       translation: aiData.translation,
-      data: finalData
+      data: finalData,
+      is_vocab: true, // Auto-promote to vocabulary
+      hit_count: 1,
+      last_queried: new Date().toISOString()
     };
 
     // Save to Cache
@@ -914,6 +951,8 @@ app.get("/learn/practice", async (req, res) => {
     let userPrompt = "";
 
     const tuning = aiConfig.tuning_instructions ? `\n\nExtra Focus/Fine-Tuning: ${aiConfig.tuning_instructions}` : "";
+    const vocab = getVocabSample(10);
+    const vocabInstruction = vocab ? `\n\nPRIORITY VOCABULARY: You MUST try to use as many of these words as possible in the generated content (if they fit the level): ${vocab}.` : "";
 
     if (type === "en-de") {
       // MODE 1: Written Translation (EN -> DE)
@@ -927,7 +966,7 @@ app.get("/learn/practice", async (req, res) => {
    - B2: Complex grammar(subjunctive, passive), abstract topics.Max ${aiConfig.word_counts.B2 || 15} words.
    - C1: Advanced structures, nuanced vocabulary, literary style.Max ${aiConfig.word_counts.C1 || 15} words.
  
-      Format: { "question": "English sentence (Sentence case)", "context": "Brief English grammar hint (e.g., 'Use Perfekt tense')" } `;
+      Format: { "question": "English sentence (Sentence case)", "context": "Brief English grammar hint (e.g., 'Use Perfekt tense')" } ${vocabInstruction}`;
     } else {
       // MODE 2: MCQ (DE -> EN)
       // User gets a German sentence, chooses right English meaning from 4 options
@@ -945,7 +984,7 @@ app.get("/learn/practice", async (req, res) => {
       "options": ["Option A (English)", "Option B (English)", "Option C (English)", "Option D (English)"],
         "answer": "The correct option string (English)",
           "explanation": "Brief level-appropriate explanation in English (2-4 sentences). Follow the tutor persona: calm, friendly, and focused on meaning first."
-  } `;
+  } ${vocabInstruction}`;
     }
 
     const completion = await groq.chat.completions.create({
