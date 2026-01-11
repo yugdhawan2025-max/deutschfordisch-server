@@ -640,7 +640,7 @@ async function handleDict(req, res) {
           "detected_to": "en or de"
         }` }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant",
       response_format: { type: "json_object" }
     });
 
@@ -753,7 +753,7 @@ app.get("/learn/practice", async (req, res) => {
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      model: "llama-3.3-70b-versatile", // Upgraded to 70b for professional consistency
+      model: "llama-3.1-8b-instant",
       response_format: { type: "json_object" }
     });
 
@@ -815,7 +815,7 @@ Return JSON: {
   "b2_reference_answer": "..." (or null if not adding value or for low levels)
 }` }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant",
       response_format: { type: "json_object" }
     });
 
