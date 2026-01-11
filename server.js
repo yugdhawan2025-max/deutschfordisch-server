@@ -56,6 +56,7 @@ const DEFAULT_AI_CONFIG = {
   system_role: "You are a professional human German tutor. Your goal is to help learners understand German naturally and clearly. You prioritize learner understanding and natural usage over academic grammar rules.",
   tone: "calm, friendly, and teacher-like", // "strict", "funny", "supportive"
   goethe_ref: true,
+  ai_request_limit: 1000,
   word_counts: {
     "A1": 5, "A2": 8, "B1": 12, "B2": 15, "C1": 15, "C2": 20
   },
@@ -210,7 +211,11 @@ function getVocabSample(count = 5) {
 app.use("/uploads", express.static(STORAGE_ROOT));
 
 app.get("/api/usage", (req, res) => {
-  res.json({ success: true, stats: usageStats });
+  res.json({
+    success: true,
+    stats: usageStats,
+    limit: aiConfig.ai_request_limit || 1000
+  });
 });
 
 /* -------------------- ROOT: PREMIUM DASHBOARD -------------------- */
@@ -242,6 +247,8 @@ app.get("/", (req, res) => {
         .endpoint-row:last-child { border-bottom: none; }
         .endpoint-name { color: var(--text-muted); }
         .endpoint-count { font-weight: 600; color: var(--accent); }
+        .progress-container { width: 100%; background: rgba(255,255,255,0.05); border-radius: 10px; height: 10px; margin-top: 1rem; overflow: hidden; border: 1px solid var(--border); }
+        .progress-bar { height: 100%; background: linear-gradient(to right, var(--accent), #fff); width: 0%; transition: width 0.5s ease-out; }
         body {
             font-family: 'Inter', sans-serif;
             background: radial-gradient(circle at top right, #1a1e2e, #0a0c10);
@@ -456,8 +463,11 @@ app.get("/", (req, res) => {
                 <h3>Live AI Usage</h3>
                 <div class="stats-display">
                     <div class="stat-item">
-                        <span class="stat-value" id="total-req">0</span>
-                        <label>Total AI Requests</label>
+                        <span class="stat-value"><span id="total-req">0</span> <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">/ <span id="total-limit">0</span></span></span>
+                        <label>AI Requests Sent</label>
+                        <div class="progress-container">
+                            <div id="usage-progress" class="progress-bar"></div>
+                        </div>
                     </div>
                     <div id="endpoint-stats" style="margin-top: 0.5rem;"></div>
                 </div>
@@ -692,7 +702,13 @@ app.get("/", (req, res) => {
                 const data = await res.json();
                 if (data.success && data.stats) {
                     const stats = data.stats;
+                    const limit = data.limit || 1000;
+                    
                     document.getElementById('total-req').innerText = stats.total_requests || 0;
+                    document.getElementById('total-limit').innerText = limit;
+                    
+                    const percent = Math.min(100, ((stats.total_requests || 0) / limit) * 100);
+                    document.getElementById('usage-progress').style.width = percent + '%';
                     
                     const endpointDiv = document.getElementById('endpoint-stats');
                     endpointDiv.innerHTML = '';
