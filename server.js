@@ -830,51 +830,43 @@ async function handleDict(req, res) {
   try {
     const completion = await groq.chat.completions.create({
       messages: [
-        { role: "system", content: "You are a German Grammar Expert and professional dictionary API. Respond ONLY in valid JSON." },
+        { role: "system", content: "You are a precise German-English dictionary API. You provide the most common, direct translation. Respond ONLY in valid JSON." },
+        { role: "user", content: `Lookup "cat" (Source: en, Target: de).` },
+        { role: "assistant", content: `{"translation": "Katze", "data": {"artikel": "die", "plural": "die Katzen", "perfekt": "N/A", "praeteritum": "N/A", "case": "N/A", "gender": "f", "vowel_change": "N/A", "extra_info": "Regular noun", "synonyms": ["Kater", "Stubentiger"], "example": "Die Katze schläft auf dem Sofa."}}` },
         {
           role: "user", content: `Lookup "${queryTerm}" (Source: ${from}, Target: ${to}).
         
         Rules:
-        1. Identify the 'best' translation.
-        2. If Source or Target is 'auto', you must detect the languages yourself (specifically between English and German).
-        3. If the German term is a noun, you MUST include the definite article (der/die/das) and capitalize it (e.g., 'der Hund').
-        4. Even if source is German, ensure 'german_full' is the explicit Article + Noun form.
-        5. Provide gender (m/f/n) for German nouns.
-        6. Provide 2-3 common alternate translations.
-        7. For German words, provide additional grammar data:
+        1. Identify the 'best', most common translation. Do NOT use obscure words.
+        2. If Source or Target is 'auto', you must detect the languages yourself.
+        3. If the German term is a noun, you MUST include the definite article (der/die/das).
+        4. Provide gender (m/f/n) for German nouns.
+        5. For German words, provide additional grammar data:
            - artikel: "der", "die", or "das" (if noun)
-           - plural: Plural form (if noun, e.g., "die Hunde")
-           - perfekt: Partizip II form (if verb, e.g., "ist gegangen")
-           - praeteritum: Simple past form (if verb, e.g., "ging")
-           - case: Dativ/Akkusativ usage if applicable (if preposition or verb)
-           - synonyms: list of 2-3 synonyms
-           - example: A natural example sentence in German.
-           - vowel_change: For irregular verbs with vowel shifts in 2nd/3rd person singular, specify it (e.g., "e -> ie" for "sehen" or "a -> ä" for "fahren"). If regular, return "N/A".
-           - extra_info: Essential notes (e.g., "Irregular verb; vowel change in 2nd/3rd person singular" or "Separable verb"). If regular, return "Regular verb".
+           - plural: Plural form (if noun)
+           - perfekt: Partizip II form (if verb)
+           - praeteritum: Simple past form (if verb)
+           - case: Dativ/Akkusativ usage if applicable
+           - synonyms: list of 2 synonyms
+           - example: A natural example sentence.
+           - vowel_change: e.g., "e -> ie" for "sehen". Return "N/A" if regular.
+           - extra_info: e.g., "Irregular verb". Return "Regular verb" or "Regular noun" if normal.
 
         Return JSON: {
-          "translation": "Main translation (English)",
+          "translation": "Main translation",
           "data": {
-            "artikel": "der/die/das or N/A",
-            "plural": "Plural form or N/A",
-            "perfekt": "Perfekt form or N/A",
-            "praeteritum": "Präteritum form or N/A",
-            "case": "Dativ/Akkusativ or N/A",
-            "gender": "m/f/n/N/A",
-            "vowel_change": "vowel shift or N/A",
-            "extra_info": "additional notes or N/A",
-            "synonyms": ["syn1", "syn2"],
-            "example": "Example sentence."
+            "artikel": "...", "plural": "...", "perfekt": "...", "praeteritum": "...", "case": "...", "gender": "...", 
+            "vowel_change": "...", "extra_info": "...", "synonyms": [...], "example": "..."
           },
-          "detected_from": "en or de",
-          "detected_to": "en or de"
+          "detected_from": "${from}",
+          "detected_to": "${to}"
         }` }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant",
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/dict", "llama-3.3-70b-versatile");
+    logAiUsage("/dict", "llama-3.1-8b-instant");
 
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
