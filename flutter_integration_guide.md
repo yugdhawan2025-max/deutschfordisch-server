@@ -190,18 +190,14 @@ The user is given a German sentence and must select the correct English translat
 }
 ```
 
-### Validate Translation (`POST /evaluate`)
-Updated structure to support detailed AI feedback with level-appropriate corrections.
+### AI Vocabulary Maturity (New)
+The backend now tracks the "maturity" of individual words based on your lookups. Use these fields to enhance your UI:
 
-**Response Structure:**
-```json
-{
-  "success": true,
-  "data": {
-    "user_answer": "The user's translation (echoed back)",
-    "corrected_answer": "The correct translation at their level",
-    "feedback": "Detailed educational feedback (3-4 sentences) explaining grammar, vocabulary, and improvements",
-    "b2_reference_answer": "A more advanced B2-level translation for comparison"
-  }
-}
-```
+- `already_in_vocab` (bool): If `true`, the word was served from the local cache. You can use this to show a "Known Word" badge or skip redundant UI animations.
+- `hit_count` (int): Number of times the word has been queried.
+- `last_queried` (string): ISO timestamp of the last lookup.
+- `is_vocab` (bool): Always `true` for successful lookups, signifying the word is now part of the user's "Enhanced Vocabulary".
+
+### Smart Dictionary Behavior
+- **Direction-Agnostic Caching**: If you look up a German word in an "EN -> DE" session, the backend will still find it in the cache if it exists as a "DE -> EN" entry. This ensures the local vocabulary is always prioritized.
+- **Fail-Safe Validation**: The API now specifically validates AI responses. If the AI fails to produce a valid translation, you will receive a clean `500` error with a descriptive message instead of empty data.

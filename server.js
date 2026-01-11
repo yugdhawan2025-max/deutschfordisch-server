@@ -796,19 +796,29 @@ async function handleDict(req, res) {
     return res.status(400).json({ success: false, error: "Missing term" });
   }
 
-  // Check Cache
+  // 1. Check Primary Cache (Directional)
   const cacheKey = `${from}-${to}-${queryTerm.toLowerCase().trim()}`;
   if (dictCache[cacheKey]) {
-    console.log(`Cache Hit: ${cacheKey}`);
+    console.log(`Cache Hit (Primary): ${cacheKey}`);
+    return serveCachedEntry(cacheKey, res);
+  }
 
-    // Mature the entry
-    dictCache[cacheKey].hit_count = (dictCache[cacheKey].hit_count || 0) + 1;
-    dictCache[cacheKey].last_queried = new Date().toISOString();
+  // 2. Global Cache Search (Direction-Agnostic)
+  // If we didn't find it in the specific direction, search everywhere for the term
+  const lowTerm = queryTerm.toLowerCase().trim();
+  const globalMatch = Object.keys(dictCache).find(k => k.endsWith(`-${lowTerm}`));
+  if (globalMatch) {
+    console.log(`Cache Hit (Global): ${globalMatch} for ${queryTerm}`);
+    return serveCachedEntry(globalMatch, res);
+  }
+
+  function serveCachedEntry(key, response) {
+    dictCache[key].hit_count = (dictCache[key].hit_count || 0) + 1;
+    dictCache[key].last_queried = new Date().toISOString();
     saveDictCache();
-
-    return res.json({
+    return response.json({
       success: true,
-      ...dictCache[cacheKey],
+      ...dictCache[key],
       cached: true,
       already_in_vocab: true
     });
@@ -867,6 +877,11 @@ async function handleDict(req, res) {
     logAiUsage("/dict", "llama-3.1-8b-instant");
 
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
+
+    if (!aiData.translation) {
+      console.error(`AI failed to translate: ${queryTerm}`);
+      return res.status(500).json({ success: false, error: "AI could not find a translation for this term." });
+    }
 
     // APPLY DETERMINISTIC OVERRIDES
     let finalData = {
