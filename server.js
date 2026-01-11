@@ -789,27 +789,33 @@ app.get("/health", (req, res) => {
 
 /* -------------------- DICTIONARY (MYMEMORY) -------------------- */
 async function handleDict(req, res) {
-  const { term, from = "de", to = "en" } = req.method === 'POST' ? req.body : req.query;
-  const queryTerm = term || req.body?.word; // Support user's preferred Param name
+  const { term, from = "de", to = "en", bypass_cache = "false" } = req.method === 'POST' ? req.body : req.query;
+  const queryTerm = term || req.body?.word;
+  const shouldBypassCache = bypass_cache === "true" || bypass_cache === true;
 
   if (!queryTerm) {
     return res.status(400).json({ success: false, error: "Missing term" });
   }
 
-  // 1. Check Primary Cache (Directional)
   const cacheKey = `${from}-${to}-${queryTerm.toLowerCase().trim()}`;
-  if (dictCache[cacheKey]) {
-    console.log(`Cache Hit (Primary): ${cacheKey}`);
-    return serveCachedEntry(cacheKey, res);
-  }
 
-  // 2. Global Cache Search (Direction-Agnostic)
-  // If we didn't find it in the specific direction, search everywhere for the term
-  const lowTerm = queryTerm.toLowerCase().trim();
-  const globalMatch = Object.keys(dictCache).find(k => k.endsWith(`-${lowTerm}`));
-  if (globalMatch) {
-    console.log(`Cache Hit (Global): ${globalMatch} for ${queryTerm}`);
-    return serveCachedEntry(globalMatch, res);
+  // Skip cache if bypass_cache is enabled (for AI learn mode)
+  if (!shouldBypassCache) {
+    // 1. Check Primary Cache (Directional)
+    if (dictCache[cacheKey]) {
+      console.log(`Cache Hit (Primary): ${cacheKey}`);
+      return serveCachedEntry(cacheKey, res);
+    }
+
+    // 2. Global Cache Search (Direction-Agnostic)
+    const lowTerm = queryTerm.toLowerCase().trim();
+    const globalMatch = Object.keys(dictCache).find(k => k.endsWith(`-${lowTerm}`));
+    if (globalMatch) {
+      console.log(`Cache Hit (Global): ${globalMatch} for ${queryTerm}`);
+      return serveCachedEntry(globalMatch, res);
+    }
+  } else {
+    console.log(`Cache Bypass: ${queryTerm} (AI Learn Mode)`);
   }
 
   function serveCachedEntry(key, response) {
