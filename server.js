@@ -870,11 +870,11 @@ async function handleDict(req, res) {
           "detected_to": "en or de"
         }` }
       ],
-      model: "llama-3.1-8b-instant",
+      model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/dict", "llama-3.1-8b-instant");
+    logAiUsage("/dict", "llama-3.3-70b-versatile");
 
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 

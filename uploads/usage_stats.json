@@ -1,0 +1,14 @@
+{
+  "total_requests": 9,
+  "endpoints": {
+    "/dict": 5,
+    "/sentence": 1,
+    "/evaluate": 1,
+    "/learn/practice": 2
+  },
+  "models": {
+    "llama-3.1-8b-instant": 7,
+    "llama-3.3-70b-versatile": 2
+  },
+  "last_request": "2026-01-11T21:22:11.409Z"
+}

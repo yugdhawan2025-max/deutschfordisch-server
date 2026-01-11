@@ -1,0 +1,109 @@
+{
+  "de-en-fuchs": {
+    "term": "Fuchs",
+    "translation": "Fox",
+    "data": {
+      "artikel": "der",
+      "plural": "die Füchse",
+      "perfekt": "gegangen",
+      "praeteritum": "ging",
+      "case": "Akkusativ",
+      "gender": "m",
+      "vowel_change": "N/A",
+      "extra_info": "Regular noun",
+      "synonyms": [
+        "red fox",
+        "raccoon"
+      ],
+      "example": "Der Fuchs hat mich überrascht."
+    },
+    "hit_count": 1,
+    "last_queried": "2026-01-11T19:59:36.038Z"
+  },
+  "de-en-eichhörnchen": {
+    "term": "Eichhörnchen",
+    "translation": "chuckling squirrel",
+    "data": {
+      "artikel": "das",
+      "plural": "die Eichhörnchen",
+      "perfekt": "hat gehorchten",
+      "praeteritum": "hörnte",
+      "case": "Akkusativ",
+      "gender": "n",
+      "vowel_change": "N/A",
+      "extra_info": "N/A",
+      "synonyms": [
+        "chattering squirrel",
+        "tree squirrel"
+      ],
+      "example": "Die Eichhörnchen springen von Baum zu Baum."
+    },
+    "hit_count": 2,
+    "last_queried": "2026-01-11T18:40:30.769Z"
+  },
+  "de-en-asdfghjklqwerty": {
+    "term": "asdfghjklqwerty",
+    "translation": "Main translation (English)",
+    "data": {
+      "artikel": "N/A",
+      "plural": "N/A",
+      "perfekt": "N/A",
+      "praeteritum": "N/A",
+      "case": "N/A",
+      "gender": "N/A",
+      "vowel_change": "N/A",
+      "extra_info": "Regular expression",
+      "synonyms": [
+        "Typewriter key layout"
+      ],
+      "example": "Die Tasten auf meiner Tastatur sind angeordnet wie asdfghjklqwerty."
+    },
+    "is_vocab": true,
+    "hit_count": 1,
+    "last_queried": "2026-01-11T19:59:40.227Z"
+  },
+  "en-de-blanket": {
+    "term": "blanket",
+    "translation": "Das Bettlaken, Die Decke",
+    "data": {
+      "artikel": "Die",
+      "plural": "Die Decken",
+      "perfekt": "N/A",
+      "praeteritum": "N/A",
+      "case": "N/A",
+      "gender": "f",
+      "vowel_change": "N/A",
+      "extra_info": "N/A",
+      "synonyms": [
+        "Die Wolldecke",
+        "Das Laken"
+      ],
+      "example": "Ich habe mich in Der Decke eingewickelt, um warm zu bleiben."
+    },
+    "is_vocab": true,
+    "hit_count": 1,
+    "last_queried": "2026-01-11T21:22:02.635Z"
+  },
+  "en-de-weapon": {
+    "term": "weapon",
+    "translation": "Waffe",
+    "data": {
+      "artikel": "die",
+      "plural": "die Waffen",
+      "perfekt": "N/A",
+      "praeteritum": "N/A",
+      "case": "N/A",
+      "gender": "f",
+      "vowel_change": "N/A",
+      "extra_info": "N/A",
+      "synonyms": [
+        "Gewehr",
+        "Schwert"
+      ],
+      "example": "Die Polizei beschlagnahmte die Waffe des Angreifers."
+    },
+    "is_vocab": true,
+    "hit_count": 1,
+    "last_queried": "2026-01-11T21:22:11.409Z"
+  }
+}

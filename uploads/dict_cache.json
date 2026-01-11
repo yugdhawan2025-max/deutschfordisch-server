@@ -1,0 +1,22 @@
+{
+  "en-de-squirrel": {
+    "term": "squirrel",
+    "translation": "Eichhörnchen",
+    "data": {
+      "artikel": "das",
+      "plural": "Eichhörnchen",
+      "perfekt": "gehabt",
+      "praeteritum": "habte",
+      "case": "Akkusativ",
+      "gender": "n",
+      "vowel_change": "N/A",
+      "extra_info": "N/A",
+      "synonyms": [
+        "Hasen",
+        "Mäuse",
+        "Hamster"
+      ],
+      "example": "Ein Eichhörnchen saß auf einem Baum."
+    }
+  }
+}
