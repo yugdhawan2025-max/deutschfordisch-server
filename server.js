@@ -914,9 +914,11 @@ async function handleDict(req, res) {
            - plural: Plural form (if noun)
            - perfekt: Partizip II form (if verb)
            - praeteritum: Simple past form (if verb)
+           - praesens: Present tense form for 2nd and 3rd person (e.g., "du liest, er liest") (if verb)
            - case: Dativ/Akkusativ usage if applicable
            - synonyms: list of 2 synonyms
-           - example: A natural example sentence.
+           - example: A natural German example sentence.
+           - exampleEn: The English translation of the example sentence.
            - vowel_change: e.g., "e -> ie" for "sehen". Return "N/A" if regular.
            - part_of_speech: "noun", "verb", "adjective", "adverb", "conjunction", "preposition", "pronoun", "interjection".
            - extra_info: e.g., "Irregular verb". Return "Regular verb" or "Regular noun" if normal.
@@ -924,8 +926,9 @@ async function handleDict(req, res) {
         Return JSON: {
           "translation": "Main translation",
           "data": {
-            "artikel": "...", "plural": "...", "perfekt": "...", "praeteritum": "...", "case": "...", "gender": "...", 
-            "vowel_change": "...", "part_of_speech": "...", "extra_info": "...", "synonyms": [...], "example": "..."
+            "artikel": "...", "plural": "...", "perfekt": "...", "praeteritum": "...", "praesens": "...", 
+            "case": "...", "gender": "...", "vowel_change": "...", "part_of_speech": "...", 
+            "extra_info": "...", "synonyms": [...], "example": "...", "exampleEn": "..."
           },
           "detected_from": "${from}",
           "detected_to": "${to}"
@@ -950,13 +953,15 @@ async function handleDict(req, res) {
       plural: aiData.data?.plural || "N/A",
       perfekt: aiData.data?.perfekt || "N/A",
       praeteritum: aiData.data?.praeteritum || "N/A",
+      praesens: aiData.data?.praesens || "N/A",
       case: aiData.data?.case || "N/A",
       gender: aiData.data?.gender || "N/A",
       vowel_change: aiData.data?.vowel_change || "N/A",
       extra_info: aiData.data?.extra_info || "N/A",
       part_of_speech: aiData.data?.part_of_speech || "N/A",
       synonyms: aiData.data?.synonyms || [],
-      example: aiData.data?.example || ""
+      example: aiData.data?.example || "",
+      exampleEn: aiData.data?.exampleEn || ""
     };
 
     if (grammarInfo) {
@@ -966,6 +971,7 @@ async function handleDict(req, res) {
       finalData.vowel_change = grammarInfo.vowel_change;
       finalData.perfekt = grammarInfo.perfekt;
       finalData.praeteritum = grammarInfo.praeteritum;
+      finalData.praesens = `er/sie/es ${grammarInfo.third_person}`;
       finalData.gender = "N/A";
       finalData.part_of_speech = "verb";
       finalData.extra_info = `Irregular verb (3rd pers: ${grammarInfo.third_person})`;
