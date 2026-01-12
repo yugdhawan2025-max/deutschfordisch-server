@@ -57,6 +57,10 @@ const DEFAULT_AI_CONFIG = {
   tone: "calm, friendly, and teacher-like", // "strict", "funny", "supportive"
   goethe_ref: true,
   ai_request_limit: 1000,
+  model_dict: "llama-3.3-70b-versatile",
+  model_general: "llama-3.1-8b-instant",
+  rpm_limit: 1000,
+  tpm_limit: 100000,
   word_counts: {
     "A1": 5, "A2": 8, "B1": 12, "B2": 15, "C1": 15, "C2": 20
   },
@@ -503,6 +507,38 @@ app.get("/", (req, res) => {
                     </div>
                 </div>
 
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div class="input-group">
+                        <label>Dictionary AI Model</label>
+                        <select id="cfg-model-dict">
+                            <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Versatile/Accuracy)</option>
+                            <option value="llama-3.1-8b-instant">Llama 3.1 8B (Instant/Speed)</option>
+                            <option value="llama3-70b-8192">Llama 3 70B</option>
+                            <option value="llama3-8b-8192">Llama 3 8B</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>General AI Model</label>
+                        <select id="cfg-model-gen">
+                            <option value="llama-3.1-8b-instant">Llama 3.1 8B (Instant/Speed)</option>
+                            <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Versatile/Accuracy)</option>
+                            <option value="llama3-70b-8192">Llama 3 70B</option>
+                            <option value="llama3-8b-8192">Llama 3 8B</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div class="input-group">
+                        <label>RPM Limit (Requests/Min)</label>
+                        <input type="number" id="cfg-rpm" placeholder="e.g., 1000">
+                    </div>
+                    <div class="input-group">
+                        <label>TPM Limit (Tokens/Min)</label>
+                        <input type="number" id="cfg-tpm" placeholder="e.g., 100000">
+                    </div>
+                </div>
+
                 <label>Max Word Counts (per level)</label>
                 <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
                     <input type="number" id="wc-a1" placeholder="A1" style="width: 60px;">
@@ -633,6 +669,12 @@ app.get("/", (req, res) => {
                 document.getElementById('cfg-tone').value = cfg.tone || 'supportive';
                 document.getElementById('cfg-goethe').checked = cfg.goethe_ref || false;
                 
+                // New Fields
+                document.getElementById('cfg-model-dict').value = cfg.model_dict || 'llama-3.3-70b-versatile';
+                document.getElementById('cfg-model-gen').value = cfg.model_general || 'llama-3.1-8b-instant';
+                document.getElementById('cfg-rpm').value = cfg.rpm_limit || 1000;
+                document.getElementById('cfg-tpm').value = cfg.tpm_limit || 100000;
+
                 if (cfg.word_counts) {
                     document.getElementById('wc-a1').value = cfg.word_counts.A1 || 5;
                     document.getElementById('wc-a2').value = cfg.word_counts.A2 || 8;
@@ -661,6 +703,10 @@ app.get("/", (req, res) => {
                 system_role: document.getElementById('cfg-role').value,
                 tone: document.getElementById('cfg-tone').value,
                 goethe_ref: document.getElementById('cfg-goethe').checked,
+                model_dict: document.getElementById('cfg-model-dict').value,
+                model_general: document.getElementById('cfg-model-gen').value,
+                rpm_limit: parseInt(document.getElementById('cfg-rpm').value) || 1000,
+                tpm_limit: parseInt(document.getElementById('cfg-tpm').value) || 100000,
                 word_counts: {
                     A1: parseInt(document.getElementById('wc-a1').value) || 5,
                     A2: parseInt(document.getElementById('wc-a2').value) || 8,
@@ -789,7 +835,7 @@ app.get("/health", (req, res) => {
 
 /* -------------------- DICTIONARY (MYMEMORY) -------------------- */
 async function handleDict(req, res) {
-  const { term, from = "de", to = "en", bypass_cache = "false" } = req.method === 'POST' ? req.body : req.query;
+  const { term, from = "de", to = "en", bypass_cache = "false", context = "" } = req.method === 'POST' ? req.body : req.query;
   const queryTerm = term || req.body?.word;
   const shouldBypassCache = bypass_cache === "true" || bypass_cache === true;
 
@@ -797,19 +843,34 @@ async function handleDict(req, res) {
     return res.status(400).json({ success: false, error: "Missing term" });
   }
 
-  const cacheKey = `${from}-${to}-${queryTerm.toLowerCase().trim()}`;
+  // Create a context-aware cache key
+  const normalizedTerm = queryTerm.toLowerCase().trim();
+  const contextHash = context ? `-${Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8)}` : "";
+  const cacheKey = `${from}-${to}-${normalizedTerm}${contextHash}`;
 
   // Skip cache if bypass_cache is enabled (for AI learn mode)
   if (!shouldBypassCache) {
-    // 1. Check Primary Cache (Directional)
+    // 1. Check Primary Cache (Directional + Contextual)
     if (dictCache[cacheKey]) {
       console.log(`Cache Hit (Primary): ${cacheKey}`);
       return serveCachedEntry(cacheKey, res);
     }
 
-    // 2. Global Cache Search (Direction-Agnostic)
-    const lowTerm = queryTerm.toLowerCase().trim();
-    const globalMatch = Object.keys(dictCache).find(k => k.endsWith(`-${lowTerm}`));
+    // 2. Fallback to Generic cache (if context-less entry exists)
+    const genericKey = `${from}-${to}-${normalizedTerm}`;
+    if (!context && dictCache[genericKey]) {
+      console.log(`Cache Hit (Generic): ${genericKey}`);
+      return serveCachedEntry(genericKey, res);
+    }
+
+    // 3. Global Cache Search (Direction-Agnostic, ONLY Generic or Exact match)
+    const globalMatch = Object.keys(dictCache).find(k => {
+      // Must end with the term, and either be context-less OR match the current context hash
+      const endsWithTerm = k.endsWith(`-${normalizedTerm}`);
+      const isGeneric = k === `${from === 'de' ? 'en' : 'de'}-${from === 'de' ? 'de' : 'en'}-${normalizedTerm}`;
+      const isSameContext = k.endsWith(`${normalizedTerm}${contextHash}`);
+      return endsWithTerm && (isGeneric || isSameContext);
+    });
     if (globalMatch) {
       console.log(`Cache Hit (Global): ${globalMatch} for ${queryTerm}`);
       return serveCachedEntry(globalMatch, res);
@@ -839,7 +900,8 @@ async function handleDict(req, res) {
         { role: "system", content: "You are a German Grammar Expert and professional dictionary API. Respond ONLY in valid JSON." },
         {
           role: "user", content: `Lookup "${queryTerm}" (Source: ${from}, Target: ${to}).
-        
+        ${context ? `CONTEXT: "${context}" (Please provide the meaning that fits this specific sentence).` : ""}
+
         Rules:
         1. Identify the 'best' translation.
         2. If Source or Target is 'auto', you must detect the languages yourself (specifically between English and German).
@@ -847,8 +909,7 @@ async function handleDict(req, res) {
         4. Even if source is German, ensure 'german_full' is the explicit Article + Noun form.
         5. Provide gender (m/f/n) for German nouns.
         6. Provide 2-3 common alternate translations.
-        4. Provide gender (m/f/n) for German nouns.
-        5. For German words, provide additional grammar data:
+        7. For German words, provide additional grammar data:
            - artikel: "der", "die", or "das" (if noun)
            - plural: Plural form (if noun)
            - perfekt: Partizip II form (if verb)
@@ -857,23 +918,24 @@ async function handleDict(req, res) {
            - synonyms: list of 2 synonyms
            - example: A natural example sentence.
            - vowel_change: e.g., "e -> ie" for "sehen". Return "N/A" if regular.
+           - part_of_speech: "noun", "verb", "adjective", "adverb", "conjunction", "preposition", "pronoun", "interjection".
            - extra_info: e.g., "Irregular verb". Return "Regular verb" or "Regular noun" if normal.
 
         Return JSON: {
           "translation": "Main translation",
           "data": {
             "artikel": "...", "plural": "...", "perfekt": "...", "praeteritum": "...", "case": "...", "gender": "...", 
-            "vowel_change": "...", "extra_info": "...", "synonyms": [...], "example": "..."
+            "vowel_change": "...", "part_of_speech": "...", "extra_info": "...", "synonyms": [...], "example": "..."
           },
           "detected_from": "${from}",
           "detected_to": "${to}"
         }` }
       ],
-      model: "llama-3.3-70b-versatile",
+      model: aiConfig.model_dict || "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/dict", "llama-3.3-70b-versatile");
+    logAiUsage("/dict", aiConfig.model_dict || "llama-3.3-70b-versatile");
 
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
@@ -892,6 +954,7 @@ async function handleDict(req, res) {
       gender: aiData.data?.gender || "N/A",
       vowel_change: aiData.data?.vowel_change || "N/A",
       extra_info: aiData.data?.extra_info || "N/A",
+      part_of_speech: aiData.data?.part_of_speech || "N/A",
       synonyms: aiData.data?.synonyms || [],
       example: aiData.data?.example || ""
     };
@@ -904,16 +967,24 @@ async function handleDict(req, res) {
       finalData.perfekt = grammarInfo.perfekt;
       finalData.praeteritum = grammarInfo.praeteritum;
       finalData.gender = "N/A";
+      finalData.part_of_speech = "verb";
       finalData.extra_info = `Irregular verb (3rd pers: ${grammarInfo.third_person})`;
       if (grammarInfo.is_compound) {
         finalData.extra_info += `; Compound of '${grammarInfo.base_verb}'`;
       }
     }
 
+    // Professional Audio URL (Google TTS)
+    const audioTerm = (from === 'de' ? queryTerm : aiData.translation).trim();
+    const audioLang = from === 'de' ? 'de' : 'en';
+    const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(audioTerm)}&tl=${audioLang}&client=tw-ob`;
+
     const result = {
       term: queryTerm,
+      context: context || null,
       translation: aiData.translation,
       data: finalData,
+      audio_url: audioUrl,
       is_vocab: true, // Auto-promote to vocabulary
       hit_count: 1,
       last_queried: new Date().toISOString()
@@ -951,11 +1022,11 @@ app.get("/sentence", async (req, res) => {
         { role: "system", content: "You are a professional language tutor. Respond ONLY in valid JSON format." },
         { role: "user", content: `Generate a natural German sentence using the word "${queryWord}" for a ${level} level learner.Include an English translation.Format: { "german": "...", "english": "..." } ` }
       ],
-      model: "llama-3.1-8b-instant", // Optimized for speed (prevent timeouts)
+      model: aiConfig.model_general || "llama-3.1-8b-instant", // Optimized for speed (prevent timeouts)
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/sentence", "llama-3.1-8b-instant");
+    logAiUsage("/sentence", aiConfig.model_general || "llama-3.1-8b-instant");
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
     // Wrap in "data" key for Flutter, while keeping flat keys for backward compatibility
@@ -1022,11 +1093,11 @@ app.get("/learn/practice", async (req, res) => {
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      model: "llama-3.1-8b-instant",
+      model: aiConfig.model_general || "llama-3.1-8b-instant",
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/learn/practice", "llama-3.1-8b-instant");
+    logAiUsage("/learn/practice", aiConfig.model_general || "llama-3.1-8b-instant");
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
@@ -1086,11 +1157,11 @@ Return JSON: {
   "b2_reference_answer": "..." (or null if not adding value or for low levels)
 }` }
       ],
-      model: "llama-3.1-8b-instant",
+      model: aiConfig.model_general || "llama-3.1-8b-instant",
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/evaluate", "llama-3.1-8b-instant");
+    logAiUsage("/evaluate", aiConfig.model_general || "llama-3.1-8b-instant");
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
     res.json({
