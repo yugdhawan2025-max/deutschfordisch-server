@@ -597,7 +597,7 @@ app.get("/", (req, res) => {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="input-group">
                         <label>Android Store URL</label>
-                        <input type="text" id="publish-android-url" value="https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch">
+                        <input type="text" id="publish-android-url" value="https://deutschfordisch-server.onrender.com/releases/app-release.apk">
                     </div>
                     <div class="input-group">
                         <label>iOS Store URL</label>
@@ -977,38 +977,38 @@ async function handleDict(req, res) {
 
   // Create a context-aware cache key
   const normalizedTerm = queryTerm.toLowerCase().trim();
-  const contextHash = context ? `- ${ Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8) }` : "";
-  const cacheKey = `${ from } - ${ to } - ${ normalizedTerm }${ contextHash }`;
+  const contextHash = context ? `- ${Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8)}` : "";
+  const cacheKey = `${from} - ${to} - ${normalizedTerm}${contextHash}`;
 
   // Skip cache if bypass_cache is enabled (for AI learn mode)
   if (!shouldBypassCache) {
     // 1. Check Primary Cache (Directional + Contextual)
     if (dictCache[cacheKey]) {
-      console.log(`Cache Hit(Primary): ${ cacheKey }`);
+      console.log(`Cache Hit(Primary): ${cacheKey}`);
       return serveCachedEntry(cacheKey, res);
     }
 
     // 2. Fallback to Generic cache (if context-less entry exists)
-    const genericKey = `${ from } - ${ to } - ${ normalizedTerm }`;
+    const genericKey = `${from} - ${to} - ${normalizedTerm}`;
     if (!context && dictCache[genericKey]) {
-      console.log(`Cache Hit(Generic): ${ genericKey }`);
+      console.log(`Cache Hit(Generic): ${genericKey}`);
       return serveCachedEntry(genericKey, res);
     }
 
     // 3. Global Cache Search (Direction-Agnostic, ONLY Generic or Exact match)
     const globalMatch = Object.keys(dictCache).find(k => {
       // Must end with the term, and either be context-less OR match the current context hash
-      const endsWithTerm = k.endsWith(`- ${ normalizedTerm }`);
-      const isGeneric = k === `${ from === 'de' ? 'en' : 'de'}-${ from === 'de' ? 'de' : 'en'}-${ normalizedTerm }`;
-      const isSameContext = k.endsWith(`${ normalizedTerm }${ contextHash }`);
+      const endsWithTerm = k.endsWith(`- ${normalizedTerm}`);
+      const isGeneric = k === `${from === 'de' ? 'en' : 'de'}-${from === 'de' ? 'de' : 'en'}-${normalizedTerm}`;
+      const isSameContext = k.endsWith(`${normalizedTerm}${contextHash}`);
       return endsWithTerm && (isGeneric || isSameContext);
     });
     if (globalMatch) {
-      console.log(`Cache Hit(Global): ${ globalMatch } for ${ queryTerm }`);
+      console.log(`Cache Hit(Global): ${globalMatch} for ${queryTerm}`);
       return serveCachedEntry(globalMatch, res);
     }
   } else {
-    console.log(`Cache Bypass: ${ queryTerm } (AI Learn Mode)`);
+    console.log(`Cache Bypass: ${queryTerm} (AI Learn Mode)`);
   }
 
   function serveCachedEntry(key, response) {
@@ -1031,8 +1031,8 @@ async function handleDict(req, res) {
       messages: [
         { role: "system", content: "You are a German Grammar Expert and professional dictionary API. Respond ONLY in valid JSON." },
         {
-          role: "user", content: `Lookup "${queryTerm}"(Source: ${ from }, Target: ${ to }).
-  ${ context ? `CONTEXT: "${context}" (Please provide the meaning that fits this specific sentence).` : "" }
+          role: "user", content: `Lookup "${queryTerm}"(Source: ${from}, Target: ${to}).
+  ${context ? `CONTEXT: "${context}" (Please provide the meaning that fits this specific sentence).` : ""}
 
 Rules:
 1. Identify the 'best' translation.
@@ -1075,7 +1075,7 @@ Rules:
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
     if (!aiData.translation) {
-      console.error(`AI failed to translate: ${ queryTerm } `);
+      console.error(`AI failed to translate: ${queryTerm} `);
       return res.status(500).json({ success: false, error: "AI could not find a translation for this term." });
     }
 
@@ -1103,10 +1103,10 @@ Rules:
       finalData.vowel_change = grammarInfo.vowel_change;
       finalData.perfekt = grammarInfo.perfekt;
       finalData.praeteritum = grammarInfo.praeteritum;
-      finalData.praesens = `er / sie / es ${ grammarInfo.third_person } `;
+      finalData.praesens = `er / sie / es ${grammarInfo.third_person} `;
       finalData.gender = "N/A";
       finalData.part_of_speech = "verb";
-      finalData.extra_info = `Irregular verb(3rd pers: ${ grammarInfo.third_person })`;
+      finalData.extra_info = `Irregular verb(3rd pers: ${grammarInfo.third_person})`;
       if (grammarInfo.is_compound) {
         finalData.extra_info += `; Compound of '${grammarInfo.base_verb}'`;
       }
@@ -1117,29 +1117,29 @@ Rules:
     const audioLang = from === 'de' ? 'de' : 'en';
     const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(audioTerm)}&tl=${audioLang}&client=tw-ob`;
 
-const result = {
-  term: queryTerm,
-  context: context || null,
-  translation: aiData.translation,
-  data: finalData,
-  audio_url: audioUrl,
-  is_vocab: true, // Auto-promote to vocabulary
-  hit_count: 1,
-  last_queried: new Date().toISOString()
-};
+    const result = {
+      term: queryTerm,
+      context: context || null,
+      translation: aiData.translation,
+      data: finalData,
+      audio_url: audioUrl,
+      is_vocab: true, // Auto-promote to vocabulary
+      hit_count: 1,
+      last_queried: new Date().toISOString()
+    };
 
-// Save to Cache
-dictCache[cacheKey] = result;
-saveDictCache();
+    // Save to Cache
+    dictCache[cacheKey] = result;
+    saveDictCache();
 
-res.json({
-  success: true,
-  ...result
-});
+    res.json({
+      success: true,
+      ...result
+    });
   } catch (err) {
-  console.error("Dict error:", err.message);
-  res.status(500).json({ success: false, error: "Dictionary lookup failed" });
-}
+    console.error("Dict error:", err.message);
+    res.status(500).json({ success: false, error: "Dictionary lookup failed" });
+  }
 }
 
 app.get("/dict", handleDict);
@@ -1331,7 +1331,7 @@ app.get("/app_version.json", (req, res) => {
   res.json({
     android: {
       version: "1.1.7+12",
-      url: "https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch",
+      url: "https://deutschfordisch-server.onrender.com/releases/app-release.apk",
       force_update: false,
       changelog: "Bug fixes and improvements"
     },
@@ -1349,7 +1349,7 @@ app.post("/admin/publish_version", (req, res) => {
   const {
     android_version,
     ios_version,
-    android_url = "https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch",
+    android_url = "https://deutschfordisch-server.onrender.com/releases/app-release.apk",
     ios_url = "https://apps.apple.com/app/id...",
     changelog = "Bug fixes and improvements",
     force_update = false
