@@ -597,7 +597,7 @@ app.get("/", (req, res) => {
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="input-group">
                         <label>Android Store URL</label>
-                        <input type="text" id="publish-android-url" value="https://deutschfordisch-server.onrender.com/releases/app-release.apk">
+                        <input type="text" id="publish-android-url" value="https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch">
                     </div>
                     <div class="input-group">
                         <label>iOS Store URL</label>
@@ -1331,7 +1331,7 @@ app.get("/app_version.json", (req, res) => {
   res.json({
     android: {
       version: "1.1.7+12",
-      url: "https://deutschfordisch-server.onrender.com/releases/app-release.apk",
+      url: "https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch",
       force_update: false,
       changelog: "Bug fixes and improvements"
     },
@@ -1349,7 +1349,7 @@ app.post("/admin/publish_version", (req, res) => {
   const {
     android_version,
     ios_version,
-    android_url = "https://deutschfordisch-server.onrender.com/releases/app-release.apk",
+    android_url = "https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch",
     ios_url = "https://apps.apple.com/app/id...",
     changelog = "Bug fixes and improvements",
     force_update = false
