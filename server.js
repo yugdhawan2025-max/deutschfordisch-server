@@ -1198,16 +1198,16 @@ app.get("/app_version.json", (req, res) => {
   // Fallback default
   res.json({
     android: {
-      version: "1.0.0",
-      url: "",
+      version: "1.1.7+12",
+      url: "https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch",
       force_update: false,
-      changelog: "No release found"
+      changelog: "Bug fixes and improvements"
     },
     ios: {
-      version: "1.0.0",
-      url: "",
+      version: "1.1.7+12",
+      url: "https://apps.apple.com/app/id...",
       force_update: false,
-      changelog: "No release found"
+      changelog: "Bug fixes and improvements"
     }
   });
 });
