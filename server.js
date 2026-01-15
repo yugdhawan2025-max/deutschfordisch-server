@@ -1191,20 +1191,43 @@ app.post("/learn/story", async (req, res) => {
 
 /* -------------------- EXAM: MOCK TEST -------------------- */
 app.get("/exam/mock", async (req, res) => {
-  const level = req.query.level || "B1";
+  const { level = "B1", mode = "full", module: examModule = "all" } = req.query;
+
+  let duration = level === 'B1' ? 65 : 75;
+  if (mode === 'quick') duration = 15;
+
+  let moduleInstruction = "";
+  if (examModule !== "all") {
+    moduleInstruction = `
+CRITICAL: The user has requested ONLY the ${examModule} module. 
+- You MUST NOT generate any other sections (e.g., if "Lesen" is selected, do not generate Grammatik or Sprechen).
+- Focus all 3000 tokens on making this single module highly detailed and rigorous.
+`;
+  }
+
+  let modeInstruction = "";
+  if (mode === "quick") {
+    modeInstruction = `
+CRITICAL: This is a "Quick Blitz" session (15 minutes).
+- Keep the content extremely condensed.
+- Generate only 1 or 2 high-impact tasks total.
+- Ensure the difficulty remains ${level}, but the quantity is small enough to finish in 15 minutes.
+`;
+  }
 
   const prompt = `
 Generate a highly authentic, rigorous Goethe-Zertifikat ${level} Mock Exam.
-This is a high-stakes simulation and must be very accurate to the official format.
+${modeInstruction}
+${moduleInstruction}
 
 The response MUST be a single, valid JSON object containing exactly these fields:
-- "title": "Goethe-Zertifikat ${level} Modelltest"
-- "duration_minutes": ${level === 'B1' ? 65 : 75}
+- "title": "Goethe-Zertifikat ${level} ${examModule === 'all' ? 'Modelltest' : examModule}"
+- "duration_minutes": ${duration}
 - "sections": An array of objects. Each section object has:
   - "title": String (e.g., "Lesen Teil 1")
-  - "instructions": Detailed German instructions (e.g., "Sie lesen einen Text. Was ist richtig? Kreuzen Sie an.")
+  - "instructions": Detailed German instructions
   - "tasks": An array of objects. Each task has:
-    - "context": A substantial text in German (150-300 words for B1/B2) appropriate for the level. Use complex sentence structures and level-specific vocabulary.
+    - "context": A substantial text in German (appropriate for the level).
     - "questions": An array of objects. Each question has:
       - "text": The question in German.
       - "options": Array of 3 strings (MCQ).
@@ -1212,14 +1235,10 @@ The response MUST be a single, valid JSON object containing exactly these fields
 
 Authenticity Guidelines for ${level}:
 1. Topic Areas: Beruf, Ausbildung, Umwelt, Reisen, Gesellschaft, Kommunikation.
-2. Linguistic Rigor: Use ${level} level grammar:
-   - B1: Passiv, Infinitiv mit zu, Konjunktiv II (Wünsche/Ratschläge), Nebensätze mit obwohl, während.
-   - B2: Passiv mit Modalverben, Nominalisierung, komplexe Partizipialattribute, Konjunktiv I, feste Nomen-Verb-Verbindungen.
-3. Section Map:
-   - Part 1: Detailed blog post or newspaper article (General comprehension).
-   - Part 2: Working with data/facts (Matching situations).
-   - Part 3: Commentaries or opinions (Detecting viewpoints).
-   - Part 4: Sprachbausteine (Coherent text with grammatical/lexical gaps).
+2. Linguistic Rigor: Use ${level} level grammar (Passiv, Konjunktiv, etc.).
+3. Section Map (ONLY include items relevant to "${examModule}"):
+   - Part 1-3: Lesen (Reading)
+   - Part 4: Grammatik / Sprachbausteine
    - Part 5: Sprechen (Interactive oral task. Context only, no questions).
 
 Strictly follow the ${level} word lists. Deliver ONLY raw JSON. No markdown.
