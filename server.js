@@ -160,6 +160,7 @@ function resolveGrammar(term) {
 const STATS_PATH = path.join(STORAGE_ROOT, "usage_stats.json");
 let usageStats = {
   total_requests: 0,
+  total_tokens: 0,
   endpoints: {},
   models: {},
   last_request: null
@@ -174,8 +175,9 @@ if (fs.existsSync(STATS_PATH)) {
   }
 }
 
-function logAiUsage(endpoint, model) {
+function logAiUsage(endpoint, model, tokens = 0) {
   usageStats.total_requests++;
+  usageStats.total_tokens += tokens;
   usageStats.last_request = new Date().toISOString();
 
   usageStats.endpoints[endpoint] = (usageStats.endpoints[endpoint] || 0) + 1;
@@ -218,7 +220,8 @@ app.get("/api/usage", (req, res) => {
   res.json({
     success: true,
     stats: usageStats,
-    limit: aiConfig.ai_request_limit || 1000
+    limit: aiConfig.ai_request_limit || 1000,
+    token_limit: aiConfig.tpm_limit || 100000
   });
 });
 
@@ -471,6 +474,13 @@ app.get("/", (req, res) => {
                         <label>AI Requests Sent</label>
                         <div class="progress-container">
                             <div id="usage-progress" class="progress-bar"></div>
+                        </div>
+                    </div>
+                    <div class="stat-item" style="margin-top: 1rem;">
+                        <span class="stat-value"><span id="total-tokens">0</span> <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">/ <span id="token-limit-display">0</span></span></span>
+                        <label>AI Tokens Used</label>
+                        <div class="progress-container">
+                            <div id="token-progress" class="progress-bar" style="background: linear-gradient(to right, #ff4757, var(--accent));"></div>
                         </div>
                     </div>
                     <div id="endpoint-stats" style="margin-top: 0.5rem;"></div>
@@ -749,12 +759,18 @@ app.get("/", (req, res) => {
                 if (data.success && data.stats) {
                     const stats = data.stats;
                     const limit = data.limit || 1000;
+                    const tokenLimit = data.token_limit || 100000;
                     
                     document.getElementById('total-req').innerText = stats.total_requests || 0;
                     document.getElementById('total-limit').innerText = limit;
+                    document.getElementById('total-tokens').innerText = (stats.total_tokens || 0).toLocaleString();
+                    document.getElementById('token-limit-display').innerText = tokenLimit.toLocaleString();
                     
                     const percent = Math.min(100, ((stats.total_requests || 0) / limit) * 100);
                     document.getElementById('usage-progress').style.width = percent + '%';
+
+                    const tokenPercent = Math.min(100, ((stats.total_tokens || 0) / tokenLimit) * 100);
+                    document.getElementById('token-progress').style.width = tokenPercent + '%';
                     
                     const endpointDiv = document.getElementById('endpoint-stats');
                     endpointDiv.innerHTML = '';
@@ -939,7 +955,7 @@ async function handleDict(req, res) {
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/dict", aiConfig.model_dict || "llama-3.3-70b-versatile");
+    logAiUsage("/dict", aiConfig.model_dict || "llama-3.3-70b-versatile", completion.usage?.total_tokens || 0);
 
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
@@ -1036,7 +1052,7 @@ app.get("/sentence", async (req, res) => {
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/sentence", aiConfig.model_general || "llama-3.1-8b-instant");
+    logAiUsage("/sentence", aiConfig.model_general || "llama-3.1-8b-instant", completion.usage?.total_tokens || 0);
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
     // Wrap in "data" key for Flutter, while keeping flat keys for backward compatibility
@@ -1107,7 +1123,7 @@ app.get("/learn/practice", async (req, res) => {
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/learn/practice", aiConfig.model_general || "llama-3.1-8b-instant");
+    logAiUsage("/learn/practice", aiConfig.model_general || "llama-3.1-8b-instant", completion.usage?.total_tokens || 0);
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
@@ -1171,7 +1187,7 @@ Return JSON: {
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/evaluate", aiConfig.model_general || "llama-3.1-8b-instant");
+    logAiUsage("/evaluate", aiConfig.model_general || "llama-3.1-8b-instant", completion.usage?.total_tokens || 0);
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
     res.json({
