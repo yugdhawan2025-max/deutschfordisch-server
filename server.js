@@ -1189,6 +1189,67 @@ app.post("/learn/story", async (req, res) => {
   }
 });
 
+/* -------------------- EXAM: MOCK TEST -------------------- */
+app.get("/exam/mock", async (req, res) => {
+  const level = req.query.level || "B1";
+
+  const prompt = `
+Generate a highly authentic, rigorous Goethe-Zertifikat ${level} Mock Exam.
+This is a high-stakes simulation and must be very accurate to the official format.
+
+The response MUST be a single, valid JSON object containing exactly these fields:
+- "title": "Goethe-Zertifikat ${level} Modelltest"
+- "duration_minutes": ${level === 'B1' ? 65 : 75}
+- "sections": An array of objects. Each section object has:
+  - "title": String (e.g., "Lesen Teil 1")
+  - "instructions": Detailed German instructions (e.g., "Sie lesen einen Text. Was ist richtig? Kreuzen Sie an.")
+  - "tasks": An array of objects. Each task has:
+    - "context": A substantial text in German (150-300 words for B1/B2) appropriate for the level. Use complex sentence structures and level-specific vocabulary.
+    - "questions": An array of objects. Each question has:
+      - "text": The question in German.
+      - "options": Array of 3 strings (MCQ).
+      - "correct_index": Number (0-2).
+
+Authenticity Guidelines for ${level}:
+1. Topic Areas: Beruf, Ausbildung, Umwelt, Reisen, Gesellschaft, Kommunikation.
+2. Linguistic Rigor: Use ${level} level grammar:
+   - B1: Passiv, Infinitiv mit zu, Konjunktiv II (Wünsche/Ratschläge), Nebensätze mit obwohl, während.
+   - B2: Passiv mit Modalverben, Nominalisierung, komplexe Partizipialattribute, Konjunktiv I, feste Nomen-Verb-Verbindungen.
+3. Section Map:
+   - Part 1: Detailed blog post or newspaper article (General comprehension).
+   - Part 2: Working with data/facts (Matching situations).
+   - Part 3: Commentaries or opinions (Detecting viewpoints).
+   - Part 4: Sprachbausteine (Coherent text with grammatical/lexical gaps).
+
+Strictly follow the ${level} word lists. Deliver ONLY raw JSON. No markdown.
+`;
+
+  try {
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: aiConfig.system_role },
+        { role: "user", content: prompt }
+      ],
+      model: aiConfig.model_dict, // Use 70B for high-quality exam generation
+      temperature: 0.7,
+      max_tokens: 3000,
+      response_format: { type: "json_object" }
+    });
+
+    const resultString = completion.choices[0].message.content;
+    const resultJson = JSON.parse(resultString);
+
+    res.json({
+      success: true,
+      data: resultJson
+    });
+
+  } catch (err) {
+    console.error("Mock Test generation failed:", err);
+    res.status(500).json({ success: false, error: "Failed to generate mock exam. Please try again." });
+  }
+});
+
 /* -------------------- AI: EVALUATE TRANSLATION -------------------- */
 app.post("/evaluate", async (req, res) => {
   const { sentence, translation, level = "A1", from = "de", to = "en" } = req.body;
