@@ -1216,6 +1216,20 @@ app.get("/app_version.json", (req, res) => {
   });
 });
 
+app.get("/diag/manifest", (req, res) => {
+  const exists = fs.existsSync(MANIFEST_PATH);
+  let content = null;
+  if (exists) {
+    content = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
+  }
+  res.json({
+    manifest_path: MANIFEST_PATH,
+    exists,
+    content,
+    fallback_version: "1.1.7+12"
+  });
+});
+
 /* -------------------- ADMIN: UPLOAD RELEASE -------------------- */
 app.post("/admin/upload_release", upload.single("file"), (req, res) => {
   // Authentication Removed per user request
