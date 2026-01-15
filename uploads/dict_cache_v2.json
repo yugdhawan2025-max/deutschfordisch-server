@@ -1,109 +1,150 @@
 {
-  "de-en-fuchs": {
-    "term": "Fuchs",
-    "translation": "Fox",
+  "de-en-messer": {
+    "term": "Messer",
+    "translation": "Knife",
+    "data": {
+      "artikel": "das",
+      "plural": "Messer",
+      "perfekt": "N/A",
+      "praeteritum": "N/A",
+      "case": "Akkusativ: das Messer, Dativ: dem Messer, Genitiv: des Messers",
+      "gender": "n",
+      "vowel_change": "N/A",
+      "extra_info": "Regular noun",
+      "synonyms": [
+        "Schneidewerkzeug",
+        "Schweizer Messer"
+      ],
+      "example": "Das Messer liegt auf dem Tisch."
+    },
+    "is_vocab": true,
+    "hit_count": 1,
+    "last_queried": "2026-01-11T21:46:25.139Z"
+  },
+  "de-en-hund": {
+    "term": "Hund",
+    "translation": "dog",
     "data": {
       "artikel": "der",
-      "plural": "die Füchse",
-      "perfekt": "gegangen",
-      "praeteritum": "ging",
-      "case": "Akkusativ",
+      "plural": "Hunde",
+      "perfekt": "N/A",
+      "praeteritum": "N/A",
+      "case": "Akkusativ: den Hund, Dativ: dem Hund",
       "gender": "m",
       "vowel_change": "N/A",
       "extra_info": "Regular noun",
       "synonyms": [
-        "red fox",
-        "raccoon"
+        "Köter",
+        "Vierbeiner"
       ],
-      "example": "Der Fuchs hat mich überrascht."
+      "example": "Der Hund ist sehr freundlich."
     },
+    "is_vocab": true,
     "hit_count": 1,
-    "last_queried": "2026-01-11T19:59:36.038Z"
+    "last_queried": "2026-01-11T22:10:53.596Z"
   },
-  "de-en-eichhörnchen": {
-    "term": "Eichhörnchen",
-    "translation": "chuckling squirrel",
+  "de-en-bank-69636820": {
+    "term": "Bank",
+    "context": "Ich muss Geld von der Bank abheben.",
+    "translation": "bank",
+    "data": {
+      "artikel": "die",
+      "plural": "Banken",
+      "perfekt": "N/A",
+      "praeteritum": "N/A",
+      "case": "Dativ: der Bank, Akkusativ: die Bank",
+      "gender": "f",
+      "vowel_change": "N/A",
+      "extra_info": "Regular noun",
+      "part_of_speech": "noun",
+      "synonyms": [
+        "Geldinstitut",
+        "Kreditinstitut"
+      ],
+      "example": "Ich gehe zur Bank, um Geld abzuheben."
+    },
+    "audio_url": "https://translate.google.com/translate_tts?ie=UTF-8&q=Bank&tl=de&client=tw-ob",
+    "is_vocab": true,
+    "hit_count": 4,
+    "last_queried": "2026-01-12T04:49:37.793Z"
+  },
+  "de-en-haus": {
+    "term": "Haus",
+    "context": null,
+    "translation": "house",
     "data": {
       "artikel": "das",
-      "plural": "die Eichhörnchen",
-      "perfekt": "hat gehorchten",
-      "praeteritum": "hörnte",
-      "case": "Akkusativ",
+      "plural": "Häuser",
+      "perfekt": "N/A",
+      "praeteritum": "N/A",
+      "case": "Dativ: dem Haus, Akkusativ: das Haus",
       "gender": "n",
       "vowel_change": "N/A",
-      "extra_info": "N/A",
+      "extra_info": "Regular noun",
+      "part_of_speech": "noun",
       "synonyms": [
-        "chattering squirrel",
-        "tree squirrel"
+        "Wohnung",
+        "Gebäude"
       ],
-      "example": "Die Eichhörnchen springen von Baum zu Baum."
+      "example": "Ich gehe zum Haus meiner Eltern."
     },
+    "audio_url": "https://translate.google.com/translate_tts?ie=UTF-8&q=Haus&tl=de&client=tw-ob",
+    "is_vocab": true,
     "hit_count": 2,
-    "last_queried": "2026-01-11T18:40:30.769Z"
+    "last_queried": "2026-01-12T04:49:37.795Z"
   },
-  "de-en-asdfghjklqwerty": {
-    "term": "asdfghjklqwerty",
-    "translation": "Main translation (English)",
+  "de-en-sehen": {
+    "term": "sehen",
+    "context": null,
+    "translation": "to see",
     "data": {
       "artikel": "N/A",
       "plural": "N/A",
-      "perfekt": "N/A",
-      "praeteritum": "N/A",
-      "case": "N/A",
+      "perfekt": "hat gesehen",
+      "praeteritum": "sah",
+      "praesens": "er/sie/es sieht",
+      "case": "Akkusativ",
       "gender": "N/A",
-      "vowel_change": "N/A",
-      "extra_info": "Regular expression",
+      "vowel_change": "e -> ie",
+      "extra_info": "Irregular verb (3rd pers: sieht)",
+      "part_of_speech": "verb",
       "synonyms": [
-        "Typewriter key layout"
+        "behold",
+        "observe"
       ],
-      "example": "Die Tasten auf meiner Tastatur sind angeordnet wie asdfghjklqwerty."
+      "example": "Ich sehe den Hund.",
+      "exampleEn": "I see the dog."
     },
+    "audio_url": "https://translate.google.com/translate_tts?ie=UTF-8&q=sehen&tl=de&client=tw-ob",
     "is_vocab": true,
     "hit_count": 1,
-    "last_queried": "2026-01-11T19:59:40.227Z"
+    "last_queried": "2026-01-12T05:44:39.955Z"
   },
-  "en-de-blanket": {
-    "term": "blanket",
-    "translation": "Das Bettlaken, Die Decke",
+  "de-en-tisch": {
+    "term": "Tisch",
+    "context": null,
+    "translation": "table",
     "data": {
-      "artikel": "Die",
-      "plural": "Die Decken",
-      "perfekt": "N/A",
-      "praeteritum": "N/A",
-      "case": "N/A",
-      "gender": "f",
+      "artikel": "der",
+      "plural": "Tische",
+      "perfekt": "besetzt",
+      "praeteritum": "besetzte",
+      "praesens": "besetzt wird",
+      "case": "dative singular",
+      "gender": "m",
       "vowel_change": "N/A",
-      "extra_info": "N/A",
+      "extra_info": "Regular noun",
+      "part_of_speech": "noun",
       "synonyms": [
-        "Die Wolldecke",
-        "Das Laken"
+        "Tafel",
+        "Schaufel"
       ],
-      "example": "Ich habe mich in Der Decke eingewickelt, um warm zu bleiben."
+      "example": "Den Tisch bedecken wir jetzt.",
+      "exampleEn": "We will cover the table now."
     },
+    "audio_url": "https://translate.google.com/translate_tts?ie=UTF-8&q=Tisch&tl=de&client=tw-ob",
     "is_vocab": true,
     "hit_count": 1,
-    "last_queried": "2026-01-11T21:22:02.635Z"
-  },
-  "en-de-weapon": {
-    "term": "weapon",
-    "translation": "Waffe",
-    "data": {
-      "artikel": "die",
-      "plural": "die Waffen",
-      "perfekt": "N/A",
-      "praeteritum": "N/A",
-      "case": "N/A",
-      "gender": "f",
-      "vowel_change": "N/A",
-      "extra_info": "N/A",
-      "synonyms": [
-        "Gewehr",
-        "Schwert"
-      ],
-      "example": "Die Polizei beschlagnahmte die Waffe des Angreifers."
-    },
-    "is_vocab": true,
-    "hit_count": 1,
-    "last_queried": "2026-01-11T21:22:11.409Z"
+    "last_queried": "2026-01-12T05:44:40.338Z"
   }
 }

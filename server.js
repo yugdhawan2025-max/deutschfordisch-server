@@ -561,60 +561,6 @@ app.get("/", (req, res) => {
                 <button onclick="saveConfig()">Save AI Settings</button>
                 <div id="config-res" class="result-container"></div>
             </div>
-
-            <!-- Publish Update Form -->
-            <div class="card" style="grid-column: span 1.5">
-                <h3>📱 Publish App Update</h3>
-                
-                <div id="current-version-display" style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; font-size: 0.85rem;">
-                    <div style="color: var(--text-muted); margin-bottom: 0.5rem;">Current Published Version:</div>
-                    <div style="display: flex; gap: 2rem;">
-                        <div>
-                            <span style="color: var(--accent);">Android:</span> <span id="current-android-version">Loading...</span>
-                        </div>
-                        <div>
-                            <span style="color: var(--accent);">iOS:</span> <span id="current-ios-version">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="input-group">
-                        <label>Android Version</label>
-                        <input type="text" id="publish-android-version" placeholder="e.g., 1.1.7+12">
-                    </div>
-                    <div class="input-group">
-                        <label>iOS Version</label>
-                        <input type="text" id="publish-ios-version" placeholder="e.g., 1.1.7+12">
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label>Changelog</label>
-                    <textarea id="publish-changelog" placeholder="e.g., Bug fixes and improvements" rows="2"></textarea>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="input-group">
-                        <label>Android Store URL</label>
-                        <input type="text" id="publish-android-url" value="https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch">
-                    </div>
-                    <div class="input-group">
-                        <label>iOS Store URL</label>
-                        <input type="text" id="publish-ios-url" value="https://apps.apple.com/app/id...">
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="checkbox" id="publish-force-update" style="width: auto;">
-                        <span>Force Update (Users must update to continue)</span>
-                    </label>
-                </div>
-
-                <button onclick="publishVersion()">Publish Update</button>
-                <div id="publish-res" class="result-container"></div>
-            </div>
         </div>
 
         <div class="status-footer">
@@ -788,7 +734,7 @@ app.get("/", (req, res) => {
                     resDiv.innerHTML = \`<span style="color: #ff4757">❌ Error: \${data.error}</span>\`;
                 }
             } catch (err) {
-                resDiv.innerHTML = '<span style="color: #ff4757">❌ Network Error: ' + err.message + '</span>';
+                resDiv.innerHTML = \`<span style="color: #ff4757">❌ Network Error: \${err.message}</span>\`;
             } finally {
                 btn.innerHTML = "Save AI Settings";
                 btn.disabled = false;
@@ -830,129 +776,51 @@ app.get("/", (req, res) => {
             } catch (e) { console.error("Stats poll failed", e); }
         }
 
-        async function loadCurrentVersion() {
-            try {
-                const res = await fetch('/app_version.json');
-                const data = await res.json();
-                
-                document.getElementById('current-android-version').innerText = data.android?.version || 'N/A';
-                document.getElementById('current-ios-version').innerText = data.ios?.version || 'N/A';
-            } catch (e) {
-                console.error("Failed to load current version", e);
-                document.getElementById('current-android-version').innerText = 'Error';
-                document.getElementById('current-ios-version').innerText = 'Error';
-            }
-        }
-
-        async function publishVersion() {
-            const resDiv = document.getElementById('publish-res');
-            const btn = document.querySelector('button[onclick="publishVersion()"]');
-            
-            btn.innerHTML = "Publishing...";
-            btn.disabled = true;
-            resDiv.style.display = 'block';
-            resDiv.innerHTML = '<span style="color: var(--accent)">Updating version manifest...</span>';
-            resDiv.classList.add('active');
-            
-            const androidVersion = document.getElementById('publish-android-version').value.trim();
-            const iosVersion = document.getElementById('publish-ios-version').value.trim();
-            const changelog = document.getElementById('publish-changelog').value.trim() || "Bug fixes and improvements";
-            const androidUrl = document.getElementById('publish-android-url').value.trim();
-            const iosUrl = document.getElementById('publish-ios-url').value.trim();
-            const forceUpdate = document.getElementById('publish-force-update').checked;
-
-            if (!androidVersion && !iosVersion) {
-                resDiv.innerHTML = '<span style="color: #ff4757">❌ Error: Please enter at least one version (Android or iOS)</span>';
-                btn.innerHTML = "Publish Update";
-                btn.disabled = false;
-                return;
-            }
-
-            const body = {
-                android_version: androidVersion || undefined,
-                ios_version: iosVersion || undefined,
-                changelog: changelog,
-                android_url: androidUrl,
-                ios_url: iosUrl,
-                force_update: forceUpdate
-            };
-
-            try {
-                const res = await fetch('/admin/publish_version', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    const time = new Date().toLocaleTimeString();
-                    resDiv.innerHTML = '<span style="color: #00ff88; font-weight: bold;">✅ Published Successfully at ' + time + '!</span><br><span style="font-size:0.8em; color: #ccc">Version manifest updated. App will detect update on next check.</span>';
-
-    // Reload current version display
-    loadCurrentVersion();
-
-    // Clear form
-    document.getElementById('publish-android-version').value = '';
-    document.getElementById('publish-ios-version').value = '';
-    document.getElementById('publish-changelog').value = '';
-    document.getElementById('publish-force-update').checked = false;
-                } else {
-                    resDiv.innerHTML = '<span style="color: #ff4757">❌ Error: ' + data.error + '</span>';
-                    resDiv.innerHTML = '<span style="color: #ff4757">❌ Error: ' + data.error + '</span>';
-            } catch (err) {
-                resDiv.innerHTML = '<span style="color: #ff4757">❌ Network Error: ' + err.message + '</span>';
-            } finally {
-    btn.disabled = false;
-            }
-        }
-
         window.onload = () => {
-      loadConfig();
-    loadCurrentVersion();
-    updateUsageStats();
-    setInterval(updateUsageStats, 2000);
+            loadConfig();
+            updateUsageStats();
+            setInterval(updateUsageStats, 2000);
         };
-  </script>
-</body >
-</html >
-    `);
+    </script>
+</body>
+</html>
+  `);
 });
 
 app.get("/test-ai", (req, res) => {
   res.send(`
-    < !DOCTYPE html >
-  <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-          body {background: #111; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-          button {padding: 15px 30px; font-size: 18px; background: #00d2ff; border: none; border-radius: 8px; cursor: pointer; }
-          #log {margin - top: 20px; font-family: monospace; color: #0f0; }
-        </style>
-    </head>
-    <body>
-      <h1>AI Speed Test</h1>
-      <button onclick="testSpeed()">Run Test</button>
-      <div id="log"></div>
-      <script>
-        async function testSpeed() {
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+button { padding: 15px 30px; font-size: 18px; background: #00d2ff; border: none; border-radius: 8px; cursor: pointer; }
+#log { margin-top: 20px; font-family: monospace; color: #0f0; }
+</style>
+</head>
+<body>
+<h1>AI Speed Test</h1>
+<button onclick="testSpeed()">Run Test</button>
+<div id="log"></div>
+<script>
+async function testSpeed() {
     const log = document.getElementById('log');
-        log.innerHTML = "Testing...";
-        const start = Date.now();
-        try {
+    log.innerHTML = "Testing...";
+    const start = Date.now();
+    try {
         const res = await fetch('/sentence?word=test&level=A1');
         const data = await res.json();
         const end = Date.now();
         const duration = (end - start) / 1000;
         log.innerHTML = \`Success!\nTime: \${duration}s\n\nResponse:\n\${JSON.stringify(data, null, 2)}\`;
     } catch (e) {
-          log.innerHTML = "Error: " + e.message;
+        log.innerHTML = "Error: " + e.message;
     }
 }
-      </script>
-    </body>
-  </html>
+</script>
+</body>
+</html>
   `);
 });
 
@@ -977,34 +845,34 @@ async function handleDict(req, res) {
 
   // Create a context-aware cache key
   const normalizedTerm = queryTerm.toLowerCase().trim();
-  const contextHash = context ? `- ${Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8)}` : "";
-  const cacheKey = `${from} - ${to} - ${normalizedTerm}${contextHash}`;
+  const contextHash = context ? `-${Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8)}` : "";
+  const cacheKey = `${from}-${to}-${normalizedTerm}${contextHash}`;
 
   // Skip cache if bypass_cache is enabled (for AI learn mode)
   if (!shouldBypassCache) {
     // 1. Check Primary Cache (Directional + Contextual)
     if (dictCache[cacheKey]) {
-      console.log(`Cache Hit(Primary): ${cacheKey}`);
+      console.log(`Cache Hit (Primary): ${cacheKey}`);
       return serveCachedEntry(cacheKey, res);
     }
 
     // 2. Fallback to Generic cache (if context-less entry exists)
-    const genericKey = `${from} - ${to} - ${normalizedTerm}`;
+    const genericKey = `${from}-${to}-${normalizedTerm}`;
     if (!context && dictCache[genericKey]) {
-      console.log(`Cache Hit(Generic): ${genericKey}`);
+      console.log(`Cache Hit (Generic): ${genericKey}`);
       return serveCachedEntry(genericKey, res);
     }
 
     // 3. Global Cache Search (Direction-Agnostic, ONLY Generic or Exact match)
     const globalMatch = Object.keys(dictCache).find(k => {
       // Must end with the term, and either be context-less OR match the current context hash
-      const endsWithTerm = k.endsWith(`- ${normalizedTerm}`);
+      const endsWithTerm = k.endsWith(`-${normalizedTerm}`);
       const isGeneric = k === `${from === 'de' ? 'en' : 'de'}-${from === 'de' ? 'de' : 'en'}-${normalizedTerm}`;
       const isSameContext = k.endsWith(`${normalizedTerm}${contextHash}`);
       return endsWithTerm && (isGeneric || isSameContext);
     });
     if (globalMatch) {
-      console.log(`Cache Hit(Global): ${globalMatch} for ${queryTerm}`);
+      console.log(`Cache Hit (Global): ${globalMatch} for ${queryTerm}`);
       return serveCachedEntry(globalMatch, res);
     }
   } else {
@@ -1031,40 +899,41 @@ async function handleDict(req, res) {
       messages: [
         { role: "system", content: "You are a German Grammar Expert and professional dictionary API. Respond ONLY in valid JSON." },
         {
-          role: "user", content: `Lookup "${queryTerm}"(Source: ${from}, Target: ${to}).
-  ${context ? `CONTEXT: "${context}" (Please provide the meaning that fits this specific sentence).` : ""}
+          role: "user", content: `Lookup "${queryTerm}" (Source: ${from}, Target: ${to}).
+        ${context ? `CONTEXT: "${context}" (Please provide the meaning that fits this specific sentence).` : ""}
 
-Rules:
-1. Identify the 'best' translation.
-        2. If Source or Target is 'auto', you must detect the languages yourself(specifically between English and German).
-        3. If the German term is a noun, you MUST include the definite article(der / die / das) and capitalize it(e.g., 'der Hund').
+        Rules:
+        1. Identify the 'best' translation.
+        2. If Source or Target is 'auto', you must detect the languages yourself (specifically between English and German).
+        3. If the German term is a noun, you MUST include the definite article (der/die/das) and capitalize it (e.g., 'der Hund').
         4. Even if source is German, ensure 'german_full' is the explicit Article + Noun form.
-        5. Provide gender(m / f / n) for German nouns.
-        6. Provide 2 - 3 common alternate translations.
+        5. Provide gender (m/f/n) for German nouns.
+        6. Provide 2-3 common alternate translations.
         7. For German words, provide additional grammar data:
-- artikel: "der", "die", or "das"(if noun)
-  - plural: Plural form(if noun)
-  - perfekt: Partizip II form(if verb)
-  - praeteritum: Simple past form(if verb)
-  - praesens: Present tense form for 2nd and 3rd person(e.g., "du liest, er liest")(if verb)
-  - case: Dativ / Akkusativ usage if applicable
-    - synonyms: list of 2 synonyms
-      - example: A natural German example sentence.
+           - artikel: "der", "die", or "das" (if noun)
+           - plural: Plural form (if noun)
+           - perfekt: Partizip II form (if verb)
+           - praeteritum: Simple past form (if verb)
+           - praesens: Present tense form for 2nd and 3rd person (e.g., "du liest, er liest") (if verb)
+           - case: Dativ/Akkusativ usage if applicable
+           - synonyms: list of 2 synonyms
+           - example: A natural German example sentence.
            - exampleEn: The English translation of the example sentence.
-           - vowel_change: e.g., "e -> ie" for "sehen".Return "N/A" if regular.
+           - vowel_change: e.g., "e -> ie" for "sehen". Return "N/A" if regular.
            - part_of_speech: "noun", "verb", "adjective", "adverb", "conjunction", "preposition", "pronoun", "interjection".
-           - extra_info: e.g., "Irregular verb".Return "Regular verb" or "Regular noun" if normal.
+           - extra_info: e.g., "Irregular verb". Return "Regular verb" or "Regular noun" if normal.
 
         Return JSON: {
-  "translation": "Main translation",
-    "data": {
-    "artikel": "...", "plural": "...", "perfekt": "...", "praeteritum": "...", "praesens": "...",
-      "case": "...", "gender": "...", "vowel_change": "...", "part_of_speech": "...",
-        "extra_info": "...", "synonyms": [...], "example": "...", "exampleEn": "..."
-  },
-  "detected_from": "${from}",
-    "detected_to": "${to}"
-} ` }
+          "translation": "Main translation",
+          "alternates": ["alt1", "alt2", "alt3"],
+          "data": {
+            "artikel": "...", "plural": "...", "perfekt": "...", "praeteritum": "...", "praesens": "...", 
+            "case": "...", "gender": "...", "vowel_change": "...", "part_of_speech": "...", 
+            "extra_info": "...", "synonyms": [...], "example": "...", "exampleEn": "..."
+          },
+          "detected_from": "${from}",
+          "detected_to": "${to}"
+        }` }
       ],
       model: aiConfig.model_dict || "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
@@ -1075,7 +944,7 @@ Rules:
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
     if (!aiData.translation) {
-      console.error(`AI failed to translate: ${queryTerm} `);
+      console.error(`AI failed to translate: ${queryTerm}`);
       return res.status(500).json({ success: false, error: "AI could not find a translation for this term." });
     }
 
@@ -1103,10 +972,10 @@ Rules:
       finalData.vowel_change = grammarInfo.vowel_change;
       finalData.perfekt = grammarInfo.perfekt;
       finalData.praeteritum = grammarInfo.praeteritum;
-      finalData.praesens = `er / sie / es ${grammarInfo.third_person} `;
+      finalData.praesens = `er/sie/es ${grammarInfo.third_person}`;
       finalData.gender = "N/A";
       finalData.part_of_speech = "verb";
-      finalData.extra_info = `Irregular verb(3rd pers: ${grammarInfo.third_person})`;
+      finalData.extra_info = `Irregular verb (3rd pers: ${grammarInfo.third_person})`;
       if (grammarInfo.is_compound) {
         finalData.extra_info += `; Compound of '${grammarInfo.base_verb}'`;
       }
@@ -1121,6 +990,7 @@ Rules:
       term: queryTerm,
       context: context || null,
       translation: aiData.translation,
+      alternates: aiData.alternates || [],
       data: finalData,
       audio_url: audioUrl,
       is_vocab: true, // Auto-promote to vocabulary
@@ -1330,79 +1200,18 @@ app.get("/app_version.json", (req, res) => {
   // Fallback default
   res.json({
     android: {
-      version: "1.1.7+12",
-      url: "https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch",
+      version: "1.0.0",
+      url: "",
       force_update: false,
-      changelog: "Bug fixes and improvements"
+      changelog: "No release found"
     },
     ios: {
-      version: "1.1.7+12",
-      url: "https://apps.apple.com/app/id...",
+      version: "1.0.0",
+      url: "",
       force_update: false,
-      changelog: "Bug fixes and improvements"
+      changelog: "No release found"
     }
   });
-});
-
-/* -------------------- ADMIN: PUBLISH VERSION (NO FILE) -------------------- */
-app.post("/admin/publish_version", (req, res) => {
-  const {
-    android_version,
-    ios_version,
-    android_url = "https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch",
-    ios_url = "https://apps.apple.com/app/id...",
-    changelog = "Bug fixes and improvements",
-    force_update = false
-  } = req.body;
-
-  if (!android_version && !ios_version) {
-    return res.status(400).json({ success: false, error: "At least one version (Android or iOS) is required" });
-  }
-
-  try {
-    // Load existing manifest or create new one
-    let manifest = {
-      android: { version: "1.0.0", url: "", force_update: false, changelog: "" },
-      ios: { version: "1.0.0", url: "", force_update: false, changelog: "" }
-    };
-
-    if (fs.existsSync(MANIFEST_PATH)) {
-      manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
-    }
-
-    // Update Android if provided
-    if (android_version) {
-      manifest.android = {
-        version: android_version,
-        url: android_url,
-        force_update: force_update,
-        changelog: changelog
-      };
-    }
-
-    // Update iOS if provided
-    if (ios_version) {
-      manifest.ios = {
-        version: ios_version,
-        url: ios_url,
-        force_update: force_update,
-        changelog: changelog
-      };
-    }
-
-    // Write to persistent storage
-    fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
-
-    res.json({
-      success: true,
-      message: `Version published successfully`,
-      manifest: manifest
-    });
-
-  } catch (err) {
-    console.error("Version publish failed:", err);
-    res.status(500).json({ success: false, error: "Failed to update version manifest" });
-  }
 });
 
 /* -------------------- ADMIN: UPLOAD RELEASE -------------------- */
