@@ -1143,6 +1143,52 @@ app.get("/learn/practice", async (req, res) => {
   }
 });
 
+/* -------------------- AI: STORY MODE -------------------- */
+app.post("/learn/story", async (req, res) => {
+  const { words = [], level = "A1" } = req.body;
+
+  try {
+    const wordList = words.length > 0 ? words.join(", ") : "common daily objects";
+    const systemPrompt = "You are a professional language tutor. Respond ONLY in valid JSON format.";
+    const userPrompt = `Generate a very short, level-appropriate German story (3-5 sentences) for a ${level} CEFR learner.
+    
+    WORDS TO INCLUDE: ${wordList}
+    
+    The story should be followed by 1 multiple-choice comprehension question in English.
+    
+    Format: {
+      "story_german": "...",
+      "story_english": "...",
+      "question": "Comprehension question in English",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "answer": "Correct option string",
+      "explanation": "Brief explanation in English"
+    }`;
+
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      model: aiConfig.model_general || "llama-3.1-8b-instant",
+      response_format: { type: "json_object" }
+    });
+
+    logAiUsage("/learn/story", aiConfig.model_general || "llama-3.1-8b-instant", completion.usage?.total_tokens || 0);
+
+    const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
+
+    res.json({
+      success: true,
+      data
+    });
+
+  } catch (err) {
+    console.error("AI Story error:", err.message);
+    res.status(500).json({ success: false, error: "Story generation failed" });
+  }
+});
+
 /* -------------------- AI: EVALUATE TRANSLATION -------------------- */
 app.post("/evaluate", async (req, res) => {
   const { sentence, translation, level = "A1", from = "de", to = "en" } = req.body;
