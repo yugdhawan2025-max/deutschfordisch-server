@@ -1220,6 +1220,7 @@ Authenticity Guidelines for ${level}:
    - Part 2: Working with data/facts (Matching situations).
    - Part 3: Commentaries or opinions (Detecting viewpoints).
    - Part 4: Sprachbausteine (Coherent text with grammatical/lexical gaps).
+   - Part 5: Sprechen (Interactive oral task. Context only, no questions).
 
 Strictly follow the ${level} word lists. Deliver ONLY raw JSON. No markdown.
 `;
@@ -1247,6 +1248,47 @@ Strictly follow the ${level} word lists. Deliver ONLY raw JSON. No markdown.
   } catch (err) {
     console.error("Mock Test generation failed:", err);
     res.status(500).json({ success: false, error: "Failed to generate mock exam. Please try again." });
+  }
+});
+
+/* -------------------- EXAM: SPEAKING PARTNER -------------------- */
+app.post("/exam/speak", async (req, res) => {
+  const { level, chatHistory, taskDescription } = req.body;
+  const model = "llama-3.1-8b-instant"; // Fast and high rate limits
+
+  const systemRole = `
+You are a German exam partner for the Goethe-Zertifikat ${level} Speaking module.
+Your goal is to have an authentic, helpful, but rigorous dialogue with the candidate.
+
+Current Task: ${taskDescription}
+
+Rules:
+1. Speak ONLY in German.
+2. Be natural but follow the level-specific grammar and vocabulary.
+3. Keep your responses relatively short (max 2-3 sentences) to maintain a fast dialogue.
+4. If it's a planning task (B1), propose ideas and ask for the candidate's opinion.
+5. If it's a discussion (B2), express your own viewpoint and ask the candidate to elaborate.
+6. Do NOT correct their grammar during the conversation unless it's completely unintelligible. Stay in character.
+`;
+
+  try {
+    const messages = [
+      { role: "system", content: systemRole },
+      ...chatHistory
+    ];
+
+    const completion = await groq.chat.completions.create({
+      messages,
+      model,
+      temperature: 0.7,
+      max_tokens: 500,
+    });
+
+    const response = completion.choices[0].message.content;
+    res.json({ success: true, response });
+  } catch (err) {
+    console.error("Speaking API Error:", err);
+    res.status(500).json({ success: false, error: "AI Partner is busy. Try again." });
   }
 });
 
