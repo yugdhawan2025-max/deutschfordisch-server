@@ -25,15 +25,17 @@ const groq = new Groq({
 });
 
 /* -------------------- STORAGE CONFIG -------------------- */
-// Use persistent storage if provided (Render), otherwise default to local 'uploads'
-const STORAGE_ROOT = process.env.STORAGE_PATH || path.join(__dirname, "uploads");
+// Explicitly target Render persistent disk /var/lib/data if it exists, otherwise use STORAGE_PATH or local uploads
+const RENDER_DISK = "/var/lib/data";
+const STORAGE_ROOT = fs.existsSync(RENDER_DISK) ? RENDER_DISK : (process.env.STORAGE_PATH || path.join(__dirname, "uploads"));
 const MANIFEST_PATH = path.join(STORAGE_ROOT, "release_manifest.json");
 
 // Ensure storage directory exists
 if (!fs.existsSync(STORAGE_ROOT)) {
   fs.mkdirSync(STORAGE_ROOT, { recursive: true });
-  console.log(`Created storage directory at: ${STORAGE_ROOT}`);
 }
+console.log(`[STORAGE] Root: ${STORAGE_ROOT}`);
+console.log(`[STORAGE] Manifest: ${MANIFEST_PATH}`);
 
 // Configure Multer
 const storage = multer.diskStorage({
@@ -1204,32 +1206,41 @@ Return JSON: {
 
 
 /* -------------------- APP VERSION CHECK -------------------- */
+const FALLBACK_MANIFEST = {
+  android: {
+    version: "1.1.7+12",
+    url: "http://deutschfordisch-server.onrender.com/uploads/app-unknown.apk",
+    force_update: false,
+    changelog: "Bug fixes and improvements"
+  },
+  ios: {
+    version: "1.1.7+12",
+    url: "https://apps.apple.com/app/id6740695079",
+    force_update: false,
+    changelog: "Bug fixes and improvements"
+  }
+};
+
 app.get("/app_version.json", (req, res) => {
-  // Try to read dynamic manifest, otherwise fallback to default
+  // Always start with fallback values
+  let manifest = { ...FALLBACK_MANIFEST };
+
   try {
     if (fs.existsSync(MANIFEST_PATH)) {
-      const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
-      return res.json(manifest);
+      const savedManifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
+      // Merge: Stored version overrides code fallback ONLY if it looks valid
+      if (savedManifest.android && savedManifest.android.version !== "0.0.0") {
+        manifest.android = { ...manifest.android, ...savedManifest.android };
+      }
+      if (savedManifest.ios && savedManifest.ios.version !== "0.0.0") {
+        manifest.ios = { ...manifest.ios, ...savedManifest.ios };
+      }
     }
   } catch (err) {
-    console.error("Error reading manifest:", err);
+    console.error("Error reading manifest, using hardcoded fallbacks:", err);
   }
 
-  // Fallback default
-  res.json({
-    android: {
-      version: "1.1.7+12",
-      url: "http://deutschfordisch-server.onrender.com/uploads/app-unknown.apk",
-      force_update: false,
-      changelog: "Bug fixes and improvements"
-    },
-    ios: {
-      version: "1.1.7+12",
-      url: "https://apps.apple.com/app/id6740695079",
-      force_update: false,
-      changelog: "Bug fixes and improvements"
-    }
-  });
+  res.json(manifest);
 });
 
 
