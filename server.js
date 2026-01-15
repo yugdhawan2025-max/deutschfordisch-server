@@ -163,8 +163,9 @@ const STATS_PATH = path.join(STORAGE_ROOT, "usage_stats.json");
 let usageStats = {
   total_requests: 0,
   total_tokens: 0,
-  endpoints: {},
-  models: {},
+  endpoints: {}, // { name: { requests, tokens } }
+  models: {},    // { name: { requests, tokens } }
+  recent_logs: [], // [ { timestamp, endpoint, model, tokens } ]
   last_request: null
 };
 
@@ -180,10 +181,35 @@ if (fs.existsSync(STATS_PATH)) {
 function logAiUsage(endpoint, model, tokens = 0) {
   usageStats.total_requests++;
   usageStats.total_tokens += tokens;
-  usageStats.last_request = new Date().toISOString();
+  const now = new Date().toISOString();
+  usageStats.last_request = now;
 
-  usageStats.endpoints[endpoint] = (usageStats.endpoints[endpoint] || 0) + 1;
-  usageStats.models[model] = (usageStats.models[model] || 0) + 1;
+  // Initialize if needed (legacy migration)
+  if (typeof usageStats.endpoints[endpoint] === 'number') {
+    usageStats.endpoints[endpoint] = { requests: usageStats.endpoints[endpoint], tokens: 0 };
+  }
+  if (typeof usageStats.models[model] === 'number') {
+    usageStats.models[model] = { requests: usageStats.models[model], tokens: 0 };
+  }
+
+  // Update Endpoints
+  if (!usageStats.endpoints[endpoint]) usageStats.endpoints[endpoint] = { requests: 0, tokens: 0 };
+  usageStats.endpoints[endpoint].requests++;
+  usageStats.endpoints[endpoint].tokens += tokens;
+
+  // Update Models
+  if (!usageStats.models[model]) usageStats.models[model] = { requests: 0, tokens: 0 };
+  usageStats.models[model].requests++;
+  usageStats.models[model].tokens += tokens;
+
+  // Add to recent logs (keep last 15)
+  usageStats.recent_logs.unshift({
+    timestamp: now,
+    endpoint,
+    model,
+    tokens
+  });
+  if (usageStats.recent_logs.length > 15) usageStats.recent_logs.pop();
 
   try {
     fs.writeFileSync(STATS_PATH, JSON.stringify(usageStats, null, 2));
@@ -468,26 +494,59 @@ app.get("/", (req, res) => {
             </div>
 
             <!-- Live AI Tracking -->
-            <div class="card" id="usage-card">
-                <h3>Live AI Usage</h3>
-                <div class="stats-display">
-                    <div class="stat-item">
-                        <span class="stat-value"><span id="total-req">0</span> <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">/ <span id="total-limit">0</span></span></span>
-                        <label>AI Requests Sent</label>
-                        <div class="progress-container">
-                            <div id="usage-progress" class="progress-bar"></div>
+            <div class="card" id="usage-card" style="grid-column: span 1.5">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 10px; margin-left: -1rem; margin-right: -1rem; margin-top: -1rem;">
+                    <h3 style="margin:0; background:none; padding:0;">Live AI Usage</h3>
+                    <div id="live-indicator" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; color: var(--accent); font-weight: bold; opacity: 0; transition: opacity 0.5s;">
+                        <span style="width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent);"></span>
+                        LIVE REQUEST
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem;">
+                    <div class="stats-display">
+                        <div class="stat-item">
+                            <span class="stat-value"><span id="total-req">0</span> <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">/ <span id="total-limit">0</span></span></span>
+                            <label>AI Requests Sent</label>
+                            <div class="progress-container">
+                                <div id="usage-progress" class="progress-bar"></div>
+                            </div>
+                        </div>
+                        <div class="stat-item" style="margin-top: 1rem;">
+                            <span class="stat-value"><span id="total-tokens">0</span> <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">/ <span id="token-limit-display">0</span></span></span>
+                            <label>AI Tokens Used</label>
+                            <div class="progress-container">
+                                <div id="token-progress" class="progress-bar" style="background: linear-gradient(to right, #ff4757, var(--accent));"></div>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-item" style="margin-top: 1rem;">
-                        <span class="stat-value"><span id="total-tokens">0</span> <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">/ <span id="token-limit-display">0</span></span></span>
-                        <label>AI Tokens Used</label>
-                        <div class="progress-container">
-                            <div id="token-progress" class="progress-bar" style="background: linear-gradient(to right, #ff4757, var(--accent));"></div>
-                        </div>
+                    
+                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; border: 1px solid var(--border);">
+                        <label style="margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; display: block;">Endpoint Performance</label>
+                        <div id="endpoint-stats" style="max-height: 180px; overflow-y: auto;"></div>
                     </div>
-                    <div id="endpoint-stats" style="margin-top: 0.5rem;"></div>
                 </div>
                 <div id="usage-last-update" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 1rem; text-align: right;">Last updated: Never</div>
+            </div>
+
+            <!-- Recent Activity Log -->
+            <div class="card" style="grid-column: span 1.5">
+                <h3>Recent Activity Log</h3>
+                <div id="recent-logs-container" style="background: #000; border-radius: 12px; border: 1px solid var(--border); overflow: hidden;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem; text-align: left;">
+                        <thead style="background: rgba(255,255,255,0.05); color: var(--text-muted);">
+                            <tr>
+                                <th style="padding: 0.75rem 1rem;">Time</th>
+                                <th style="padding: 0.75rem 1rem;">Endpoint</th>
+                                <th style="padding: 0.75rem 1rem;">Model</th>
+                                <th style="padding: 0.75rem 1rem; text-align: right;">Tokens</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-logs-body">
+                            <tr><td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-muted);">Initializing activity log...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- AI Config Settings -->
@@ -754,6 +813,8 @@ app.get("/", (req, res) => {
         }
 
         // Load config on startup
+        let lastRequestTimestamp = null;
+
         async function updateUsageStats() {
             try {
                 const res = await fetch('/api/usage');
@@ -774,21 +835,52 @@ app.get("/", (req, res) => {
                     const tokenPercent = Math.min(100, ((stats.total_tokens || 0) / tokenLimit) * 100);
                     document.getElementById('token-progress').style.width = tokenPercent + '%';
                     
+                    // Endpoint Stats Table
                     const endpointDiv = document.getElementById('endpoint-stats');
                     endpointDiv.innerHTML = '';
                     
-                    for (const [name, count] of Object.entries(stats.endpoints || {})) {
+                    for (const [name, data] of Object.entries(stats.endpoints || {})) {
+                        const count = typeof data === 'object' ? data.requests : data;
+                        const tokens = typeof data === 'object' ? data.tokens : 0;
                         endpointDiv.innerHTML += \`
-                            <div class="endpoint-row">
-                                <span class="endpoint-name">\${name}</span>
-                                <span class="endpoint-count">\${count}</span>
+                            <div class="endpoint-row" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                                <span class="endpoint-name" style="font-weight: 500; font-family: monospace; color: var(--text);">\${name}</span>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: bold; color: var(--accent);">\${count} reqs</div>
+                                    <div style="font-size: 0.65rem; color: var(--text-muted);">\${tokens.toLocaleString()} tokens</div>
+                                </div>
                             </div>
                         \`;
                     }
                     
-                    if (stats.last_request) {
+                    // Recent Logs Table
+                    const logsBody = document.getElementById('recent-logs-body');
+                    if (stats.recent_logs && stats.recent_logs.length > 0) {
+                        logsBody.innerHTML = stats.recent_logs.map(log => {
+                            const time = new Date(log.timestamp).toLocaleTimeString();
+                            return \`
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">\${time}</td>
+                                    <td style="padding: 0.75rem 1rem; font-family: monospace; color: #fff;">\${log.endpoint}</td>
+                                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">\${log.model}</td>
+                                    <td style="padding: 0.75rem 1rem; text-align: right; font-weight: bold; color: var(--accent);">\${log.tokens.toLocaleString()}</td>
+                                </tr>
+                            \`;
+                        }).join('');
+                    } else {
+                        logsBody.innerHTML = '<tr><td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-muted);">No recent activity tracked yet.</td></tr>';
+                    }
+
+                    // Live Indicator logic
+                    if (stats.last_request && stats.last_request !== lastRequestTimestamp) {
+                        const indicator = document.getElementById('live-indicator');
+                        if (lastRequestTimestamp !== null) { // Don't flash on first load
+                            indicator.style.opacity = '1';
+                            setTimeout(() => indicator.style.opacity = '0', 2000);
+                        }
+                        lastRequestTimestamp = stats.last_request;
                         const date = new Date(stats.last_request);
-                        document.getElementById('usage-last-update').innerText = 'Last: ' + date.toLocaleTimeString();
+                        document.getElementById('usage-last-update').innerText = 'Last Activity: ' + date.toLocaleTimeString();
                     }
                 }
             } catch (e) { console.error("Stats poll failed", e); }
@@ -1259,6 +1351,8 @@ Strictly follow the ${level} word lists. Deliver ONLY raw JSON. No markdown.
     const resultString = completion.choices[0].message.content;
     const resultJson = JSON.parse(resultString);
 
+    logAiUsage("/exam/mock", aiConfig.model_dict || "llama-3.3-70b-versatile", completion.usage?.total_tokens || 0);
+
     res.json({
       success: true,
       data: resultJson
@@ -1304,6 +1398,7 @@ Rules:
     });
 
     const response = completion.choices[0].message.content;
+    logAiUsage("/exam/speak", model, completion.usage?.total_tokens || 0);
     res.json({ success: true, response });
   } catch (err) {
     console.error("Speaking API Error:", err);
