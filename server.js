@@ -1203,7 +1203,7 @@ app.get("/app_version.json", (req, res) => {
   res.json({
     android: {
       version: "1.1.7+12",
-      url: "https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch",
+      url: "http://deutschfordisch-server.onrender.com/uploads/app-unknown.apk",
       force_update: false,
       changelog: "Bug fixes and improvements"
     },
