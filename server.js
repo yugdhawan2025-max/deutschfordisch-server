@@ -904,11 +904,11 @@ async function handleDict(req, res) {
 
         Rules:
         1. Identify the 'best' translation.
-        2. If Source or Target is 'auto', you must detect the languages yourself (specifically between English and German).
+        2. Detect the language of the term (English or German).
         3. If the German term is a noun, you MUST include the definite article (der/die/das) and capitalize it (e.g., 'der Hund').
         4. Even if source is German, ensure 'german_full' is the explicit Article + Noun form.
         5. Provide gender (m/f/n) for German nouns.
-        6. Provide 2-3 common alternate translations.
+        6. Provide exactly 2 common alternate translations in the 'alternates' array.
         7. For German words, provide additional grammar data:
            - artikel: "der", "die", or "das" (if noun)
            - plural: Plural form (if noun)
@@ -925,14 +925,14 @@ async function handleDict(req, res) {
 
         Return JSON: {
           "translation": "Main translation",
-          "alternates": ["alt1", "alt2", "alt3"],
+          "alternates": ["alt1", "alt2"],
+          "detected_from": "de or en",
+          "detected_to": "en or de",
           "data": {
             "artikel": "...", "plural": "...", "perfekt": "...", "praeteritum": "...", "praesens": "...", 
             "case": "...", "gender": "...", "vowel_change": "...", "part_of_speech": "...", 
             "extra_info": "...", "synonyms": [...], "example": "...", "exampleEn": "..."
-          },
-          "detected_from": "${from}",
-          "detected_to": "${to}"
+          }
         }` }
       ],
       model: aiConfig.model_dict || "llama-3.3-70b-versatile",
@@ -982,8 +982,8 @@ async function handleDict(req, res) {
     }
 
     // Professional Audio URL (Google TTS)
-    const audioTerm = (from === 'de' ? queryTerm : aiData.translation).trim();
-    const audioLang = from === 'de' ? 'de' : 'en';
+    const audioTerm = (aiData.detected_from === 'de' ? queryTerm : aiData.translation).trim();
+    const audioLang = aiData.detected_from === 'de' ? 'de' : 'en';
     const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(audioTerm)}&tl=${audioLang}&client=tw-ob`;
 
     const result = {
@@ -991,6 +991,8 @@ async function handleDict(req, res) {
       context: context || null,
       translation: aiData.translation,
       alternates: aiData.alternates || [],
+      from: aiData.detected_from || from,
+      to: aiData.detected_to || to,
       data: finalData,
       audio_url: audioUrl,
       is_vocab: true, // Auto-promote to vocabulary
@@ -1200,16 +1202,16 @@ app.get("/app_version.json", (req, res) => {
   // Fallback default
   res.json({
     android: {
-      version: "1.0.0",
-      url: "",
+      version: "1.1.7+12",
+      url: "https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch",
       force_update: false,
-      changelog: "No release found"
+      changelog: "Bug fixes and improvements"
     },
     ios: {
-      version: "1.0.0",
-      url: "",
+      version: "1.1.7+12",
+      url: "https://apps.apple.com/app/id6740695079",
       force_update: false,
-      changelog: "No release found"
+      changelog: "Bug fixes and improvements"
     }
   });
 });
@@ -1257,7 +1259,7 @@ app.post("/admin/upload_release", upload.single("file"), (req, res) => {
       // iOS doesn't usually allow direct IPA downloads this way, but we update metadata
       manifest.ios = {
         version,
-        url: "https://apps.apple.com/app/id123456789", // Placeholder for logic
+        url: "https://apps.apple.com/app/id6740695079", // Official iOS link
         force_update: false,
         changelog
       };
