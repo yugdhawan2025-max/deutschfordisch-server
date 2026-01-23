@@ -219,33 +219,24 @@ io.on("connection", (socket) => {
     console.log(`[SOCKET] ${socket.id} joined match: ${matchId}`);
   });
 
-  // Start/Trigger a round with a noun (server-authoritative)
+  // Start/Trigger a round with a word (server-authoritative)
   socket.on("trigger_round", async (data) => {
-    const { matchId, noun } = data;
+    const { matchId, noun } = data; // 'noun' is now the English term from the app
     if (!matchId || !noun) return;
 
     console.log(`[SOCKET] Round trigger in ${matchId} for: ${noun}`);
 
-    // 1. Validate Noun & Get Translation
-    const entry = getNounEntry(noun);
-    if (!entry) {
-      console.warn(`[SOCKET] Invalid or unapproved noun requested: ${noun}`);
-      socket.emit("round_error", { error: "Invalid noun. Must be in approved vocab list." });
-      return;
-    }
-
-    // 2. Get/Search Image (using English translation for search, German for cache key)
-    const englishTerm = entry.translation || entry.data?.translation || noun;
-    const imageUrl = await getOrSearchImage(noun, englishTerm);
+    // 1. Skip strict validation as requested (Allow any English word)
+    // 2. Get/Search Image (using provided term for both cache key and search)
+    const imageUrl = await getOrSearchImage(noun, noun);
 
     // 3. Broadcast to all players in the match
     io.to(matchId).emit("new_round_image", {
-      noun: noun, // Still send the German noun so frontend knows what to validate
+      noun: noun,
       imageUrl: imageUrl,
-      timestamp: new Date().toISOString()
     });
 
-    console.log(`[SOCKET] Broadcasted image for "${noun}" (Search: "${englishTerm}") to match ${matchId}`);
+    console.log(`[SOCKET] Broadcasted image for "${noun}" to match ${matchId}`);
   });
 
   socket.on("disconnect", () => {
