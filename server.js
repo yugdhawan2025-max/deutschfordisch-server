@@ -123,7 +123,7 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache.json");
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v3.json"); // Fresh cache for better results
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
@@ -143,7 +143,7 @@ function saveImageCache() {
   }
 }
 
-const FALLBACK_IMAGE = "https://images.pexels.com/photos/4050312/pexels-photo-4050312.jpeg"; // High quality fallback
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1579546678181-7f9a84b02581?auto=format&fit=crop&w=1000&q=80"; // Abstract color gradient fallback instead of laptop
 
 /**
  * Searches for an image on Pexels and returns the URL.
@@ -151,7 +151,11 @@ const FALLBACK_IMAGE = "https://images.pexels.com/photos/4050312/pexels-photo-40
  */
 async function getOrSearchImage(germanNoun, englishTranslation) {
   const cacheKey = germanNoun.toLowerCase().trim();
-  const searchKeyword = englishTranslation || germanNoun;
+  // Filter keyword: "female doctor" -> "doctor"
+  let searchKeyword = (englishTranslation || germanNoun).toLowerCase();
+  if (searchKeyword.includes("female ")) searchKeyword = searchKeyword.replace("female ", "");
+  if (searchKeyword.includes("male ")) searchKeyword = searchKeyword.replace("male ", "");
+  searchKeyword = searchKeyword.split(',')[0].trim();
 
   // 1. Check Cache
   if (imageCache[cacheKey]) {
@@ -168,26 +172,41 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
 
   try {
     console.log(`[IMAGE] Searching Pexels for: "${searchKeyword}" (German: ${cacheKey})`);
-    const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchKeyword)}&per_page=5`, {
+    const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchKeyword)}&per_page=40`, {
       headers: { Authorization: apiKey }
     });
 
-    if (!response.ok) throw new Error(`Pexels API error: ${response.statusText}`);
+    if (!response.ok) {
+      console.error(`Pexels API Error: ${response.status} ${response.statusText}`);
+      throw new Error(`Pexels API error: ${response.statusText}`);
+    }
 
     const data = await response.json();
     if (data.photos && data.photos.length > 0) {
-      const selectedImage = data.photos[0].src.large2x || data.photos[0].src.large;
+      // Pick a random image from a wider pool (40) for better variety
+      const randomIndex = Math.floor(Math.random() * data.photos.length);
+      const photo = data.photos[randomIndex];
+      const selectedImage = photo.src.large2x || photo.src.large || photo.src.medium;
 
-      // 3. Cache Result (Using German noun as key)
-      imageCache[cacheKey] = selectedImage;
-      saveImageCache();
+      // 3. Cache Result (Only if it's a real result)
+      if (selectedImage && selectedImage !== FALLBACK_IMAGE) {
+        imageCache[cacheKey] = selectedImage;
+        saveImageCache();
+      }
       return selectedImage;
+    } else {
+      console.warn(`[IMAGE] No photos found for keyword: ${searchKeyword}`);
+      // Try secondary search with just "noun" if it was different
+      if (searchKeyword !== germanNoun) {
+        return await getOrSearchImage(germanNoun, germanNoun);
+      }
     }
   } catch (err) {
-    console.error(`[IMAGE] Search failed for ${searchKeyword}:`, err);
+    console.error(`[IMAGE] Search critical failure for ${searchKeyword}:`, err);
   }
 
-  return FALLBACK_IMAGE;
+  // Final attempt: use a dynamic Unsplash URL as a better fallback than a static laptop
+  return `https://source.unsplash.com/1600x900/?${encodeURIComponent(searchKeyword)}`;
 }
 
 /**
@@ -234,6 +253,7 @@ io.on("connection", (socket) => {
     io.to(matchId).emit("new_round_image", {
       noun: noun,
       imageUrl: imageUrl,
+      round: data.round || 1
     });
 
     console.log(`[SOCKET] Broadcasted image for "${noun}" to match ${matchId}`);
