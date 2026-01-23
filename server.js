@@ -1173,12 +1173,12 @@ app.get("/", (req, res) => {
                 
                 if (data.success) {
                     const time = new Date().toLocaleTimeString();
-                    resDiv.innerHTML = `< span style = "color: #00ff88; font-weight: bold;" >✅ Saved Successfully at ${ time }!</span > <br><span style="font-size:0.8em; color: #ccc">Configuration updated on persistent storage.</span>`;
+                    resDiv.innerHTML = \`<span style="color: #00ff88; font-weight: bold;">✅ Saved Successfully at \${time}!</span><br><span style="font-size:0.8em; color: #ccc">Configuration updated on persistent storage.</span>\`;
                 } else {
-      resDiv.innerHTML = `<span style="color: #ff4757">❌ Error: ${data.error}</span>`;
+                    resDiv.innerHTML = \`<span style="color: #ff4757">❌ Error: \${data.error}</span>\`;
                 }
             } catch (err) {
-      resDiv.innerHTML = `<span style="color: #ff4757">❌ Network Error: ${err.message}</span>`;
+                resDiv.innerHTML = \`<span style="color: #ff4757">❌ Network Error: \${err.message}</span>\`;
             } finally {
       btn.innerHTML = "Save AI Settings";
     btn.disabled = false;
@@ -1212,37 +1212,37 @@ app.get("/", (req, res) => {
     const endpointDiv = document.getElementById('endpoint-stats');
     endpointDiv.innerHTML = '';
 
-    for (const [name, data] of Object.entries(stats.endpoints || { })) {
-                        const count = typeof data === 'object' ? data.requests : data;
-    const tokens = typeof data === 'object' ? data.tokens : 0;
-    endpointDiv.innerHTML += `
-    <div class="endpoint-row" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
-      <span class="endpoint-name" style="font-weight: 500; font-family: monospace; color: var(--text);">${name}</span>
-      <div style="text-align: right;">
-        <div style="font-weight: bold; color: var(--accent);">${count} reqs</div>
-        <div style="font-size: 0.65rem; color: var(--text-muted);">${tokens.toLocaleString()} tokens</div>
-      </div>
-    </div>
-    `;
-                    }
+    for (const [name, data] of Object.entries(stats.endpoints || {})) {
+        const count = typeof data === 'object' ? data.requests : data;
+        const tokens = typeof data === 'object' ? data.tokens : 0;
+        endpointDiv.innerHTML += \`
+            <div class="endpoint-row" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                <span class="endpoint-name" style="font-weight: 500; font-family: monospace; color: var(--text);">\${name}</span>
+                <div style="text-align: right;">
+                    <div style="font-weight: bold; color: var(--accent);">\${count} reqs</div>
+                    <div style="font-size: 0.65rem; color: var(--text-muted);">\${tokens.toLocaleString()} tokens</div>
+                </div>
+            </div>
+        \`;
+    }
 
     // Recent Logs Table
     const logsBody = document.getElementById('recent-logs-body');
-                    if (stats.recent_logs && stats.recent_logs.length > 0) {
-      logsBody.innerHTML = stats.recent_logs.map(log => {
-        const time = new Date(log.timestamp).toLocaleTimeString();
-        return `
-                                <tr style="border-bottom: 1px solid var(--border);">
-                                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">${time}</td>
-                                    <td style="padding: 0.75rem 1rem; font-family: monospace; color: #fff;">${log.endpoint}</td>
-                                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">${log.model}</td>
-                                    <td style="padding: 0.75rem 1rem; text-align: right; font-weight: bold; color: var(--accent);">${log.tokens.toLocaleString()}</td>
-                                </tr>
-                            `;
-      }).join('');
-                    } else {
-      logsBody.innerHTML = '<tr><td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-muted);">No recent activity tracked yet.</td></tr>';
-                    }
+    if (stats.recent_logs && stats.recent_logs.length > 0) {
+        logsBody.innerHTML = stats.recent_logs.map(log => {
+            const time = new Date(log.timestamp).toLocaleTimeString();
+            return \`
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">\${time}</td>
+                    <td style="padding: 0.75rem 1rem; font-family: monospace; color: #fff;">\${log.endpoint}</td>
+                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">\${log.model}</td>
+                    <td style="padding: 0.75rem 1rem; text-align: right; font-weight: bold; color: var(--accent);">\${log.tokens.toLocaleString()}</td>
+                </tr>
+            \`;
+        }).join('');
+    } else {
+        logsBody.innerHTML = '<tr><td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-muted);">No recent activity tracked yet.</td></tr>';
+    }
 
     // Live Indicator logic
     if (stats.last_request && stats.last_request !== lastRequestTimestamp) {
@@ -1329,38 +1329,38 @@ async function handleDict(req, res) {
 
   // Create a context-aware cache key
   const normalizedTerm = queryTerm.toLowerCase().trim();
-  const contextHash = context ? `- ${ Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8) } ` : "";
-  const dictCacheKey = `${ from } - ${ to } - ${ normalizedTerm }${ contextHash } `;
+  const contextHash = context ? `- ${Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8)} ` : "";
+  const dictCacheKey = `${from} - ${to} - ${normalizedTerm}${contextHash} `;
 
   // Skip cache if bypass_cache is enabled (for AI learn mode)
   if (!shouldBypassCache) {
     // 1. Check Primary Cache (Directional + Contextual)
     if (dictCache[dictCacheKey]) {
-      console.log(`Cache Hit(Primary): ${ dictCacheKey } `);
+      console.log(`Cache Hit(Primary): ${dictCacheKey} `);
       return serveCachedEntry(dictCacheKey, res);
     }
 
     // 2. Fallback to Generic cache (if context-less entry exists)
-    const genericKey = `${ from } - ${ to } - ${ normalizedTerm } `;
+    const genericKey = `${from} - ${to} - ${normalizedTerm} `;
     if (!context && dictCache[genericKey]) {
-      console.log(`Cache Hit(Generic): ${ genericKey } `);
+      console.log(`Cache Hit(Generic): ${genericKey} `);
       return serveCachedEntry(genericKey, res);
     }
 
     // 3. Global Cache Search (Direction-Agnostic, ONLY Generic or Exact match)
     const globalMatch = Object.keys(dictCache).find(k => {
       // Must end with the term, and either be context-less OR match the current context hash
-      const endsWithTerm = k.endsWith(`- ${ normalizedTerm } `);
-      const isGeneric = k === `${ from === 'de' ? 'en' : 'de' } -${ from === 'de' ? 'de' : 'en' } -${ normalizedTerm } `;
-      const isSameContext = k.endsWith(`${ normalizedTerm }${ contextHash } `);
+      const endsWithTerm = k.endsWith(`- ${normalizedTerm} `);
+      const isGeneric = k === `${from === 'de' ? 'en' : 'de'} -${from === 'de' ? 'de' : 'en'} -${normalizedTerm} `;
+      const isSameContext = k.endsWith(`${normalizedTerm}${contextHash} `);
       return endsWithTerm && (isGeneric || isSameContext);
     });
     if (globalMatch) {
-      console.log(`Cache Hit(Global): ${ globalMatch } for ${ queryTerm }`);
+      console.log(`Cache Hit(Global): ${globalMatch} for ${queryTerm}`);
       return serveCachedEntry(globalMatch, res);
     }
   } else {
-    console.log(`Cache Bypass: ${ queryTerm } (AI Learn Mode)`);
+    console.log(`Cache Bypass: ${queryTerm} (AI Learn Mode)`);
   }
 
   function serveCachedEntry(key, response) {
@@ -1383,8 +1383,8 @@ async function handleDict(req, res) {
       messages: [
         { role: "system", content: "You are a German Grammar Expert and professional dictionary API. Respond ONLY in valid JSON." },
         {
-          role: "user", content: `Lookup "${queryTerm}"(Source: ${ from }, Target: ${ to }).
-  ${ context ? `CONTEXT: "${context}" (Please provide the meaning that fits this specific sentence).` : "" }
+          role: "user", content: `Lookup "${queryTerm}"(Source: ${from}, Target: ${to}).
+  ${context ? `CONTEXT: "${context}" (Please provide the meaning that fits this specific sentence).` : ""}
 
 Rules:
 1. Identify the 'best' translation.
@@ -1428,7 +1428,7 @@ Rules:
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
     if (!aiData.translation) {
-      console.error(`AI failed to translate: ${ queryTerm } `);
+      console.error(`AI failed to translate: ${queryTerm} `);
       return res.status(500).json({ success: false, error: "AI could not find a translation for this term." });
     }
 
@@ -1456,10 +1456,10 @@ Rules:
       finalData.vowel_change = grammarInfo.vowel_change;
       finalData.perfekt = grammarInfo.perfekt;
       finalData.praeteritum = grammarInfo.praeteritum;
-      finalData.praesens = `er / sie / es ${ grammarInfo.third_person } `;
+      finalData.praesens = `er / sie / es ${grammarInfo.third_person} `;
       finalData.gender = "N/A";
       finalData.part_of_speech = "verb";
-      finalData.extra_info = `Irregular verb(3rd pers: ${ grammarInfo.third_person })`;
+      finalData.extra_info = `Irregular verb(3rd pers: ${grammarInfo.third_person})`;
       if (grammarInfo.is_compound) {
         finalData.extra_info += `; Compound of '${grammarInfo.base_verb}'`;
       }
@@ -1470,32 +1470,32 @@ Rules:
     const audioLang = aiData.detected_from === 'de' ? 'de' : 'en';
     const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(audioTerm)}&tl=${audioLang}&client=tw-ob`;
 
-const result = {
-  term: queryTerm,
-  context: context || null,
-  translation: aiData.translation,
-  alternates: aiData.alternates || [],
-  from: aiData.detected_from || from,
-  to: aiData.detected_to || to,
-  data: finalData,
-  audio_url: audioUrl,
-  is_vocab: true, // Auto-promote to vocabulary
-  hit_count: 1,
-  last_queried: new Date().toISOString()
-};
+    const result = {
+      term: queryTerm,
+      context: context || null,
+      translation: aiData.translation,
+      alternates: aiData.alternates || [],
+      from: aiData.detected_from || from,
+      to: aiData.detected_to || to,
+      data: finalData,
+      audio_url: audioUrl,
+      is_vocab: true, // Auto-promote to vocabulary
+      hit_count: 1,
+      last_queried: new Date().toISOString()
+    };
 
-// Save to Cache
-dictCache[dictCacheKey] = result;
-saveDictCache();
+    // Save to Cache
+    dictCache[dictCacheKey] = result;
+    saveDictCache();
 
-res.json({
-  success: true,
-  ...result
-});
+    res.json({
+      success: true,
+      ...result
+    });
   } catch (err) {
-  console.error("Dict error:", err.message);
-  res.status(500).json({ success: false, error: "Dictionary lookup failed" });
-}
+    console.error("Dict error:", err.message);
+    res.status(500).json({ success: false, error: "Dictionary lookup failed" });
+  }
 }
 
 app.get("/dict", handleDict);
