@@ -166,43 +166,43 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
   // 2. Search Pexels
   const apiKey = process.env.PEXELS_API_KEY;
   if (!apiKey || apiKey.includes("YOUR_PEXELS_API_KEY")) {
-    console.warn("[IMAGE] No Pexels API Key found, using fallback.");
-    return FALLBACK_IMAGE;
-  }
+    console.warn(`[IMAGE] No Pexels API Key found. Skipping Pexels and using dynamic fallback for "${searchKeyword}".`);
+    // Skip Pexels search but proceed to the dynamic fallback at matching keyword
+  } else {
+    try {
+      console.log(`[IMAGE] Searching Pexels for: "${searchKeyword}" (German: ${cacheKey})`);
+      const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchKeyword)}&per_page=40`, {
+        headers: { Authorization: apiKey }
+      });
 
-  try {
-    console.log(`[IMAGE] Searching Pexels for: "${searchKeyword}" (German: ${cacheKey})`);
-    const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchKeyword)}&per_page=40`, {
-      headers: { Authorization: apiKey }
-    });
-
-    if (!response.ok) {
-      console.error(`Pexels API Error: ${response.status} ${response.statusText}`);
-      throw new Error(`Pexels API error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    if (data.photos && data.photos.length > 0) {
-      // Pick a random image from a wider pool (40) for better variety
-      const randomIndex = Math.floor(Math.random() * data.photos.length);
-      const photo = data.photos[randomIndex];
-      const selectedImage = photo.src.large2x || photo.src.large || photo.src.medium;
-
-      // 3. Cache Result (Only if it's a real result)
-      if (selectedImage && selectedImage !== FALLBACK_IMAGE) {
-        imageCache[cacheKey] = selectedImage;
-        saveImageCache();
+      if (!response.ok) {
+        console.error(`Pexels API Error: ${response.status} ${response.statusText}`);
+        throw new Error(`Pexels API error: ${response.statusText}`);
       }
-      return selectedImage;
-    } else {
-      console.warn(`[IMAGE] No photos found for keyword: ${searchKeyword}`);
-      // Try secondary search with just "noun" if it was different
-      if (searchKeyword !== germanNoun) {
-        return await getOrSearchImage(germanNoun, germanNoun);
+
+      const data = await response.json();
+      if (data.photos && data.photos.length > 0) {
+        // Pick a random image from a wider pool (40) for better variety
+        const randomIndex = Math.floor(Math.random() * data.photos.length);
+        const photo = data.photos[randomIndex];
+        const selectedImage = photo.src.large2x || photo.src.large || photo.src.medium;
+
+        // 3. Cache Result (Only if it's a real result)
+        if (selectedImage) {
+          imageCache[cacheKey] = selectedImage;
+          saveImageCache();
+        }
+        return selectedImage;
+      } else {
+        console.warn(`[IMAGE] No photos found for keyword: ${searchKeyword}`);
+        // Try secondary search with just "noun" if it was different
+        if (searchKeyword !== germanNoun) {
+          return await getOrSearchImage(germanNoun, germanNoun);
+        }
       }
+    } catch (err) {
+      console.error(`[IMAGE] Search critical failure for ${searchKeyword}:`, err);
     }
-  } catch (err) {
-    console.error(`[IMAGE] Search critical failure for ${searchKeyword}:`, err);
   }
 
   // Final attempt: Placehold.co is the most stable

@@ -9,6 +9,8 @@ services:
         sync: false # Requires manual entry in Render Dashboard for security
       - key: STORAGE_PATH
         value: /var/lib/data
+      - key: PEXELS_API_KEY
+        sync: false # Manual entry required in Render
       - key: NODE_VERSION
         value: 18.0.0
     disk:
