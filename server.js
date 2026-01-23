@@ -413,6 +413,18 @@ app.get("/api/usage", (req, res) => {
   });
 });
 
+app.get("/api/test_image", async (req, res) => {
+  const { query } = req.query;
+  if (!query) return res.status(400).json({ success: false, error: "Missing query" });
+
+  try {
+    const imageUrl = await getOrSearchImage(query, query);
+    res.json({ success: true, imageUrl });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 /* -------------------- ROOT: PREMIUM DASHBOARD -------------------- */
 app.get("/", (req, res) => {
   res.send(`
@@ -604,6 +616,17 @@ app.get("/", (req, res) => {
                 
                 <button onclick="runTest('dict')">Search API</button>
                 <div id="dict-res" class="result-container"></div>
+            </div>
+
+            <!-- Image Search Tester -->
+            <div class="card">
+                <h3>Image Search Tester</h3>
+                <div class="input-group">
+                    <label>Keyword</label>
+                    <input type="text" id="img-query" placeholder="e.g., Katze" onkeydown="if(event.key==='Enter') runTest('image')">
+                </div>
+                <button onclick="runTest('image')">Test Search</button>
+                <div id="image-res" class="result-container" style="text-align: center;"></div>
             </div>
 
             <!-- AI Sentence -->
@@ -876,6 +899,9 @@ app.get("/", (req, res) => {
                     to: isEnToDe ? "de" : "en",
                     level: "A1"
                 };
+            } else if (type === 'image') {
+                const q = document.getElementById('img-query').value;
+                url = \`/api/test_image?query=\${encodeURIComponent(q)}\`;
             }
 
             try {
@@ -885,7 +911,12 @@ app.get("/", (req, res) => {
                     body: body ? JSON.stringify(body) : null
                 });
                 const data = await response.json();
-                resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
+                if (type === 'image' && data.success) {
+                    resDiv.innerHTML = \`<img src="\${data.imageUrl}" style="max-width: 100%; border-radius: 12px; margin-top: 1rem; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all;">\${data.imageUrl}</div>\`;
+                } else {
+                    resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
+                }
             } catch (err) {
                 resDiv.innerHTML = \`<span style="color: #ff4757">Error: \${err.message}</span>\`;
             }
