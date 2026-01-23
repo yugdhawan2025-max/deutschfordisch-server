@@ -7,6 +7,8 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from 'url';
+import http from "http";
+import { Server } from "socket.io";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +16,19 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  path: '/socket.io/', // Explicitly match frontend expectation
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Helper route to verify server is alive and Socket.io is mounted
+app.get('/socket-test', (req, res) => {
+  res.send('Server is alive! Socket.io is mounted at /socket.io/');
+});
 app.use(cors());
 app.use(express.json());
 
@@ -106,6 +121,137 @@ function saveDictCache() {
     console.error("Failed to save dict cache:", err);
   }
 }
+
+/* -------------------- IMAGE CACHE & SEARCH -------------------- */
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache.json");
+let imageCache = {};
+
+if (fs.existsSync(IMAGE_CACHE_PATH)) {
+  try {
+    imageCache = JSON.parse(fs.readFileSync(IMAGE_CACHE_PATH, "utf8"));
+    console.log(`Loaded ${Object.keys(imageCache).length} cached images.`);
+  } catch (err) {
+    console.error("Failed to load image cache:", err);
+  }
+}
+
+function saveImageCache() {
+  try {
+    fs.writeFileSync(IMAGE_CACHE_PATH, JSON.stringify(imageCache, null, 2));
+  } catch (err) {
+    console.error("Failed to save image cache:", err);
+  }
+}
+
+const FALLBACK_IMAGE = "https://images.pexels.com/photos/4050312/pexels-photo-4050312.jpeg"; // High quality fallback
+
+/**
+ * Searches for an image on Pexels and returns the URL.
+ * Includes caching logic using the German noun as the key.
+ */
+async function getOrSearchImage(germanNoun, englishTranslation) {
+  const cacheKey = germanNoun.toLowerCase().trim();
+  const searchKeyword = englishTranslation || germanNoun;
+
+  // 1. Check Cache
+  if (imageCache[cacheKey]) {
+    console.log(`[IMAGE] Cache Hit: ${cacheKey}`);
+    return imageCache[cacheKey];
+  }
+
+  // 2. Search Pexels
+  const apiKey = process.env.PEXELS_API_KEY;
+  if (!apiKey || apiKey.includes("YOUR_PEXELS_API_KEY")) {
+    console.warn("[IMAGE] No Pexels API Key found, using fallback.");
+    return FALLBACK_IMAGE;
+  }
+
+  try {
+    console.log(`[IMAGE] Searching Pexels for: "${searchKeyword}" (German: ${cacheKey})`);
+    const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchKeyword)}&per_page=5`, {
+      headers: { Authorization: apiKey }
+    });
+
+    if (!response.ok) throw new Error(`Pexels API error: ${response.statusText}`);
+
+    const data = await response.json();
+    if (data.photos && data.photos.length > 0) {
+      const selectedImage = data.photos[0].src.large2x || data.photos[0].src.large;
+
+      // 3. Cache Result (Using German noun as key)
+      imageCache[cacheKey] = selectedImage;
+      saveImageCache();
+      return selectedImage;
+    }
+  } catch (err) {
+    console.error(`[IMAGE] Search failed for ${searchKeyword}:`, err);
+  }
+
+  return FALLBACK_IMAGE;
+}
+
+/**
+ * Validates if a term is an approved noun in the vocab list.
+ * Returns the entry if found, otherwise null.
+ */
+function getNounEntry(noun) {
+  const cleanNoun = noun.toLowerCase().trim();
+
+  // Check dictCache for any entry that matches this term and is a noun
+  const keys = Object.keys(dictCache);
+  const foundKey = keys.find(k => {
+    const entry = dictCache[k];
+    const isTermMatch = entry.term?.toLowerCase() === cleanNoun;
+    const isNoun = entry.data?.part_of_speech === "noun" || (entry.data?.artikel && entry.data?.artikel !== "N/A");
+    return isTermMatch && isNoun;
+  });
+
+  return foundKey ? dictCache[foundKey] : null;
+}
+
+/* -------------------- MULTIPLAYER GAME FLOW -------------------- */
+io.on("connection", (socket) => {
+  console.log(`[SOCKET] Peer connected: ${socket.id}`);
+
+  // Join a specific match room
+  socket.on("join_match", (matchId) => {
+    socket.join(matchId);
+    console.log(`[SOCKET] ${socket.id} joined match: ${matchId}`);
+  });
+
+  // Start/Trigger a round with a noun (server-authoritative)
+  socket.on("trigger_round", async (data) => {
+    const { matchId, noun } = data;
+    if (!matchId || !noun) return;
+
+    console.log(`[SOCKET] Round trigger in ${matchId} for: ${noun}`);
+
+    // 1. Validate Noun & Get Translation
+    const entry = getNounEntry(noun);
+    if (!entry) {
+      console.warn(`[SOCKET] Invalid or unapproved noun requested: ${noun}`);
+      socket.emit("round_error", { error: "Invalid noun. Must be in approved vocab list." });
+      return;
+    }
+
+    // 2. Get/Search Image (using English translation for search, German for cache key)
+    const englishTerm = entry.translation || entry.data?.translation || noun;
+    const imageUrl = await getOrSearchImage(noun, englishTerm);
+
+    // 3. Broadcast to all players in the match
+    io.to(matchId).emit("new_round_image", {
+      noun: noun, // Still send the German noun so frontend knows what to validate
+      imageUrl: imageUrl,
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`[SOCKET] Broadcasted image for "${noun}" (Search: "${englishTerm}") to match ${matchId}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`[SOCKET] Peer disconnected: ${socket.id}`);
+  });
+});
 
 /* -------------------- GRAMMAR DATA SERVICE -------------------- */
 const GRAMMAR_DATA_PATH = path.join(__dirname, "grammar_data.json");
@@ -1587,6 +1733,6 @@ app.post("/admin/ai_config", (req, res) => {
 });
 
 /* -------------------- START -------------------- */
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server live on port ${PORT} `);
 });
