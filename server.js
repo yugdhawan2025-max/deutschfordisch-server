@@ -143,7 +143,7 @@ function saveImageCache() {
   }
 }
 
-const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1579546678181-7f9a84b02581?auto=format&fit=crop&w=1000&q=80"; // Abstract color gradient fallback instead of laptop
+const FALLBACK_IMAGE = "https://placehold.co/1000x1000/023047/white?text=No+Image+Found"; // Stable placeholder
 
 /**
  * Searches for an image on Pexels and returns the URL.
@@ -206,7 +206,7 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
   }
 
   // Final attempt: use a dynamic Unsplash URL as a better fallback than a static laptop
-  return `https://source.unsplash.com/1600x900/?${encodeURIComponent(searchKeyword)}`;
+  return `https://loremflickr.com/1000/1000/${encodeURIComponent(searchKeyword)}`;
 }
 
 /**
