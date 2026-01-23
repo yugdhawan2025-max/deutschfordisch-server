@@ -256,7 +256,7 @@ io.on("connection", (socket) => {
     io.to(matchId).emit("new_round_image", {
       noun: noun,
       imageUrl: imageUrl,
-      round: data.round || 1
+      round: Math.floor(data.round || 1)
     });
 
     console.log(`[SOCKET] Broadcasted image for "${noun}" to match ${matchId}`);
