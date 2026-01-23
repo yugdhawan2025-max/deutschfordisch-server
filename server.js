@@ -159,7 +159,7 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
 
   // 1. Check Cache
   if (imageCache[cacheKey]) {
-    console.log(`[IMAGE] Cache Hit: ${cacheKey}`);
+    console.log(`[IMAGE] Cache Hit for "${cacheKey}": ${imageCache[cacheKey]}`);
     return imageCache[cacheKey];
   }
 
@@ -205,8 +205,10 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
     console.error(`[IMAGE] Search critical failure for ${searchKeyword}:`, err);
   }
 
-  // Final attempt: use a dynamic Unsplash URL as a better fallback than a static laptop
-  return `https://loremflickr.com/1000/1000/${encodeURIComponent(searchKeyword)}`;
+  // Final attempt: Placehold.co is the most stable
+  const fallback = `https://placehold.co/1000x1000/023047/FFB703?text=${encodeURIComponent(searchKeyword)}`;
+  console.log(`[IMAGE] Using final fallback for "${searchKeyword}": ${fallback}`);
+  return fallback;
 }
 
 /**
@@ -248,6 +250,7 @@ io.on("connection", (socket) => {
     // 1. Skip strict validation as requested (Allow any English word)
     // 2. Get/Search Image (using provided term for both cache key and search)
     const imageUrl = await getOrSearchImage(noun, noun);
+    console.log(`[SOCKET] Image found: ${imageUrl}`);
 
     // 3. Broadcast to all players in the match
     io.to(matchId).emit("new_round_image", {
@@ -1113,14 +1116,14 @@ async function handleDict(req, res) {
   // Create a context-aware cache key
   const normalizedTerm = queryTerm.toLowerCase().trim();
   const contextHash = context ? `-${Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8)}` : "";
-  const cacheKey = `${from}-${to}-${normalizedTerm}${contextHash}`;
+  const dictCacheKey = `${from}-${to}-${normalizedTerm}${contextHash}`;
 
   // Skip cache if bypass_cache is enabled (for AI learn mode)
   if (!shouldBypassCache) {
     // 1. Check Primary Cache (Directional + Contextual)
-    if (dictCache[cacheKey]) {
-      console.log(`Cache Hit (Primary): ${cacheKey}`);
-      return serveCachedEntry(cacheKey, res);
+    if (dictCache[dictCacheKey]) {
+      console.log(`Cache Hit (Primary): ${dictCacheKey}`);
+      return serveCachedEntry(dictCacheKey, res);
     }
 
     // 2. Fallback to Generic cache (if context-less entry exists)
@@ -1268,7 +1271,7 @@ async function handleDict(req, res) {
     };
 
     // Save to Cache
-    dictCache[cacheKey] = result;
+    dictCache[dictCacheKey] = result;
     saveDictCache();
 
     res.json({
