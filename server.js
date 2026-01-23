@@ -143,7 +143,7 @@ function saveImageCache() {
   }
 }
 
-const FALLBACK_IMAGE = "https://placehold.co/1000x1000/023047/white?text=No+Image+Found"; // Stable placeholder
+const FALLBACK_IMAGE = "https://placehold.co/1000x1000/023047/white.png?text=No+Image+Found"; // Stable placeholder
 
 /**
  * Searches for an image on Pexels and returns the URL.
@@ -206,8 +206,8 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
   }
 
   // Final attempt: Placehold.co is the most stable
-  const fallback = `https://placehold.co/1000x1000/023047/FFB703?text=${encodeURIComponent(searchKeyword)}`;
-  console.log(`[IMAGE] Using final fallback for "${searchKeyword}": ${fallback}`);
+  const fallback = `https://placehold.co/1000x1000/023047/FFB703.png?text=${encodeURIComponent(searchKeyword)}`;
+  console.log(`[IMAGE] Final fallback served for "${searchKeyword}": ${fallback}`);
   return fallback;
 }
 
