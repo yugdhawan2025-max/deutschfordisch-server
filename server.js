@@ -151,8 +151,18 @@ const FALLBACK_IMAGE = "https://placehold.co/1000x1000/023047/white.png?text=No+
  */
 async function getOrSearchImage(germanNoun, englishTranslation) {
   const cacheKey = germanNoun.toLowerCase().trim();
-  // Filter keyword: "female doctor" -> "doctor"
-  let searchKeyword = (englishTranslation || germanNoun).toLowerCase();
+  // Filter keyword: "female doctor" -> "doctor", "das Buch" -> "Buch"
+  let searchKeyword = (englishTranslation || germanNoun).toLowerCase().trim();
+
+  // Strip German articles
+  const articles = ["der ", "die ", "das ", "ein ", "eine "];
+  for (const article of articles) {
+    if (searchKeyword.startsWith(article)) {
+      searchKeyword = searchKeyword.replace(article, "").trim();
+      break;
+    }
+  }
+
   if (searchKeyword.includes("female ")) searchKeyword = searchKeyword.replace("female ", "");
   if (searchKeyword.includes("male ")) searchKeyword = searchKeyword.replace("male ", "");
   searchKeyword = searchKeyword.split(',')[0].trim();
@@ -417,9 +427,16 @@ app.get("/api/test_image", async (req, res) => {
   const { query } = req.query;
   if (!query) return res.status(400).json({ success: false, error: "Missing query" });
 
+  const apiKey = process.env.PEXELS_API_KEY;
+  const isKeyMissing = !apiKey || apiKey.includes("YOUR_PEXELS_API_KEY");
+
   try {
     const imageUrl = await getOrSearchImage(query, query);
-    res.json({ success: true, imageUrl });
+    res.json({
+      success: true,
+      imageUrl,
+      apiKeyStatus: isKeyMissing ? "missing" : "active"
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -912,7 +929,12 @@ app.get("/", (req, res) => {
                 });
                 const data = await response.json();
                 if (type === 'image' && data.success) {
-                    resDiv.innerHTML = \`<img src="\${data.imageUrl}" style="max-width: 100%; border-radius: 12px; margin-top: 1rem; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
+                    let statusMsg = data.apiKeyStatus === 'active' 
+                        ? '<div style="color: #00ff88; font-size: 0.7rem; margin-bottom: 0.5rem;">✅ Pexels API Key is Active</div>'
+                        : '<div style="color: #ff4757; font-size: 0.7rem; margin-bottom: 0.5rem;">⚠️ Pexels API Key Missing - Using Fallback Placeholders</div>';
+                    
+                    resDiv.innerHTML = \`\${statusMsg}
+                    <img src="\${data.imageUrl}" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
                     <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all;">\${data.imageUrl}</div>\`;
                 } else {
                     resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
