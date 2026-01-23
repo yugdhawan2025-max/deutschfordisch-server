@@ -123,7 +123,7 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v3.json"); // Fresh cache for better results
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v4.json"); // v4 for Pixabay
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
@@ -163,8 +163,10 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
     }
   }
 
-  if (searchKeyword.includes("female ")) searchKeyword = searchKeyword.replace("female ", "");
-  if (searchKeyword.includes("male ")) searchKeyword = searchKeyword.replace("male ", "");
+  // Remove gendered prefixes (e.g., "female doctor" -> "doctor")
+  searchKeyword = searchKeyword.replace(/^female\s+/i, "");
+  searchKeyword = searchKeyword.replace(/^male\s+/i, "");
+
   searchKeyword = searchKeyword.split(',')[0].trim();
 
   // 1. Check Cache
@@ -173,29 +175,26 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
     return imageCache[cacheKey];
   }
 
-  // 2. Search Pexels
-  const apiKey = process.env.PEXELS_API_KEY;
-  if (!apiKey || apiKey.includes("YOUR_PEXELS_API_KEY")) {
-    console.warn(`[IMAGE] No Pexels API Key found. Skipping Pexels and using dynamic fallback for "${searchKeyword}".`);
-    // Skip Pexels search but proceed to the dynamic fallback at matching keyword
+  // 2. Search Pixabay
+  const apiKey = process.env.PIXABAY_API_KEY;
+  if (!apiKey || apiKey.includes("YOUR_PIXABAY_API_KEY")) {
+    console.warn(`[IMAGE] No Pixabay API Key found. Skipping Pixabay and using dynamic fallback for "${searchKeyword}".`);
   } else {
     try {
-      console.log(`[IMAGE] Searching Pexels for: "${searchKeyword}" (German: ${cacheKey})`);
-      const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchKeyword)}&per_page=40`, {
-        headers: { Authorization: apiKey }
-      });
+      console.log(`[IMAGE] Searching Pixabay for: "${searchKeyword}" (German: ${cacheKey})`);
+      const response = await fetch(`https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&per_page=40`);
 
       if (!response.ok) {
-        console.error(`Pexels API Error: ${response.status} ${response.statusText}`);
-        throw new Error(`Pexels API error: ${response.statusText}`);
+        console.error(`Pixabay API Error: ${response.status} ${response.statusText}`);
+        throw new Error(`Pixabay API error: ${response.statusText}`);
       }
 
       const data = await response.json();
-      if (data.photos && data.photos.length > 0) {
-        // Pick a random image from a wider pool (40) for better variety
-        const randomIndex = Math.floor(Math.random() * data.photos.length);
-        const photo = data.photos[randomIndex];
-        const selectedImage = photo.src.large2x || photo.src.large || photo.src.medium;
+      if (data.hits && data.hits.length > 0) {
+        // Pick a random image from the pool for better variety
+        const randomIndex = Math.floor(Math.random() * data.hits.length);
+        const photo = data.hits[randomIndex];
+        const selectedImage = photo.largeImageURL || photo.webformatURL;
 
         // 3. Cache Result (Only if it's a real result)
         if (selectedImage) {
@@ -204,14 +203,14 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
         }
         return selectedImage;
       } else {
-        console.warn(`[IMAGE] No photos found for keyword: ${searchKeyword}`);
+        console.warn(`[IMAGE] No photos found on Pixabay for keyword: ${searchKeyword}`);
         // Try secondary search with just "noun" if it was different
         if (searchKeyword !== germanNoun) {
           return await getOrSearchImage(germanNoun, germanNoun);
         }
       }
     } catch (err) {
-      console.error(`[IMAGE] Search critical failure for ${searchKeyword}:`, err);
+      console.error(`[IMAGE] Pixabay Search critical failure for ${searchKeyword}:`, err);
     }
   }
 
@@ -427,15 +426,21 @@ app.get("/api/test_image", async (req, res) => {
   const { query } = req.query;
   if (!query) return res.status(400).json({ success: false, error: "Missing query" });
 
-  const apiKey = process.env.PEXELS_API_KEY;
-  const isKeyMissing = !apiKey || apiKey.includes("YOUR_PEXELS_API_KEY");
+  const apiKey = process.env.PIXABAY_API_KEY;
+  const isKeyMissing = !apiKey || apiKey.includes("YOUR_PIXABAY_API_KEY");
+  const keyPrefix = apiKey ? apiKey.substring(0, 5) + "..." : "NONE";
 
   try {
     const imageUrl = await getOrSearchImage(query, query);
+    // Since we standardized getOrSearchImage to always return a string
+    const cleaned = "N/A"; // We could track this if needed, but keeping it simple for now
+
     res.json({
       success: true,
       imageUrl,
-      apiKeyStatus: isKeyMissing ? "missing" : "active"
+      apiKeyStatus: isKeyMissing ? "missing" : "active",
+      apiKeyPrefix: keyPrefix,
+      cleanedKeyword: cleaned
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -929,13 +934,27 @@ app.get("/", (req, res) => {
                 });
                 const data = await response.json();
                 if (type === 'image' && data.success) {
-                    let statusMsg = data.apiKeyStatus === 'active' 
-                        ? '<div style="color: #00ff88; font-size: 0.7rem; margin-bottom: 0.5rem;">✅ Pexels API Key is Active</div>'
-                        : '<div style="color: #ff4757; font-size: 0.7rem; margin-bottom: 0.5rem;">⚠️ Pexels API Key Missing - Using Fallback Placeholders</div>';
+                    let statusColor = data.apiKeyStatus === 'active' ? '#00ff88' : '#ff4757';
+                    let statusLabel = data.apiKeyStatus === 'active' ? 'Active' : 'MISSING';
                     
-                    resDiv.innerHTML = \`\${statusMsg}
-                    <img src="\${data.imageUrl}" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
-                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all;">\${data.imageUrl}</div>\`;
+                    resDiv.innerHTML = \`
+                        <div style="background: rgba(0,0,0,0.4); padding: 0.8rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.75rem; text-align: left; border: 1px solid var(--border);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                                <span style="color: var(--text-muted);">Pexels API Status:</span>
+                                <span style="color: \${statusColor}; font-weight: bold;">\${statusLabel}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                                <span style="color: var(--text-muted);">Key Found (Prefix):</span>
+                                <span style="font-family: monospace; color: var(--accent);">\${data.apiKeyPrefix}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: var(--text-muted);">Cleaned Keyword:</span>
+                                <span style="font-family: monospace; color: #fff;">"\${data.cleanedKeyword || 'Direct Match'}"</span>
+                            </div>
+                        </div>
+                        <img src="\${data.imageUrl}" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
+                        <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all; background: #000; padding: 0.4rem; border-radius: 4px;">\${data.imageUrl}</div>
+                    \`;
                 } else {
                     resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
                 }
