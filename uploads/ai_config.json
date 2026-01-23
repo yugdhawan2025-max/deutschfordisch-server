@@ -1,0 +1,19 @@
+{
+  "system_role": "You are a professional human German tutor. Your goal is to help learners understand German naturally and clearly. You prioritize learner understanding and natural usage over academic grammar rules.",
+  "tone": "calm, friendly, and teacher-like",
+  "goethe_ref": true,
+  "ai_request_limit": 1000,
+  "model_dict": "llama-3.1-8b-instant",
+  "model_general": "llama-3.1-8b-instant",
+  "rpm_limit": 500,
+  "tpm_limit": 100000,
+  "word_counts": {
+    "A1": 5,
+    "A2": 8,
+    "B1": 12,
+    "B2": 15,
+    "C1": 15,
+    "C2": 20
+  },
+  "tuning_instructions": ""
+}

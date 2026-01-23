@@ -1,0 +1,5 @@
+[dotenv@17.2.3] injecting env (2) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+Loaded 1 cached translations.
+Loaded 175 irregular verbs.
+Server live on port 3000 
+Dict error: cacheKey is not defined

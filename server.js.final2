@@ -7,8 +7,6 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from 'url';
-import http from "http";
-import { Server } from "socket.io";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,19 +14,6 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  path: '/socket.io/', // Explicitly match frontend expectation
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
-});
-
-// Helper route to verify server is alive and Socket.io is mounted
-app.get('/socket-test', (req, res) => {
-  res.send('Server is alive! Socket.io is mounted at /socket.io/');
-});
 app.use(cors());
 app.use(express.json());
 
@@ -40,17 +25,15 @@ const groq = new Groq({
 });
 
 /* -------------------- STORAGE CONFIG -------------------- */
-// Explicitly target Render persistent disk /var/lib/data if it exists, otherwise use STORAGE_PATH or local uploads
-const RENDER_DISK = "/var/lib/data";
-const STORAGE_ROOT = fs.existsSync(RENDER_DISK) ? RENDER_DISK : (process.env.STORAGE_PATH || path.join(__dirname, "uploads"));
+// Use persistent storage if provided (Render), otherwise default to local 'uploads'
+const STORAGE_ROOT = process.env.STORAGE_PATH || path.join(__dirname, "uploads");
 const MANIFEST_PATH = path.join(STORAGE_ROOT, "release_manifest.json");
 
 // Ensure storage directory exists
 if (!fs.existsSync(STORAGE_ROOT)) {
   fs.mkdirSync(STORAGE_ROOT, { recursive: true });
+  console.log(`Created storage directory at: ${STORAGE_ROOT}`);
 }
-console.log(`[STORAGE] Root: ${STORAGE_ROOT}`);
-console.log(`[STORAGE] Manifest: ${MANIFEST_PATH}`);
 
 // Configure Multer
 const storage = multer.diskStorage({
@@ -81,11 +64,7 @@ const DEFAULT_AI_CONFIG = {
   word_counts: {
     "A1": 5, "A2": 8, "B1": 12, "B2": 15, "C1": 15, "C2": 20
   },
-  word_counts: {
-    "A1": 5, "A2": 8, "B1": 12, "B2": 15, "C1": 15, "C2": 20
-  },
-  tuning_instructions: "", // Custom fine-tuning for content generation
-  image_size_preference: "medium" // small, medium, large
+  tuning_instructions: "" // Custom fine-tuning for content generation
 };
 
 // Load Config with Fallback
@@ -125,184 +104,6 @@ function saveDictCache() {
     console.error("Failed to save dict cache:", err);
   }
 }
-
-/* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v4.json"); // v4 for Pixabay
-let imageCache = {};
-
-if (fs.existsSync(IMAGE_CACHE_PATH)) {
-  try {
-    imageCache = JSON.parse(fs.readFileSync(IMAGE_CACHE_PATH, "utf8"));
-    console.log(`Loaded ${Object.keys(imageCache).length} cached images.`);
-  } catch (err) {
-    console.error("Failed to load image cache:", err);
-  }
-}
-
-function saveImageCache() {
-  try {
-    fs.writeFileSync(IMAGE_CACHE_PATH, JSON.stringify(imageCache, null, 2));
-  } catch (err) {
-    console.error("Failed to save image cache:", err);
-  }
-}
-
-const FALLBACK_IMAGE = "https://placehold.co/1000x1000/023047/white.png?text=No+Image+Found"; // Stable placeholder
-
-/**
- * Searches for an image on Pexels and returns the URL.
- * Includes caching logic using the German noun as the key.
- */
-async function getOrSearchImage(germanNoun, englishTranslation) {
-  const cacheKey = germanNoun.toLowerCase().trim();
-  // Filter keyword: "female doctor" -> "doctor", "das Buch" -> "Buch"
-  let searchKeyword = (englishTranslation || germanNoun).toLowerCase().trim();
-
-  // Strip German articles
-  const articles = ["der ", "die ", "das ", "ein ", "eine "];
-  for (const article of articles) {
-    if (searchKeyword.startsWith(article)) {
-      searchKeyword = searchKeyword.replace(article, "").trim();
-      break;
-    }
-  }
-
-  // Remove gendered prefixes (e.g., "female doctor" -> "doctor")
-  searchKeyword = searchKeyword.replace(/^female\s+/i, "");
-  searchKeyword = searchKeyword.replace(/^male\s+/i, "");
-
-  searchKeyword = searchKeyword.split(',')[0].trim();
-
-  // 1. Check Cache
-  if (imageCache[cacheKey]) {
-    console.log(`[IMAGE] Cache Hit for "${cacheKey}": ${imageCache[cacheKey]}`);
-    return imageCache[cacheKey];
-  }
-
-  // 2. PRIMARY: Pexels API (Square Only)
-  const pexelsKey = process.env.PEXELS_API_KEY || "S8v27Hs4NMFgPJsm9ztEjhvEMDeMlcsplvzdAFcdGq5ycHzArCap4PJJ";
-  try {
-    console.log(`[IMAGE] Searching Pexels for: "${searchKeyword}" (German: ${cacheKey})`);
-
-    // Pexels API: Search for square images to avoid cropping issues
-    const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchKeyword)}&orientation=square&per_page=1`, {
-      headers: { Authorization: pexelsKey }
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.photos && data.photos.length > 0) {
-        const photo = data.photos[0];
-        // Select size based on preference
-        const sizePref = aiConfig.image_size_preference || "medium"; // default medium
-        let selectedUrl = photo.src.large; // Default fallback to large (quality)
-
-        if (sizePref === "small") selectedUrl = photo.src.tiny || photo.src.small; // tiny is ~280px
-        else if (sizePref === "medium") selectedUrl = photo.src.medium || photo.src.large; // medium is ~350px
-        else selectedUrl = photo.src.large2x || photo.src.large; // large is 940px
-
-        return cacheAndReturn(selectedUrl);
-      } else {
-        console.warn(`[IMAGE] Pexels found no matches for "${searchKeyword}".`);
-      }
-    } else {
-      console.error(`[IMAGE] Pexels API Error: ${response.status} ${response.statusText}`);
-    }
-  } catch (err) {
-    console.error(`[IMAGE] Pexels Search critical failure for ${searchKeyword}:`, err);
-  }
-
-  // 3. SECONDARY: Pixabay API (Backup)
-  console.log(`[IMAGE] Falling back to Pixabay for: "${searchKeyword}"`);
-  const pixabayKey = process.env.PIXABAY_API_KEY;
-  if (!pixabayKey || pixabayKey.includes("YOUR_PIXABAY_API_KEY")) {
-    console.warn(`[IMAGE] No Pixabay API Key found. Skipping fallback.`);
-  } else {
-    try {
-      const response = await fetch(`https://pixabay.com/api/?key=${pixabayKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&per_page=3`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.hits && data.hits.length > 0) {
-          const randomIndex = Math.floor(Math.random() * Math.min(data.hits.length, 3));
-          const hit = data.hits[randomIndex];
-
-          // Select size based on preference
-          const sizePref = aiConfig.image_size_preference || "medium";
-          let selectedUrl = hit.webformatURL; // default medium
-
-          if (sizePref === "small") selectedUrl = hit.previewURL; // ~150px
-          else if (sizePref === "medium") selectedUrl = hit.webformatURL; // ~640px
-          else selectedUrl = hit.largeImageURL || hit.fullHDURL || hit.webformatURL; // ~1280px+
-
-          return cacheAndReturn(selectedUrl);
-        }
-      }
-    } catch (err) {
-      console.error(`[IMAGE] Pixabay Search critical failure:`, err);
-    }
-  }
-
-  // Final attempt: Placehold.co is the most stable
-  const fallback = `https://placehold.co/1000x1000/023047/FFB703.png?text=${encodeURIComponent(searchKeyword)}`;
-  console.log(`[IMAGE] Final fallback served for "${searchKeyword}": ${fallback}`);
-  return fallback;
-}
-
-/**
- * Validates if a term is an approved noun in the vocab list.
- * Returns the entry if found, otherwise null.
- */
-function getNounEntry(noun) {
-  const cleanNoun = noun.toLowerCase().trim();
-
-  // Check dictCache for any entry that matches this term and is a noun
-  const keys = Object.keys(dictCache);
-  const foundKey = keys.find(k => {
-    const entry = dictCache[k];
-    const isTermMatch = entry.term?.toLowerCase() === cleanNoun;
-    const isNoun = entry.data?.part_of_speech === "noun" || (entry.data?.artikel && entry.data?.artikel !== "N/A");
-    return isTermMatch && isNoun;
-  });
-
-  return foundKey ? dictCache[foundKey] : null;
-}
-
-/* -------------------- MULTIPLAYER GAME FLOW -------------------- */
-io.on("connection", (socket) => {
-  console.log(`[SOCKET] Peer connected: ${socket.id}`);
-
-  // Join a specific match room
-  socket.on("join_match", (matchId) => {
-    socket.join(matchId);
-    console.log(`[SOCKET] ${socket.id} joined match: ${matchId}`);
-  });
-
-  // Start/Trigger a round with a word (server-authoritative)
-  socket.on("trigger_round", async (data) => {
-    const { matchId, noun } = data; // 'noun' is now the English term from the app
-    if (!matchId || !noun) return;
-
-    console.log(`[SOCKET] Round trigger in ${matchId} for: ${noun}`);
-
-    // 1. Skip strict validation as requested (Allow any English word)
-    // 2. Get/Search Image (using provided term for both cache key and search)
-    const imageUrl = await getOrSearchImage(noun, noun);
-    console.log(`[SOCKET] Image found: ${imageUrl}`);
-
-    // 3. Broadcast to all players in the match
-    io.to(matchId).emit("new_round_image", {
-      noun: noun,
-      imageUrl: imageUrl,
-      round: Math.floor(data.round || 1)
-    });
-
-    console.log(`[SOCKET] Broadcasted image for "${noun}" to match ${matchId}`);
-  });
-
-  socket.on("disconnect", () => {
-    console.log(`[SOCKET] Peer disconnected: ${socket.id}`);
-  });
-});
 
 /* -------------------- GRAMMAR DATA SERVICE -------------------- */
 const GRAMMAR_DATA_PATH = path.join(__dirname, "grammar_data.json");
@@ -359,10 +160,8 @@ function resolveGrammar(term) {
 const STATS_PATH = path.join(STORAGE_ROOT, "usage_stats.json");
 let usageStats = {
   total_requests: 0,
-  total_tokens: 0,
-  endpoints: {}, // { name: { requests, tokens } }
-  models: {},    // { name: { requests, tokens } }
-  recent_logs: [], // [ { timestamp, endpoint, model, tokens } ]
+  endpoints: {},
+  models: {},
   last_request: null
 };
 
@@ -375,38 +174,12 @@ if (fs.existsSync(STATS_PATH)) {
   }
 }
 
-function logAiUsage(endpoint, model, tokens = 0) {
+function logAiUsage(endpoint, model) {
   usageStats.total_requests++;
-  usageStats.total_tokens += tokens;
-  const now = new Date().toISOString();
-  usageStats.last_request = now;
+  usageStats.last_request = new Date().toISOString();
 
-  // Initialize if needed (legacy migration)
-  if (typeof usageStats.endpoints[endpoint] === 'number') {
-    usageStats.endpoints[endpoint] = { requests: usageStats.endpoints[endpoint], tokens: 0 };
-  }
-  if (typeof usageStats.models[model] === 'number') {
-    usageStats.models[model] = { requests: usageStats.models[model], tokens: 0 };
-  }
-
-  // Update Endpoints
-  if (!usageStats.endpoints[endpoint]) usageStats.endpoints[endpoint] = { requests: 0, tokens: 0 };
-  usageStats.endpoints[endpoint].requests++;
-  usageStats.endpoints[endpoint].tokens += tokens;
-
-  // Update Models
-  if (!usageStats.models[model]) usageStats.models[model] = { requests: 0, tokens: 0 };
-  usageStats.models[model].requests++;
-  usageStats.models[model].tokens += tokens;
-
-  // Add to recent logs (keep last 15)
-  usageStats.recent_logs.unshift({
-    timestamp: now,
-    endpoint,
-    model,
-    tokens
-  });
-  if (usageStats.recent_logs.length > 15) usageStats.recent_logs.pop();
+  usageStats.endpoints[endpoint] = (usageStats.endpoints[endpoint] || 0) + 1;
+  usageStats.models[model] = (usageStats.models[model] || 0) + 1;
 
   try {
     fs.writeFileSync(STATS_PATH, JSON.stringify(usageStats, null, 2));
@@ -445,60 +218,8 @@ app.get("/api/usage", (req, res) => {
   res.json({
     success: true,
     stats: usageStats,
-    limit: aiConfig.ai_request_limit || 1000,
-    token_limit: aiConfig.tpm_limit || 100000
+    limit: aiConfig.ai_request_limit || 1000
   });
-});
-
-app.get("/api/test_image", async (req, res) => {
-  const { query } = req.query;
-  if (!query) return res.status(400).json({ success: false, error: "Missing query" });
-
-  const apiKey = process.env.PIXABAY_API_KEY;
-  const isKeyMissing = !apiKey || apiKey.includes("YOUR_PIXABAY_API_KEY");
-  const keyPrefix = apiKey ? apiKey.substring(0, 5) + "..." : "NONE";
-
-  try {
-    const imageUrl = await getOrSearchImage(query, query);
-    // Since we standardized getOrSearchImage to always return a string
-    const cleaned = "N/A"; // We could track this if needed, but keeping it simple for now
-
-    res.json({
-      success: true,
-      imageUrl,
-      apiKeyStatus: isKeyMissing ? "missing" : "active",
-      apiKeyPrefix: keyPrefix,
-      cleanedKeyword: cleaned
-    });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/* -------------------- IMAGE CACHE MANAGEMENT API -------------------- */
-app.get("/api/images", (req, res) => {
-  res.json(imageCache);
-});
-
-app.delete("/api/images/:key", (req, res) => {
-  const { key } = req.params;
-  if (imageCache[key]) {
-    delete imageCache[key];
-    saveImageCache();
-    res.json({ success: true, message: `Deleted cache for '${key}'` });
-  } else {
-    res.status(404).json({ success: false, error: "Key not found" });
-  }
-});
-
-app.post("/api/images/:key", (req, res) => {
-  const { key } = req.params;
-  const { url } = req.body;
-  if (!url) return res.status(400).json({ success: false, error: "Missing URL" });
-
-  imageCache[key] = url;
-  saveImageCache();
-  res.json({ success: true, message: `Updated cache for '${key}'` });
 });
 
 /* -------------------- ROOT: PREMIUM DASHBOARD -------------------- */
@@ -694,31 +415,6 @@ app.get("/", (req, res) => {
                 <div id="dict-res" class="result-container"></div>
             </div>
 
-            <!-- Image Search Tester -->
-            <div class="card">
-                <h3>Image Search Tester</h3>
-                <div class="input-group">
-                    <label>Keyword</label>
-                    <input type="text" id="img-query" placeholder="e.g., Katze" onkeydown="if(event.key==='Enter') runTest('image')">
-                </div>
-                <button onclick="runTest('image')">Test Search</button>
-                <div id="image-res" class="result-container" style="text-align: center;"></div>
-            </div>
-
-            <!-- Image Cache Manager -->
-            <div class="card" style="grid-column: span 1.5; max-height: 500px; display: flex; flex-direction: column;">
-                <h3>Image Cache Manager ("Training")</h3>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
-                    Review and correct images here. Deleting an image forces the system to find a new one next time.
-                </p>
-                <div style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 0.5rem;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
-                        <tbody id="cache-table-body"></tbody>
-                    </table>
-                </div>
-                <button onclick="loadCache()" style="margin-top: 1rem; width: auto; align-self: center; padding: 0.5rem 2rem;">Refresh Cache List</button>
-            </div>
-
             <!-- AI Sentence -->
             <div class="card">
                 <h3>Sentence Generation</h3>
@@ -767,75 +463,27 @@ app.get("/", (req, res) => {
             </div>
 
             <!-- Live AI Tracking -->
-            <div class="card" id="usage-card" style="grid-column: span 1.5">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; background: rgba(255,255,255,0.05); padding: 0.5rem 1rem; border-radius: 10px; margin-left: -1rem; margin-right: -1rem; margin-top: -1rem;">
-                    <h3 style="margin:0; background:none; padding:0;">Live AI Usage</h3>
-                    <div id="live-indicator" style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.7rem; color: var(--accent); font-weight: bold; opacity: 0; transition: opacity 0.5s;">
-                        <span style="width: 8px; height: 8px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent);"></span>
-                        LIVE REQUEST
-                    </div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 2rem;">
-                    <div class="stats-display">
-                        <div class="stat-item">
-                            <span class="stat-value"><span id="total-req">0</span> <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">/ <span id="total-limit">0</span></span></span>
-                            <label>AI Requests Sent</label>
-                            <div class="progress-container">
-                                <div id="usage-progress" class="progress-bar"></div>
-                            </div>
-                        </div>
-                        <div class="stat-item" style="margin-top: 1rem;">
-                            <span class="stat-value"><span id="total-tokens">0</span> <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">/ <span id="token-limit-display">0</span></span></span>
-                            <label>AI Tokens Used</label>
-                            <div class="progress-container">
-                                <div id="token-progress" class="progress-bar" style="background: linear-gradient(to right, #ff4757, var(--accent));"></div>
-                            </div>
+            <div class="card" id="usage-card">
+                <h3>Live AI Usage</h3>
+                <div class="stats-display">
+                    <div class="stat-item">
+                        <span class="stat-value"><span id="total-req">0</span> <span style="font-size: 1rem; color: var(--text-muted); font-weight: 400;">/ <span id="total-limit">0</span></span></span>
+                        <label>AI Requests Sent</label>
+                        <div class="progress-container">
+                            <div id="usage-progress" class="progress-bar"></div>
                         </div>
                     </div>
-                    
-                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; border: 1px solid var(--border);">
-                        <label style="margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; display: block;">Endpoint Performance</label>
-                        <div id="endpoint-stats" style="max-height: 180px; overflow-y: auto;"></div>
-                    </div>
+                    <div id="endpoint-stats" style="margin-top: 0.5rem;"></div>
                 </div>
                 <div id="usage-last-update" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 1rem; text-align: right;">Last updated: Never</div>
-            </div>
-
-            <!-- Recent Activity Log -->
-            <div class="card" style="grid-column: span 1.5">
-                <h3>Recent Activity Log</h3>
-                <div id="recent-logs-container" style="background: #000; border-radius: 12px; border: 1px solid var(--border); overflow: hidden;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem; text-align: left;">
-                        <thead style="background: rgba(255,255,255,0.05); color: var(--text-muted);">
-                            <tr>
-                                <th style="padding: 0.75rem 1rem;">Time</th>
-                                <th style="padding: 0.75rem 1rem;">Endpoint</th>
-                                <th style="padding: 0.75rem 1rem;">Model</th>
-                                <th style="padding: 0.75rem 1rem; text-align: right;">Tokens</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recent-logs-body">
-                            <tr><td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-muted);">Initializing activity log...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
             </div>
 
             <!-- AI Config Settings -->
             <div class="card" style="grid-column: span 1.5">
                 <h3>AI Config Settings</h3>
                 <div class="input-group">
-                    <label>Image Size</label>
-                    <select id="cfg-img-size">
-                        <option value="small">Small (Fastest)</option>
-                        <option value="medium">Medium (Standard)</option>
-                        <option value="large">Large (High Quality)</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>System Role & Persona</label>
-                    <textarea id="cfg-role" rows="3" placeholder="Define how the AI should behave..."></textarea>
+                    <label>System Role (Personality)</label>
+                    <input type="text" id="cfg-role" placeholder="e.g., Strict Grammar Expert">
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -912,6 +560,60 @@ app.get("/", (req, res) => {
 
                 <button onclick="saveConfig()">Save AI Settings</button>
                 <div id="config-res" class="result-container"></div>
+            </div>
+
+            <!-- Publish Update Form -->
+            <div class="card" style="grid-column: span 1.5">
+                <h3>📱 Publish App Update</h3>
+                
+                <div id="current-version-display" style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; font-size: 0.85rem;">
+                    <div style="color: var(--text-muted); margin-bottom: 0.5rem;">Current Published Version:</div>
+                    <div style="display: flex; gap: 2rem;">
+                        <div>
+                            <span style="color: var(--accent);">Android:</span> <span id="current-android-version">Loading...</span>
+                        </div>
+                        <div>
+                            <span style="color: var(--accent);">iOS:</span> <span id="current-ios-version">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label>Android Version</label>
+                        <input type="text" id="publish-android-version" placeholder="e.g., 1.1.7+12">
+                    </div>
+                    <div class="input-group">
+                        <label>iOS Version</label>
+                        <input type="text" id="publish-ios-version" placeholder="e.g., 1.1.7+12">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Changelog</label>
+                    <textarea id="publish-changelog" placeholder="e.g., Bug fixes and improvements" rows="2"></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="input-group">
+                        <label>Android Store URL</label>
+                        <input type="text" id="publish-android-url" value="https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch">
+                    </div>
+                    <div class="input-group">
+                        <label>iOS Store URL</label>
+                        <input type="text" id="publish-ios-url" value="https://apps.apple.com/app/id...">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="publish-force-update" style="width: auto;">
+                        <span>Force Update (Users must update to continue)</span>
+                    </label>
+                </div>
+
+                <button onclick="publishVersion()">Publish Update</button>
+                <div id="publish-res" class="result-container"></div>
             </div>
         </div>
 
@@ -997,9 +699,6 @@ app.get("/", (req, res) => {
                     to: isEnToDe ? "de" : "en",
                     level: "A1"
                 };
-            } else if (type === 'image') {
-                const q = document.getElementById('img-query').value;
-                url = \`/api/test_image?query=\${encodeURIComponent(q)}\`;
             }
 
             try {
@@ -1009,31 +708,7 @@ app.get("/", (req, res) => {
                     body: body ? JSON.stringify(body) : null
                 });
                 const data = await response.json();
-                if (type === 'image' && data.success) {
-                    let statusColor = data.apiKeyStatus === 'active' ? '#00ff88' : '#ff4757';
-                    let statusLabel = data.apiKeyStatus === 'active' ? 'Active' : 'MISSING';
-                    
-                    resDiv.innerHTML = \`
-                        <div style="background: rgba(0,0,0,0.4); padding: 0.8rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.75rem; text-align: left; border: 1px solid var(--border);">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                                <span style="color: var(--text-muted);">Pexels API Status:</span>
-                                <span style="color: \${statusColor}; font-weight: bold;">\${statusLabel}</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                                <span style="color: var(--text-muted);">Key Found (Prefix):</span>
-                                <span style="font-family: monospace; color: var(--accent);">\${data.apiKeyPrefix}</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: var(--text-muted);">Cleaned Keyword:</span>
-                                <span style="font-family: monospace; color: #fff;">"\${data.cleanedKeyword || 'Direct Match'}"</span>
-                            </div>
-                        </div>
-                        <img src="\${data.imageUrl}" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
-                        <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all; background: #000; padding: 0.4rem; border-radius: 4px;">\${data.imageUrl}</div>
-                    \`;
-                } else {
-                    resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
-                }
+                resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
             } catch (err) {
                 resDiv.innerHTML = \`<span style="color: #ff4757">Error: \${err.message}</span>\`;
             }
@@ -1053,7 +728,6 @@ app.get("/", (req, res) => {
                 document.getElementById('cfg-model-gen').value = cfg.model_general || 'llama-3.1-8b-instant';
                 document.getElementById('cfg-rpm').value = cfg.rpm_limit || 1000;
                 document.getElementById('cfg-tpm').value = cfg.tpm_limit || 100000;
-                document.getElementById('cfg-img-size').value = cfg.image_size_preference || 'medium';
 
                 if (cfg.word_counts) {
                     document.getElementById('wc-a1').value = cfg.word_counts.A1 || 5;
@@ -1065,69 +739,6 @@ app.get("/", (req, res) => {
                 document.getElementById('cfg-tuning').value = cfg.tuning_instructions || '';
             } catch (err) {
                 console.error("Failed to load config", err);
-            }
-        }
-
-        /* ----- CACHE MANAGER SCRIPTS ----- */
-        async function loadCache() {
-            const tbody = document.getElementById('cache-table-body');
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1rem;">Loading cache...</td></tr>';
-            try {
-                const res = await fetch('/api/images');
-                const cache = await res.json();
-                tbody.innerHTML = '';
-                
-                const entries = Object.entries(cache);
-                if (entries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1rem; color:var(--text-muted);">Cache is empty</td></tr>';
-                    return;
-                }
-
-                entries.forEach(([key, url]) => {
-                    const row = \`
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                            <td style="padding: 0.5rem; font-weight: bold; color: var(--accent); vertical-align: top;">\${key}</td>
-                            <td style="padding: 0.5rem; vertical-align: top;">
-                                <a href="\${url}" target="_blank">
-                                    <img src="\${url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border);">
-                                </a>
-                                <input type="text" id="url-\${key}" value="\${url}" style="width: 100%; margin-top: 4px; font-size: 0.7rem; padding: 4px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--border);">
-                            </td>
-                            <td style="padding: 0.5rem; text-align: right; vertical-align: top; width: 100px;">
-                                <button onclick="updateImage('\${key}')" style="padding: 4px 8px; font-size: 0.7rem; width: auto; background: #00b894; margin-bottom: 4px;">Save</button>
-                                <button onclick="deleteImage('\${key}')" style="padding: 4px 8px; font-size: 0.7rem; width: auto; background: #ff4757;">Delete</button>
-                            </td>
-                        </tr>
-                    \`;
-                    tbody.innerHTML += row;
-                });
-            } catch (err) {
-                tbody.innerHTML = \`<tr><td colspan="3" style="color: #ff4757; text-align:center;">Error: \${err.message}</td></tr>\`;
-            }
-        }
-
-        async function deleteImage(key) {
-            if (!confirm(\`Are you sure you want to delete the cached image for "\${key}"?\`)) return;
-            try {
-                await fetch(\`/api/images/\${key}\`, { method: 'DELETE' });
-                loadCache(); // Refresh
-            } catch (err) {
-                alert("Failed to delete: " + err.message);
-            }
-        }
-
-        async function updateImage(key) {
-            const url = document.getElementById(\`url-\${key}\`).value;
-            try {
-                await fetch(\`/api/images/\${key}\`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
-                });
-                alert(\`Updated image for \${key}\`);
-                loadCache(); // Refresh
-            } catch (err) {
-                alert("Failed to update: " + err.message);
             }
         }
 
@@ -1150,7 +761,6 @@ app.get("/", (req, res) => {
                 model_general: document.getElementById('cfg-model-gen').value,
                 rpm_limit: parseInt(document.getElementById('cfg-rpm').value) || 1000,
                 tpm_limit: parseInt(document.getElementById('cfg-tpm').value) || 100000,
-                image_size_preference: document.getElementById('cfg-img-size').value,
                 word_counts: {
                     A1: parseInt(document.getElementById('wc-a1').value) || 5,
                     A2: parseInt(document.getElementById('wc-a2').value) || 8,
@@ -1173,95 +783,134 @@ app.get("/", (req, res) => {
                 
                 if (data.success) {
                     const time = new Date().toLocaleTimeString();
-                    resDiv.innerHTML = `< span style = "color: #00ff88; font-weight: bold;" >✅ Saved Successfully at ${ time }!</span > <br><span style="font-size:0.8em; color: #ccc">Configuration updated on persistent storage.</span>`;
+                    resDiv.innerHTML = \`<span style="color: #00ff88; font-weight: bold;">✅ Saved Successfully at \${time}!</span><br><span style="font-size:0.8em; color: #ccc">Configuration updated on persistent storage.</span>\`;
                 } else {
-      resDiv.innerHTML = `<span style="color: #ff4757">❌ Error: ${data.error}</span>`;
+                    resDiv.innerHTML = \`<span style="color: #ff4757">❌ Error: \${data.error}</span>\`;
                 }
             } catch (err) {
-      resDiv.innerHTML = `<span style="color: #ff4757">❌ Network Error: ${err.message}</span>`;
+                resDiv.innerHTML = '<span style="color: #ff4757">❌ Network Error: ' + err.message + '</span>';
             } finally {
-      btn.innerHTML = "Save AI Settings";
+                btn.innerHTML = "Save AI Settings";
+                btn.disabled = false;
+            }
+        }
+
+        // Load config on startup
+        async function updateUsageStats() {
+            try {
+                const res = await fetch('/api/usage');
+                const data = await res.json();
+                if (data.success && data.stats) {
+                    const stats = data.stats;
+                    const limit = data.limit || 1000;
+                    
+                    document.getElementById('total-req').innerText = stats.total_requests || 0;
+                    document.getElementById('total-limit').innerText = limit;
+                    
+                    const percent = Math.min(100, ((stats.total_requests || 0) / limit) * 100);
+                    document.getElementById('usage-progress').style.width = percent + '%';
+                    
+                    const endpointDiv = document.getElementById('endpoint-stats');
+                    endpointDiv.innerHTML = '';
+                    
+                    for (const [name, count] of Object.entries(stats.endpoints || {})) {
+                        endpointDiv.innerHTML += \`
+                            <div class="endpoint-row">
+                                <span class="endpoint-name">\${name}</span>
+                                <span class="endpoint-count">\${count}</span>
+                            </div>
+                        \`;
+                    }
+                    
+                    if (stats.last_request) {
+                        const date = new Date(stats.last_request);
+                        document.getElementById('usage-last-update').innerText = 'Last: ' + date.toLocaleTimeString();
+                    }
+                }
+            } catch (e) { console.error("Stats poll failed", e); }
+        }
+
+        async function loadCurrentVersion() {
+            try {
+                const res = await fetch('/app_version.json');
+                const data = await res.json();
+                
+                document.getElementById('current-android-version').innerText = data.android?.version || 'N/A';
+                document.getElementById('current-ios-version').innerText = data.ios?.version || 'N/A';
+            } catch (e) {
+                console.error("Failed to load current version", e);
+                document.getElementById('current-android-version').innerText = 'Error';
+                document.getElementById('current-ios-version').innerText = 'Error';
+            }
+        }
+
+        async function publishVersion() {
+            const resDiv = document.getElementById('publish-res');
+            const btn = document.querySelector('button[onclick="publishVersion()"]');
+            
+            btn.innerHTML = "Publishing...";
+            btn.disabled = true;
+            resDiv.style.display = 'block';
+            resDiv.innerHTML = '<span style="color: var(--accent)">Updating version manifest...</span>';
+            resDiv.classList.add('active');
+            
+            const androidVersion = document.getElementById('publish-android-version').value.trim();
+            const iosVersion = document.getElementById('publish-ios-version').value.trim();
+            const changelog = document.getElementById('publish-changelog').value.trim() || "Bug fixes and improvements";
+            const androidUrl = document.getElementById('publish-android-url').value.trim();
+            const iosUrl = document.getElementById('publish-ios-url').value.trim();
+            const forceUpdate = document.getElementById('publish-force-update').checked;
+
+            if (!androidVersion && !iosVersion) {
+                resDiv.innerHTML = '<span style="color: #ff4757">❌ Error: Please enter at least one version (Android or iOS)</span>';
+                btn.innerHTML = "Publish Update";
+                btn.disabled = false;
+                return;
+            }
+
+            const body = {
+                android_version: androidVersion || undefined,
+                ios_version: iosVersion || undefined,
+                changelog: changelog,
+                android_url: androidUrl,
+                ios_url: iosUrl,
+                force_update: forceUpdate
+            };
+
+            try {
+                const res = await fetch('/admin/publish_version', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    const time = new Date().toLocaleTimeString();
+                    resDiv.innerHTML = '<span style="color: #00ff88; font-weight: bold;">✅ Published Successfully at ' + time + '!</span><br><span style="font-size:0.8em; color: #ccc">Version manifest updated. App will detect update on next check.</span>';
+
+    // Reload current version display
+    loadCurrentVersion();
+
+    // Clear form
+    document.getElementById('publish-android-version').value = '';
+    document.getElementById('publish-ios-version').value = '';
+    document.getElementById('publish-changelog').value = '';
+    document.getElementById('publish-force-update').checked = false;
+                } else {
+                    resDiv.innerHTML = '<span style="color: #ff4757">❌ Error: ' + data.error + '</span>';
+                    resDiv.innerHTML = '<span style="color: #ff4757">❌ Error: ' + data.error + '</span>';
+            } catch (err) {
+                resDiv.innerHTML = '<span style="color: #ff4757">❌ Network Error: ' + err.message + '</span>';
+            } finally {
+      btn.innerHTML = "Publish Update";
     btn.disabled = false;
             }
         }
 
-    // Load config on startup
-    let lastRequestTimestamp = null;
-
-    async function updateUsageStats() {
-            try {
-                const res = await fetch('/api/usage');
-    const data = await res.json();
-    if (data.success && data.stats) {
-                    const stats = data.stats;
-    const limit = data.limit || 1000;
-    const tokenLimit = data.token_limit || 100000;
-
-    document.getElementById('total-req').innerText = stats.total_requests || 0;
-    document.getElementById('total-limit').innerText = limit;
-    document.getElementById('total-tokens').innerText = (stats.total_tokens || 0).toLocaleString();
-    document.getElementById('token-limit-display').innerText = tokenLimit.toLocaleString();
-
-    const percent = Math.min(100, ((stats.total_requests || 0) / limit) * 100);
-    document.getElementById('usage-progress').style.width = percent + '%';
-
-    const tokenPercent = Math.min(100, ((stats.total_tokens || 0) / tokenLimit) * 100);
-    document.getElementById('token-progress').style.width = tokenPercent + '%';
-
-    // Endpoint Stats Table
-    const endpointDiv = document.getElementById('endpoint-stats');
-    endpointDiv.innerHTML = '';
-
-    for (const [name, data] of Object.entries(stats.endpoints || { })) {
-                        const count = typeof data === 'object' ? data.requests : data;
-    const tokens = typeof data === 'object' ? data.tokens : 0;
-    endpointDiv.innerHTML += `
-    <div class="endpoint-row" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
-      <span class="endpoint-name" style="font-weight: 500; font-family: monospace; color: var(--text);">${name}</span>
-      <div style="text-align: right;">
-        <div style="font-weight: bold; color: var(--accent);">${count} reqs</div>
-        <div style="font-size: 0.65rem; color: var(--text-muted);">${tokens.toLocaleString()} tokens</div>
-      </div>
-    </div>
-    `;
-                    }
-
-    // Recent Logs Table
-    const logsBody = document.getElementById('recent-logs-body');
-                    if (stats.recent_logs && stats.recent_logs.length > 0) {
-      logsBody.innerHTML = stats.recent_logs.map(log => {
-        const time = new Date(log.timestamp).toLocaleTimeString();
-        return `
-                                <tr style="border-bottom: 1px solid var(--border);">
-                                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">${time}</td>
-                                    <td style="padding: 0.75rem 1rem; font-family: monospace; color: #fff;">${log.endpoint}</td>
-                                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">${log.model}</td>
-                                    <td style="padding: 0.75rem 1rem; text-align: right; font-weight: bold; color: var(--accent);">${log.tokens.toLocaleString()}</td>
-                                </tr>
-                            `;
-      }).join('');
-                    } else {
-      logsBody.innerHTML = '<tr><td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-muted);">No recent activity tracked yet.</td></tr>';
-                    }
-
-    // Live Indicator logic
-    if (stats.last_request && stats.last_request !== lastRequestTimestamp) {
-                        const indicator = document.getElementById('live-indicator');
-    if (lastRequestTimestamp !== null) { // Don't flash on first load
-      indicator.style.opacity = '1';
-                            setTimeout(() => indicator.style.opacity = '0', 2000);
-                        }
-    lastRequestTimestamp = stats.last_request;
-    const date = new Date(stats.last_request);
-    document.getElementById('usage-last-update').innerText = 'Last Activity: ' + date.toLocaleTimeString();
-                    }
-                }
-            } catch (e) {console.error("Stats poll failed", e); }
-        }
-
         window.onload = () => {
       loadConfig();
-    loadCache(); // Init Cache Manager
+    loadCurrentVersion();
     updateUsageStats();
     setInterval(updateUsageStats, 2000);
         };
@@ -1329,30 +978,30 @@ async function handleDict(req, res) {
 
   // Create a context-aware cache key
   const normalizedTerm = queryTerm.toLowerCase().trim();
-  const contextHash = context ? `- ${ Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8) } ` : "";
-  const dictCacheKey = `${ from } - ${ to } - ${ normalizedTerm }${ contextHash } `;
+  const contextHash = context ? `- ${ Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8) }` : "";
+  const cacheKey = `${ from } - ${ to } - ${ normalizedTerm }${ contextHash }`;
 
   // Skip cache if bypass_cache is enabled (for AI learn mode)
   if (!shouldBypassCache) {
     // 1. Check Primary Cache (Directional + Contextual)
-    if (dictCache[dictCacheKey]) {
-      console.log(`Cache Hit(Primary): ${ dictCacheKey } `);
-      return serveCachedEntry(dictCacheKey, res);
+    if (dictCache[cacheKey]) {
+      console.log(`Cache Hit(Primary): ${ cacheKey }`);
+      return serveCachedEntry(cacheKey, res);
     }
 
     // 2. Fallback to Generic cache (if context-less entry exists)
-    const genericKey = `${ from } - ${ to } - ${ normalizedTerm } `;
+    const genericKey = `${ from } - ${ to } - ${ normalizedTerm }`;
     if (!context && dictCache[genericKey]) {
-      console.log(`Cache Hit(Generic): ${ genericKey } `);
+      console.log(`Cache Hit(Generic): ${ genericKey }`);
       return serveCachedEntry(genericKey, res);
     }
 
     // 3. Global Cache Search (Direction-Agnostic, ONLY Generic or Exact match)
     const globalMatch = Object.keys(dictCache).find(k => {
       // Must end with the term, and either be context-less OR match the current context hash
-      const endsWithTerm = k.endsWith(`- ${ normalizedTerm } `);
-      const isGeneric = k === `${ from === 'de' ? 'en' : 'de' } -${ from === 'de' ? 'de' : 'en' } -${ normalizedTerm } `;
-      const isSameContext = k.endsWith(`${ normalizedTerm }${ contextHash } `);
+      const endsWithTerm = k.endsWith(`- ${ normalizedTerm }`);
+      const isGeneric = k === `${ from === 'de' ? 'en' : 'de'}-${ from === 'de' ? 'de' : 'en'}-${ normalizedTerm }`;
+      const isSameContext = k.endsWith(`${ normalizedTerm }${ contextHash }`);
       return endsWithTerm && (isGeneric || isSameContext);
     });
     if (globalMatch) {
@@ -1388,11 +1037,11 @@ async function handleDict(req, res) {
 
 Rules:
 1. Identify the 'best' translation.
-        2. Detect the language of the term(English or German).
+        2. If Source or Target is 'auto', you must detect the languages yourself(specifically between English and German).
         3. If the German term is a noun, you MUST include the definite article(der / die / das) and capitalize it(e.g., 'der Hund').
         4. Even if source is German, ensure 'german_full' is the explicit Article + Noun form.
         5. Provide gender(m / f / n) for German nouns.
-        6. Provide exactly 2 common alternate translations in the 'alternates' array.
+        6. Provide 2 - 3 common alternate translations.
         7. For German words, provide additional grammar data:
 - artikel: "der", "die", or "das"(if noun)
   - plural: Plural form(if noun)
@@ -1409,21 +1058,20 @@ Rules:
 
         Return JSON: {
   "translation": "Main translation",
-    "alternates": ["alt1", "alt2"],
-      "detected_from": "de or en",
-        "detected_to": "en or de",
-          "data": {
+    "data": {
     "artikel": "...", "plural": "...", "perfekt": "...", "praeteritum": "...", "praesens": "...",
       "case": "...", "gender": "...", "vowel_change": "...", "part_of_speech": "...",
         "extra_info": "...", "synonyms": [...], "example": "...", "exampleEn": "..."
-  }
+  },
+  "detected_from": "${from}",
+    "detected_to": "${to}"
 } ` }
       ],
       model: aiConfig.model_dict || "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/dict", aiConfig.model_dict || "llama-3.3-70b-versatile", completion.usage?.total_tokens || 0);
+    logAiUsage("/dict", aiConfig.model_dict || "llama-3.3-70b-versatile");
 
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
@@ -1466,17 +1114,14 @@ Rules:
     }
 
     // Professional Audio URL (Google TTS)
-    const audioTerm = (aiData.detected_from === 'de' ? queryTerm : aiData.translation).trim();
-    const audioLang = aiData.detected_from === 'de' ? 'de' : 'en';
+    const audioTerm = (from === 'de' ? queryTerm : aiData.translation).trim();
+    const audioLang = from === 'de' ? 'de' : 'en';
     const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(audioTerm)}&tl=${audioLang}&client=tw-ob`;
 
 const result = {
   term: queryTerm,
   context: context || null,
   translation: aiData.translation,
-  alternates: aiData.alternates || [],
-  from: aiData.detected_from || from,
-  to: aiData.detected_to || to,
   data: finalData,
   audio_url: audioUrl,
   is_vocab: true, // Auto-promote to vocabulary
@@ -1485,7 +1130,7 @@ const result = {
 };
 
 // Save to Cache
-dictCache[dictCacheKey] = result;
+dictCache[cacheKey] = result;
 saveDictCache();
 
 res.json({
@@ -1520,7 +1165,7 @@ app.get("/sentence", async (req, res) => {
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/sentence", aiConfig.model_general || "llama-3.1-8b-instant", completion.usage?.total_tokens || 0);
+    logAiUsage("/sentence", aiConfig.model_general || "llama-3.1-8b-instant");
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
     // Wrap in "data" key for Flutter, while keeping flat keys for backward compatibility
@@ -1591,7 +1236,7 @@ app.get("/learn/practice", async (req, res) => {
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/learn/practice", aiConfig.model_general || "llama-3.1-8b-instant", completion.usage?.total_tokens || 0);
+    logAiUsage("/learn/practice", aiConfig.model_general || "llama-3.1-8b-instant");
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
@@ -1606,177 +1251,6 @@ app.get("/learn/practice", async (req, res) => {
   } catch (err) {
     console.error("AI Learn error:", err.message);
     res.status(500).json({ success: false, error: "Learning generation failed" });
-  }
-});
-
-/* -------------------- AI: STORY MODE -------------------- */
-app.post("/learn/story", async (req, res) => {
-  const { words = [], level = "A1" } = req.body;
-
-  try {
-    const wordList = words.length > 0 ? words.join(", ") : "common daily objects";
-    const systemPrompt = "You are a professional language tutor. Respond ONLY in valid JSON format.";
-    const userPrompt = `Generate a very short, level-appropriate German story (3-5 sentences) for a ${level} CEFR learner.
-    
-    WORDS TO INCLUDE: ${wordList}
-    
-    The story should be followed by 1 multiple-choice comprehension question in English.
-    
-    Format: {
-      "story_german": "...",
-      "story_english": "...",
-      "question": "Comprehension question in English",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "answer": "Correct option string",
-      "explanation": "Brief explanation in English"
-    }`;
-
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      model: aiConfig.model_general || "llama-3.1-8b-instant",
-      response_format: { type: "json_object" }
-    });
-
-    logAiUsage("/learn/story", aiConfig.model_general || "llama-3.1-8b-instant", completion.usage?.total_tokens || 0);
-
-    const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
-
-    res.json({
-      success: true,
-      data
-    });
-
-  } catch (err) {
-    console.error("AI Story error:", err.message);
-    res.status(500).json({ success: false, error: "Story generation failed" });
-  }
-});
-
-/* -------------------- EXAM: MOCK TEST -------------------- */
-app.get("/exam/mock", async (req, res) => {
-  const { level = "B1", mode = "full", module: examModule = "all" } = req.query;
-
-  let duration = level === 'B1' ? 65 : 75;
-  if (mode === 'quick') duration = 15;
-
-  let moduleInstruction = "";
-  if (examModule !== "all") {
-    moduleInstruction = `
-CRITICAL: The user has requested ONLY the ${examModule} module. 
-- You MUST NOT generate any other sections (e.g., if "Lesen" is selected, do not generate Grammatik or Sprechen).
-- Focus all 3000 tokens on making this single module highly detailed and rigorous.
-`;
-  }
-
-  let modeInstruction = "";
-  if (mode === "quick") {
-    modeInstruction = `
-CRITICAL: This is a "Quick Blitz" session (15 minutes).
-- Keep the content extremely condensed.
-- Generate only 1 or 2 high-impact tasks total.
-- Ensure the difficulty remains ${level}, but the quantity is small enough to finish in 15 minutes.
-`;
-  }
-
-  const prompt = `
-Generate a highly authentic, rigorous Goethe-Zertifikat ${level} Mock Exam.
-${modeInstruction}
-${moduleInstruction}
-
-The response MUST be a single, valid JSON object containing exactly these fields:
-- "title": "Goethe-Zertifikat ${level} ${examModule === 'all' ? 'Modelltest' : examModule}"
-- "duration_minutes": ${duration}
-- "sections": An array of objects. Each section object has:
-  - "title": String (e.g., "Lesen Teil 1")
-  - "instructions": Detailed German instructions
-  - "tasks": An array of objects. Each task has:
-    - "context": A substantial text in German (appropriate for the level).
-    - "questions": An array of objects. Each question has:
-      - "text": The question in German.
-      - "options": Array of 3 strings (MCQ).
-      - "correct_index": Number (0-2).
-
-Authenticity Guidelines for ${level}:
-1. Topic Areas: Beruf, Ausbildung, Umwelt, Reisen, Gesellschaft, Kommunikation.
-2. Linguistic Rigor: Use ${level} level grammar (Passiv, Konjunktiv, etc.).
-3. Section Map (ONLY include items relevant to "${examModule}"):
-   - Part 1-3: Lesen (Reading)
-   - Part 4: Grammatik / Sprachbausteine
-   - Part 5: Sprechen (Interactive oral task. Context only, no questions).
-
-Strictly follow the ${level} word lists. Deliver ONLY raw JSON. No markdown.
-`;
-
-  try {
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: aiConfig.system_role },
-        { role: "user", content: prompt }
-      ],
-      model: aiConfig.model_dict, // Use 70B for high-quality exam generation
-      temperature: 0.7,
-      max_tokens: 3000,
-      response_format: { type: "json_object" }
-    });
-
-    const resultString = completion.choices[0].message.content;
-    const resultJson = JSON.parse(resultString);
-
-    logAiUsage("/exam/mock", aiConfig.model_dict || "llama-3.3-70b-versatile", completion.usage?.total_tokens || 0);
-
-    res.json({
-      success: true,
-      data: resultJson
-    });
-
-  } catch (err) {
-    console.error("Mock Test generation failed:", err);
-    res.status(500).json({ success: false, error: "Failed to generate mock exam. Please try again." });
-  }
-});
-
-/* -------------------- EXAM: SPEAKING PARTNER -------------------- */
-app.post("/exam/speak", async (req, res) => {
-  const { level, chatHistory, taskDescription } = req.body;
-  const model = "llama-3.1-8b-instant"; // Fast and high rate limits
-
-  const systemRole = `
-You are a German exam partner for the Goethe-Zertifikat ${level} Speaking module.
-Your goal is to have an authentic, helpful, but rigorous dialogue with the candidate.
-
-Current Task: ${taskDescription}
-
-Rules:
-1. Speak ONLY in German.
-2. Be natural but follow the level-specific grammar and vocabulary.
-3. Keep your responses relatively short (max 2-3 sentences) to maintain a fast dialogue.
-4. If it's a planning task (B1), propose ideas and ask for the candidate's opinion.
-5. If it's a discussion (B2), express your own viewpoint and ask the candidate to elaborate.
-6. Do NOT correct their grammar during the conversation unless it's completely unintelligible. Stay in character.
-`;
-
-  try {
-    const messages = [
-      { role: "system", content: systemRole },
-      ...chatHistory
-    ];
-
-    const completion = await groq.chat.completions.create({
-      messages,
-      model,
-      temperature: 0.7,
-      max_tokens: 500,
-    });
-
-    const response = completion.choices[0].message.content;
-    logAiUsage("/exam/speak", model, completion.usage?.total_tokens || 0);
-    res.json({ success: true, response });
-  } catch (err) {
-    console.error("Speaking API Error:", err);
-    res.status(500).json({ success: false, error: "AI Partner is busy. Try again." });
   }
 });
 
@@ -1826,7 +1300,7 @@ Return JSON: {
       response_format: { type: "json_object" }
     });
 
-    logAiUsage("/evaluate", aiConfig.model_general || "llama-3.1-8b-instant", completion.usage?.total_tokens || 0);
+    logAiUsage("/evaluate", aiConfig.model_general || "llama-3.1-8b-instant");
 
     const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
     res.json({
@@ -1843,44 +1317,94 @@ Return JSON: {
 
 
 /* -------------------- APP VERSION CHECK -------------------- */
-const FALLBACK_MANIFEST = {
-  android: {
-    version: "1.1.7+12",
-    url: "http://deutschfordisch-server.onrender.com/uploads/app-unknown.apk",
-    force_update: false,
-    changelog: "Bug fixes and improvements"
-  },
-  ios: {
-    version: "1.1.7+12",
-    url: "https://apps.apple.com/app/id6740695079",
-    force_update: false,
-    changelog: "Bug fixes and improvements"
-  }
-};
-
 app.get("/app_version.json", (req, res) => {
-  // Always start with fallback values
-  let manifest = { ...FALLBACK_MANIFEST };
-
+  // Try to read dynamic manifest, otherwise fallback to default
   try {
     if (fs.existsSync(MANIFEST_PATH)) {
-      const savedManifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
-      // Merge: Stored version overrides code fallback ONLY if it looks valid
-      if (savedManifest.android && savedManifest.android.version !== "0.0.0") {
-        manifest.android = { ...manifest.android, ...savedManifest.android };
-      }
-      if (savedManifest.ios && savedManifest.ios.version !== "0.0.0") {
-        manifest.ios = { ...manifest.ios, ...savedManifest.ios };
-      }
+      const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
+      return res.json(manifest);
     }
   } catch (err) {
-    console.error("Error reading manifest, using hardcoded fallbacks:", err);
+    console.error("Error reading manifest:", err);
   }
 
-  res.json(manifest);
+  // Fallback default
+  res.json({
+    android: {
+      version: "1.1.7+12",
+      url: "https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch",
+      force_update: false,
+      changelog: "Bug fixes and improvements"
+    },
+    ios: {
+      version: "1.1.7+12",
+      url: "https://apps.apple.com/app/id...",
+      force_update: false,
+      changelog: "Bug fixes and improvements"
+    }
+  });
 });
 
+/* -------------------- ADMIN: PUBLISH VERSION (NO FILE) -------------------- */
+app.post("/admin/publish_version", (req, res) => {
+  const {
+    android_version,
+    ios_version,
+    android_url = "https://play.google.com/store/apps/details?id=com.yugdhawan.deutschfordisch",
+    ios_url = "https://apps.apple.com/app/id...",
+    changelog = "Bug fixes and improvements",
+    force_update = false
+  } = req.body;
 
+  if (!android_version && !ios_version) {
+    return res.status(400).json({ success: false, error: "At least one version (Android or iOS) is required" });
+  }
+
+  try {
+    // Load existing manifest or create new one
+    let manifest = {
+      android: { version: "1.0.0", url: "", force_update: false, changelog: "" },
+      ios: { version: "1.0.0", url: "", force_update: false, changelog: "" }
+    };
+
+    if (fs.existsSync(MANIFEST_PATH)) {
+      manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8"));
+    }
+
+    // Update Android if provided
+    if (android_version) {
+      manifest.android = {
+        version: android_version,
+        url: android_url,
+        force_update: force_update,
+        changelog: changelog
+      };
+    }
+
+    // Update iOS if provided
+    if (ios_version) {
+      manifest.ios = {
+        version: ios_version,
+        url: ios_url,
+        force_update: force_update,
+        changelog: changelog
+      };
+    }
+
+    // Write to persistent storage
+    fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
+
+    res.json({
+      success: true,
+      message: `Version published successfully`,
+      manifest: manifest
+    });
+
+  } catch (err) {
+    console.error("Version publish failed:", err);
+    res.status(500).json({ success: false, error: "Failed to update version manifest" });
+  }
+});
 
 /* -------------------- ADMIN: UPLOAD RELEASE -------------------- */
 app.post("/admin/upload_release", upload.single("file"), (req, res) => {
@@ -1925,7 +1449,7 @@ app.post("/admin/upload_release", upload.single("file"), (req, res) => {
       // iOS doesn't usually allow direct IPA downloads this way, but we update metadata
       manifest.ios = {
         version,
-        url: "https://apps.apple.com/app/id6740695079", // Official iOS link
+        url: "https://apps.apple.com/app/id123456789", // Placeholder for logic
         force_update: false,
         changelog
       };
@@ -1961,6 +1485,6 @@ app.post("/admin/ai_config", (req, res) => {
 });
 
 /* -------------------- START -------------------- */
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`Server live on port ${PORT} `);
 });
