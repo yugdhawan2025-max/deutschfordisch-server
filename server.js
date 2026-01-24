@@ -984,28 +984,35 @@ app.get("/", (req, res) => {
                 });
                 const data = await response.json();
                 if (type === 'image' && data.success) {
-                    let statusColor = data.apiKeyStatus === 'active' ? '#00ff88' : '#ff4757';
-                    let statusLabel = data.apiKeyStatus === 'active' ? 'Active' : 'MISSING';
+                    const info = data.vocab_info || {};
+                    const isCached = data.is_cached;
+                    const statusColor = isCached ? '#00ff88' : '#3a7bd5';
+                    const statusLabel = isCached ? 'Cached' : 'Direct (Uncached)';
                     
                     resDiv.innerHTML = \`
                         <div style="background: rgba(0,0,0,0.4); padding: 0.8rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.75rem; text-align: left; border: 1px solid var(--border);">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                                <span style="color: var(--text-muted);">Pexels API Status:</span>
-                                <span style="color: \${statusColor}; font-weight: bold;">\${statusLabel}</span>
+                                <span style="color: var(--text-muted);">Pixabay API Status:</span>
+                                <span style="color: #00ff88; font-weight: bold;">Connected (v10)</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                                <span style="color: var(--text-muted);">Key Found (Prefix):</span>
-                                <span style="font-family: monospace; color: var(--accent);">\${data.apiKeyPrefix}</span>
+                                <span style="color: var(--text-muted);">Category:</span>
+                                <span style="font-family: monospace; color: var(--accent);">\${info.category || 'Unknown'}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                                <span style="color: var(--text-muted);">Search Terms:</span>
+                                <span style="font-family: monospace; color: #fff;">"\${info.search_terms || data.word}"</span>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
-                                <span style="color: var(--text-muted);">Cleaned Keyword:</span>
-                                <span style="font-family: monospace; color: #fff;">"\${data.cleanedKeyword || 'Direct Match'}"</span>
+                                <span style="color: var(--text-muted);">Cache Status:</span>
+                                <span style="color: \${statusColor}; font-weight: bold;">\${statusLabel}</span>
                             </div>
                         </div>
                         <img src="\${data.imageUrl}" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
                         <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all; background: #000; padding: 0.4rem; border-radius: 4px;">\${data.imageUrl}</div>
                     \`;
-                } else {
+                }
+ else {
                     resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
                 }
             } catch (err) {

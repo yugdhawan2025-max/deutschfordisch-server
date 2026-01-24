@@ -35,6 +35,12 @@
             "category": "objects",
             "search_terms": "writing pencil",
             "disambiguation": "An instrument for writing or drawing"
+        },
+        {
+            "word": "plate",
+            "category": "objects",
+            "search_terms": "dinner plate, ceramic plate",
+            "disambiguation": "A flat dish, typically circular, from which food is eaten"
         }
     ]
 }
