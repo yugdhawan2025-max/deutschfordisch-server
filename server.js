@@ -81,11 +81,7 @@ const DEFAULT_AI_CONFIG = {
   word_counts: {
     "A1": 5, "A2": 8, "B1": 12, "B2": 15, "C1": 15, "C2": 20
   },
-  word_counts: {
-    "A1": 5, "A2": 8, "B1": 12, "B2": 15, "C1": 15, "C2": 20
-  },
-  tuning_instructions: "", // Custom fine-tuning for content generation
-  image_size_preference: "medium" // small, medium, large
+  tuning_instructions: "" // Custom fine-tuning for content generation
 };
 
 // Load Config with Fallback
@@ -127,13 +123,13 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v4.json"); // v4 for Pixabay
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v6.json"); // v6 for Square-Prioritized Pixabay
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
   try {
     imageCache = JSON.parse(fs.readFileSync(IMAGE_CACHE_PATH, "utf8"));
-    console.log(`Loaded ${Object.keys(imageCache).length} cached images.`);
+    console.log(`Loaded ${Object.keys(imageCache).length} cached images (v6).`);
   } catch (err) {
     console.error("Failed to load image cache:", err);
   }
@@ -150,12 +146,11 @@ function saveImageCache() {
 const FALLBACK_IMAGE = "https://placehold.co/1000x1000/023047/white.png?text=No+Image+Found"; // Stable placeholder
 
 /**
- * Searches for an image on Pexels and returns the URL.
- * Includes caching logic using the German noun as the key.
+ * Searches for an image on Pixabay and returns the URL.
+ * Includes manual filtering for 'square-ish' images to prevent bad cropping in-app.
  */
 async function getOrSearchImage(germanNoun, englishTranslation) {
   const cacheKey = germanNoun.toLowerCase().trim();
-  // Filter keyword: "female doctor" -> "doctor", "das Buch" -> "Buch"
   let searchKeyword = (englishTranslation || germanNoun).toLowerCase().trim();
 
   // Strip German articles
@@ -170,7 +165,6 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
   // Remove gendered prefixes (e.g., "female doctor" -> "doctor")
   searchKeyword = searchKeyword.replace(/^female\s+/i, "");
   searchKeyword = searchKeyword.replace(/^male\s+/i, "");
-
   searchKeyword = searchKeyword.split(',')[0].trim();
 
   // 1. Check Cache
@@ -179,74 +173,61 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
     return imageCache[cacheKey];
   }
 
-  // 2. PRIMARY: Pexels API
-  const pexelsKey = process.env.PEXELS_API_KEY || "S8v27Hs4NMFgPJsm9ztEjhvEMDeMlcsplvzdAFcdGq5ycHzArCap4PJJ";
-  try {
-    console.log(`[IMAGE] Searching Pexels for: "${searchKeyword}" (German: ${cacheKey})`);
-
-    const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchKeyword)}&orientation=square&per_page=1`, {
-      headers: {
-        Authorization: pexelsKey,
-        'User-Agent': 'Mozilla/5.0 (Node.js/Server) AppleWebKit/537.36'
-      }
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.photos && data.photos.length > 0) {
-        const photo = data.photos[0];
-        // Select size based on preference
-        const sizePref = aiConfig.image_size_preference || "medium";
-        let selectedUrl = photo.src.large;
-
-        if (sizePref === "small") selectedUrl = photo.src.tiny || photo.src.small;
-        else if (sizePref === "medium") selectedUrl = photo.src.medium || photo.src.large;
-        else selectedUrl = photo.src.large2x || photo.src.large;
-
-        return cacheAndReturn(selectedUrl);
-      } else {
-        console.warn(`[IMAGE] Pexels found no matches for "${searchKeyword}".`);
-      }
-    } else {
-      console.error(`[IMAGE] Pexels API Error: ${response.status} ${response.statusText}`);
-    }
-  } catch (err) {
-    console.error(`[IMAGE] Pexels Search critical failure for ${searchKeyword}:`, err);
-  }
-
-  // 3. SECONDARY: Pixabay API (Backup)
-  console.log(`[IMAGE] Falling back to Pixabay for: "${searchKeyword}"`);
-  const pixabayKey = process.env.PIXABAY_API_KEY; // Only use Env var, no hardcoded invalid key
-  if (!pixabayKey || pixabayKey.includes("YOUR_PIXABAY_API_KEY")) {
-    console.warn(`[IMAGE] No Pixabay API Key found. Skipping fallback.`);
+  // 2. Search Pixabay
+  const apiKey = process.env.PIXABAY_API_KEY;
+  if (!apiKey || apiKey.includes("YOUR_PIXABAY_API_KEY")) {
+    console.warn(`[IMAGE] No Pixabay API Key found. Using placeholder for "${searchKeyword}".`);
   } else {
     try {
-      const response = await fetch(`https://pixabay.com/api/?key=${pixabayKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&per_page=3`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.hits && data.hits.length > 0) {
-          const randomIndex = Math.floor(Math.random() * Math.min(data.hits.length, 3));
-          const hit = data.hits[randomIndex];
+      console.log(`[IMAGE] Searching Pixabay (Square Priority) for: "${searchKeyword}"`);
+      // Get 100 results to have a good pool for filtering
+      const response = await fetch(`https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&per_page=100&safesearch=true`);
 
-          const sizePref = aiConfig.image_size_preference || "medium";
-          let selectedUrl = hit.webformatURL;
+      if (!response.ok) throw new Error(`Pixabay API error: ${response.statusText}`);
 
-          if (sizePref === "small") selectedUrl = hit.previewURL;
-          else if (sizePref === "medium") selectedUrl = hit.webformatURL;
-          else selectedUrl = hit.largeImageURL || hit.fullHDURL || hit.webformatURL;
+      const data = await response.json();
+      if (data.hits && data.hits.length > 0) {
+        // Find square-ish images (aspect ratio between 0.8 and 1.25)
+        // We only look at the top 30 hits to maintain relevance
+        const candidates = data.hits.slice(0, 30).filter(hit => {
+          const ratio = hit.imageWidth / hit.imageHeight;
+          return ratio >= 0.8 && ratio <= 1.25;
+        });
 
-          return cacheAndReturn(selectedUrl);
+        // Use the most relevant square image (index 0 of candidates) 
+        // OR fall back to the absolute top hit if no square found
+        let selectedImage = null;
+        if (candidates.length > 0) {
+          // Pick from top 3 square candidates for slight variety, prioritizing relevant ones
+          const luckyIndex = Math.floor(Math.random() * Math.min(candidates.length, 3));
+          const photo = candidates[luckyIndex];
+          selectedImage = photo.largeImageURL || photo.webformatURL;
+          console.log(`[IMAGE] Picked square-ish candidate (Index ${luckyIndex} of candidates) for "${searchKeyword}"`);
+        } else {
+          // Absolute fallback to first result if no square image exists in top results
+          selectedImage = data.hits[0].largeImageURL || data.hits[0].webformatURL;
+          console.warn(`[IMAGE] No square images found for "${searchKeyword}". Using top horizontal/vertical result.`);
+        }
+
+        // 3. Cache Result
+        if (selectedImage) {
+          imageCache[cacheKey] = selectedImage;
+          saveImageCache();
+          return selectedImage;
+        }
+      } else {
+        console.warn(`[IMAGE] No photos found on Pixabay for keyword: ${searchKeyword}`);
+        // Try secondary search with just "noun" if it was different
+        if (searchKeyword !== germanNoun) {
+          return await getOrSearchImage(germanNoun, germanNoun);
         }
       }
     } catch (err) {
-      console.error(`[IMAGE] Pixabay Search critical failure:`, err);
+      console.error(`[IMAGE] Pixabay Search failure for ${searchKeyword}:`, err);
     }
   }
 
-  // Final attempt: Placehold.co is the most stable
-  const fallback = `https://placehold.co/1000x1000/023047/FFB703.png?text=${encodeURIComponent(searchKeyword)}`;
-  console.log(`[IMAGE] Final fallback served for "${searchKeyword}": ${fallback}`);
-  return fallback;
+  return `https://placehold.co/1000x1000/023047/FFB703.png?text=${encodeURIComponent(searchKeyword)}`;
 }
 
 /**
@@ -476,32 +457,6 @@ app.get("/api/test_image", async (req, res) => {
   }
 });
 
-/* -------------------- IMAGE CACHE MANAGEMENT API -------------------- */
-app.get("/api/images", (req, res) => {
-  res.json(imageCache);
-});
-
-app.delete("/api/images/:key", (req, res) => {
-  const { key } = req.params;
-  if (imageCache[key]) {
-    delete imageCache[key];
-    saveImageCache();
-    res.json({ success: true, message: `Deleted cache for '${key}'` });
-  } else {
-    res.status(404).json({ success: false, error: "Key not found" });
-  }
-});
-
-app.post("/api/images/:key", (req, res) => {
-  const { key } = req.params;
-  const { url } = req.body;
-  if (!url) return res.status(400).json({ success: false, error: "Missing URL" });
-
-  imageCache[key] = url;
-  saveImageCache();
-  res.json({ success: true, message: `Updated cache for '${key}'` });
-});
-
 /* -------------------- ROOT: PREMIUM DASHBOARD -------------------- */
 app.get("/", (req, res) => {
   res.send(`
@@ -706,20 +661,6 @@ app.get("/", (req, res) => {
                 <div id="image-res" class="result-container" style="text-align: center;"></div>
             </div>
 
-            <!-- Image Cache Manager -->
-            <div class="card" style="grid-column: span 1.5; max-height: 500px; display: flex; flex-direction: column;">
-                <h3>Image Cache Manager ("Training")</h3>
-                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">
-                    Review and correct images here. Deleting an image forces the system to find a new one next time.
-                </p>
-                <div style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 0.5rem;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
-                        <tbody id="cache-table-body"></tbody>
-                    </table>
-                </div>
-                <button onclick="loadCache()" style="margin-top: 1rem; width: auto; align-self: center; padding: 0.5rem 2rem;">Refresh Cache List</button>
-            </div>
-
             <!-- AI Sentence -->
             <div class="card">
                 <h3>Sentence Generation</h3>
@@ -827,16 +768,8 @@ app.get("/", (req, res) => {
             <div class="card" style="grid-column: span 1.5">
                 <h3>AI Config Settings</h3>
                 <div class="input-group">
-                    <label>Image Size</label>
-                    <select id="cfg-img-size">
-                        <option value="small">Small (Fastest)</option>
-                        <option value="medium">Medium (Standard)</option>
-                        <option value="large">Large (High Quality)</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>System Role & Persona</label>
-                    <textarea id="cfg-role" rows="3" placeholder="Define how the AI should behave..."></textarea>
+                    <label>System Role (Personality)</label>
+                    <input type="text" id="cfg-role" placeholder="e.g., Strict Grammar Expert">
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -1054,7 +987,6 @@ app.get("/", (req, res) => {
                 document.getElementById('cfg-model-gen').value = cfg.model_general || 'llama-3.1-8b-instant';
                 document.getElementById('cfg-rpm').value = cfg.rpm_limit || 1000;
                 document.getElementById('cfg-tpm').value = cfg.tpm_limit || 100000;
-                document.getElementById('cfg-img-size').value = cfg.image_size_preference || 'medium';
 
                 if (cfg.word_counts) {
                     document.getElementById('wc-a1').value = cfg.word_counts.A1 || 5;
@@ -1066,69 +998,6 @@ app.get("/", (req, res) => {
                 document.getElementById('cfg-tuning').value = cfg.tuning_instructions || '';
             } catch (err) {
                 console.error("Failed to load config", err);
-            }
-        }
-
-        /* ----- CACHE MANAGER SCRIPTS ----- */
-        async function loadCache() {
-            const tbody = document.getElementById('cache-table-body');
-            tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1rem;">Loading cache...</td></tr>';
-            try {
-                const res = await fetch('/api/images');
-                const cache = await res.json();
-                tbody.innerHTML = '';
-                
-                const entries = Object.entries(cache);
-                if (entries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:1rem; color:var(--text-muted);">Cache is empty</td></tr>';
-                    return;
-                }
-
-                entries.forEach(([key, url]) => {
-                    const row = \`
-                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                            <td style="padding: 0.5rem; font-weight: bold; color: var(--accent); vertical-align: top;">\${key}</td>
-                            <td style="padding: 0.5rem; vertical-align: top;">
-                                <a href="\${url}" target="_blank">
-                                    <img src="\${url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border);">
-                                </a>
-                                <input type="text" id="url-\${key}" value="\${url}" style="width: 100%; margin-top: 4px; font-size: 0.7rem; padding: 4px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--border);">
-                            </td>
-                            <td style="padding: 0.5rem; text-align: right; vertical-align: top; width: 100px;">
-                                <button onclick="updateImage('\${key}')" style="padding: 4px 8px; font-size: 0.7rem; width: auto; background: #00b894; margin-bottom: 4px;">Save</button>
-                                <button onclick="deleteImage('\${key}')" style="padding: 4px 8px; font-size: 0.7rem; width: auto; background: #ff4757;">Delete</button>
-                            </td>
-                        </tr>
-                    \`;
-                    tbody.innerHTML += row;
-                });
-            } catch (err) {
-                tbody.innerHTML = \`<tr><td colspan="3" style="color: #ff4757; text-align:center;">Error: \${err.message}</td></tr>\`;
-            }
-        }
-
-        async function deleteImage(key) {
-            if (!confirm(\`Are you sure you want to delete the cached image for "\${key}"?\`)) return;
-            try {
-                await fetch(\`/api/images/\${key}\`, { method: 'DELETE' });
-                loadCache(); // Refresh
-            } catch (err) {
-                alert("Failed to delete: " + err.message);
-            }
-        }
-
-        async function updateImage(key) {
-            const url = document.getElementById(\`url-\${key}\`).value;
-            try {
-                await fetch(\`/api/images/\${key}\`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
-                });
-                alert(\`Updated image for \${key}\`);
-                loadCache(); // Refresh
-            } catch (err) {
-                alert("Failed to update: " + err.message);
             }
         }
 
@@ -1151,7 +1020,6 @@ app.get("/", (req, res) => {
                 model_general: document.getElementById('cfg-model-gen').value,
                 rpm_limit: parseInt(document.getElementById('cfg-rpm').value) || 1000,
                 tpm_limit: parseInt(document.getElementById('cfg-tpm').value) || 100000,
-                image_size_preference: document.getElementById('cfg-img-size').value,
                 word_counts: {
                     A1: parseInt(document.getElementById('wc-a1').value) || 5,
                     A2: parseInt(document.getElementById('wc-a2').value) || 8,
@@ -1181,131 +1049,130 @@ app.get("/", (req, res) => {
             } catch (err) {
                 resDiv.innerHTML = \`<span style="color: #ff4757">❌ Network Error: \${err.message}</span>\`;
             } finally {
-      btn.innerHTML = "Save AI Settings";
-    btn.disabled = false;
+                btn.innerHTML = "Save AI Settings";
+                btn.disabled = false;
             }
         }
 
-    // Load config on startup
-    let lastRequestTimestamp = null;
+        // Load config on startup
+        let lastRequestTimestamp = null;
 
-    async function updateUsageStats() {
+        async function updateUsageStats() {
             try {
                 const res = await fetch('/api/usage');
-    const data = await res.json();
-    if (data.success && data.stats) {
+                const data = await res.json();
+                if (data.success && data.stats) {
                     const stats = data.stats;
-    const limit = data.limit || 1000;
-    const tokenLimit = data.token_limit || 100000;
+                    const limit = data.limit || 1000;
+                    const tokenLimit = data.token_limit || 100000;
+                    
+                    document.getElementById('total-req').innerText = stats.total_requests || 0;
+                    document.getElementById('total-limit').innerText = limit;
+                    document.getElementById('total-tokens').innerText = (stats.total_tokens || 0).toLocaleString();
+                    document.getElementById('token-limit-display').innerText = tokenLimit.toLocaleString();
+                    
+                    const percent = Math.min(100, ((stats.total_requests || 0) / limit) * 100);
+                    document.getElementById('usage-progress').style.width = percent + '%';
 
-    document.getElementById('total-req').innerText = stats.total_requests || 0;
-    document.getElementById('total-limit').innerText = limit;
-    document.getElementById('total-tokens').innerText = (stats.total_tokens || 0).toLocaleString();
-    document.getElementById('token-limit-display').innerText = tokenLimit.toLocaleString();
+                    const tokenPercent = Math.min(100, ((stats.total_tokens || 0) / tokenLimit) * 100);
+                    document.getElementById('token-progress').style.width = tokenPercent + '%';
+                    
+                    // Endpoint Stats Table
+                    const endpointDiv = document.getElementById('endpoint-stats');
+                    endpointDiv.innerHTML = '';
+                    
+                    for (const [name, data] of Object.entries(stats.endpoints || {})) {
+                        const count = typeof data === 'object' ? data.requests : data;
+                        const tokens = typeof data === 'object' ? data.tokens : 0;
+                        endpointDiv.innerHTML += \`
+                            <div class="endpoint-row" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+                                <span class="endpoint-name" style="font-weight: 500; font-family: monospace; color: var(--text);">\${name}</span>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: bold; color: var(--accent);">\${count} reqs</div>
+                                    <div style="font-size: 0.65rem; color: var(--text-muted);">\${tokens.toLocaleString()} tokens</div>
+                                </div>
+                            </div>
+                        \`;
+                    }
+                    
+                    // Recent Logs Table
+                    const logsBody = document.getElementById('recent-logs-body');
+                    if (stats.recent_logs && stats.recent_logs.length > 0) {
+                        logsBody.innerHTML = stats.recent_logs.map(log => {
+                            const time = new Date(log.timestamp).toLocaleTimeString();
+                            return \`
+                                <tr style="border-bottom: 1px solid var(--border);">
+                                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">\${time}</td>
+                                    <td style="padding: 0.75rem 1rem; font-family: monospace; color: #fff;">\${log.endpoint}</td>
+                                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">\${log.model}</td>
+                                    <td style="padding: 0.75rem 1rem; text-align: right; font-weight: bold; color: var(--accent);">\${log.tokens.toLocaleString()}</td>
+                                </tr>
+                            \`;
+                        }).join('');
+                    } else {
+                        logsBody.innerHTML = '<tr><td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-muted);">No recent activity tracked yet.</td></tr>';
+                    }
 
-    const percent = Math.min(100, ((stats.total_requests || 0) / limit) * 100);
-    document.getElementById('usage-progress').style.width = percent + '%';
-
-    const tokenPercent = Math.min(100, ((stats.total_tokens || 0) / tokenLimit) * 100);
-    document.getElementById('token-progress').style.width = tokenPercent + '%';
-
-    // Endpoint Stats Table
-    const endpointDiv = document.getElementById('endpoint-stats');
-    endpointDiv.innerHTML = '';
-
-    for (const [name, data] of Object.entries(stats.endpoints || {})) {
-        const count = typeof data === 'object' ? data.requests : data;
-        const tokens = typeof data === 'object' ? data.tokens : 0;
-        endpointDiv.innerHTML += \`
-            <div class="endpoint-row" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
-                <span class="endpoint-name" style="font-weight: 500; font-family: monospace; color: var(--text);">\${name}</span>
-                <div style="text-align: right;">
-                    <div style="font-weight: bold; color: var(--accent);">\${count} reqs</div>
-                    <div style="font-size: 0.65rem; color: var(--text-muted);">\${tokens.toLocaleString()} tokens</div>
-                </div>
-            </div>
-        \`;
-    }
-
-    // Recent Logs Table
-    const logsBody = document.getElementById('recent-logs-body');
-    if (stats.recent_logs && stats.recent_logs.length > 0) {
-        logsBody.innerHTML = stats.recent_logs.map(log => {
-            const time = new Date(log.timestamp).toLocaleTimeString();
-            return \`
-                <tr style="border-bottom: 1px solid var(--border);">
-                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">\${time}</td>
-                    <td style="padding: 0.75rem 1rem; font-family: monospace; color: #fff;">\${log.endpoint}</td>
-                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">\${log.model}</td>
-                    <td style="padding: 0.75rem 1rem; text-align: right; font-weight: bold; color: var(--accent);">\${log.tokens.toLocaleString()}</td>
-                </tr>
-            \`;
-        }).join('');
-    } else {
-        logsBody.innerHTML = '<tr><td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-muted);">No recent activity tracked yet.</td></tr>';
-    }
-
-    // Live Indicator logic
-    if (stats.last_request && stats.last_request !== lastRequestTimestamp) {
+                    // Live Indicator logic
+                    if (stats.last_request && stats.last_request !== lastRequestTimestamp) {
                         const indicator = document.getElementById('live-indicator');
-    if (lastRequestTimestamp !== null) { // Don't flash on first load
-      indicator.style.opacity = '1';
+                        if (lastRequestTimestamp !== null) { // Don't flash on first load
+                            indicator.style.opacity = '1';
                             setTimeout(() => indicator.style.opacity = '0', 2000);
                         }
-    lastRequestTimestamp = stats.last_request;
-    const date = new Date(stats.last_request);
-    document.getElementById('usage-last-update').innerText = 'Last Activity: ' + date.toLocaleTimeString();
+                        lastRequestTimestamp = stats.last_request;
+                        const date = new Date(stats.last_request);
+                        document.getElementById('usage-last-update').innerText = 'Last Activity: ' + date.toLocaleTimeString();
                     }
                 }
-            } catch (e) {console.error("Stats poll failed", e); }
+            } catch (e) { console.error("Stats poll failed", e); }
         }
 
         window.onload = () => {
-      loadConfig();
-    loadCache(); // Init Cache Manager
-    updateUsageStats();
-    setInterval(updateUsageStats, 2000);
+            loadConfig();
+            updateUsageStats();
+            setInterval(updateUsageStats, 2000);
         };
-  </script>
-</body >
-</html >
-    `);
+    </script>
+</body>
+</html>
+  `);
 });
 
 app.get("/test-ai", (req, res) => {
   res.send(`
-    < !DOCTYPE html >
-  <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-          body {background: #111; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-          button {padding: 15px 30px; font-size: 18px; background: #00d2ff; border: none; border-radius: 8px; cursor: pointer; }
-          #log {margin - top: 20px; font-family: monospace; color: #0f0; }
-        </style>
-    </head>
-    <body>
-      <h1>AI Speed Test</h1>
-      <button onclick="testSpeed()">Run Test</button>
-      <div id="log"></div>
-      <script>
-        async function testSpeed() {
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+button { padding: 15px 30px; font-size: 18px; background: #00d2ff; border: none; border-radius: 8px; cursor: pointer; }
+#log { margin-top: 20px; font-family: monospace; color: #0f0; }
+</style>
+</head>
+<body>
+<h1>AI Speed Test</h1>
+<button onclick="testSpeed()">Run Test</button>
+<div id="log"></div>
+<script>
+async function testSpeed() {
     const log = document.getElementById('log');
-        log.innerHTML = "Testing...";
-        const start = Date.now();
-        try {
+    log.innerHTML = "Testing...";
+    const start = Date.now();
+    try {
         const res = await fetch('/sentence?word=test&level=A1');
         const data = await res.json();
         const end = Date.now();
         const duration = (end - start) / 1000;
         log.innerHTML = \`Success!\nTime: \${duration}s\n\nResponse:\n\${JSON.stringify(data, null, 2)}\`;
     } catch (e) {
-          log.innerHTML = "Error: " + e.message;
+        log.innerHTML = "Error: " + e.message;
     }
 }
-      </script>
-    </body>
-  </html>
+</script>
+</body>
+</html>
   `);
 });
 
@@ -1330,34 +1197,34 @@ async function handleDict(req, res) {
 
   // Create a context-aware cache key
   const normalizedTerm = queryTerm.toLowerCase().trim();
-  const contextHash = context ? `- ${Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8)} ` : "";
-  const dictCacheKey = `${from} - ${to} - ${normalizedTerm}${contextHash} `;
+  const contextHash = context ? `-${Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8)}` : "";
+  const dictCacheKey = `${from}-${to}-${normalizedTerm}${contextHash}`;
 
   // Skip cache if bypass_cache is enabled (for AI learn mode)
   if (!shouldBypassCache) {
     // 1. Check Primary Cache (Directional + Contextual)
     if (dictCache[dictCacheKey]) {
-      console.log(`Cache Hit(Primary): ${dictCacheKey} `);
+      console.log(`Cache Hit (Primary): ${dictCacheKey}`);
       return serveCachedEntry(dictCacheKey, res);
     }
 
     // 2. Fallback to Generic cache (if context-less entry exists)
-    const genericKey = `${from} - ${to} - ${normalizedTerm} `;
+    const genericKey = `${from}-${to}-${normalizedTerm}`;
     if (!context && dictCache[genericKey]) {
-      console.log(`Cache Hit(Generic): ${genericKey} `);
+      console.log(`Cache Hit (Generic): ${genericKey}`);
       return serveCachedEntry(genericKey, res);
     }
 
     // 3. Global Cache Search (Direction-Agnostic, ONLY Generic or Exact match)
     const globalMatch = Object.keys(dictCache).find(k => {
       // Must end with the term, and either be context-less OR match the current context hash
-      const endsWithTerm = k.endsWith(`- ${normalizedTerm} `);
-      const isGeneric = k === `${from === 'de' ? 'en' : 'de'} -${from === 'de' ? 'de' : 'en'} -${normalizedTerm} `;
-      const isSameContext = k.endsWith(`${normalizedTerm}${contextHash} `);
+      const endsWithTerm = k.endsWith(`-${normalizedTerm}`);
+      const isGeneric = k === `${from === 'de' ? 'en' : 'de'}-${from === 'de' ? 'de' : 'en'}-${normalizedTerm}`;
+      const isSameContext = k.endsWith(`${normalizedTerm}${contextHash}`);
       return endsWithTerm && (isGeneric || isSameContext);
     });
     if (globalMatch) {
-      console.log(`Cache Hit(Global): ${globalMatch} for ${queryTerm}`);
+      console.log(`Cache Hit (Global): ${globalMatch} for ${queryTerm}`);
       return serveCachedEntry(globalMatch, res);
     }
   } else {
@@ -1384,41 +1251,41 @@ async function handleDict(req, res) {
       messages: [
         { role: "system", content: "You are a German Grammar Expert and professional dictionary API. Respond ONLY in valid JSON." },
         {
-          role: "user", content: `Lookup "${queryTerm}"(Source: ${from}, Target: ${to}).
-  ${context ? `CONTEXT: "${context}" (Please provide the meaning that fits this specific sentence).` : ""}
+          role: "user", content: `Lookup "${queryTerm}" (Source: ${from}, Target: ${to}).
+        ${context ? `CONTEXT: "${context}" (Please provide the meaning that fits this specific sentence).` : ""}
 
-Rules:
-1. Identify the 'best' translation.
-        2. Detect the language of the term(English or German).
-        3. If the German term is a noun, you MUST include the definite article(der / die / das) and capitalize it(e.g., 'der Hund').
+        Rules:
+        1. Identify the 'best' translation.
+        2. Detect the language of the term (English or German).
+        3. If the German term is a noun, you MUST include the definite article (der/die/das) and capitalize it (e.g., 'der Hund').
         4. Even if source is German, ensure 'german_full' is the explicit Article + Noun form.
-        5. Provide gender(m / f / n) for German nouns.
+        5. Provide gender (m/f/n) for German nouns.
         6. Provide exactly 2 common alternate translations in the 'alternates' array.
         7. For German words, provide additional grammar data:
-- artikel: "der", "die", or "das"(if noun)
-  - plural: Plural form(if noun)
-  - perfekt: Partizip II form(if verb)
-  - praeteritum: Simple past form(if verb)
-  - praesens: Present tense form for 2nd and 3rd person(e.g., "du liest, er liest")(if verb)
-  - case: Dativ / Akkusativ usage if applicable
-    - synonyms: list of 2 synonyms
-      - example: A natural German example sentence.
+           - artikel: "der", "die", or "das" (if noun)
+           - plural: Plural form (if noun)
+           - perfekt: Partizip II form (if verb)
+           - praeteritum: Simple past form (if verb)
+           - praesens: Present tense form for 2nd and 3rd person (e.g., "du liest, er liest") (if verb)
+           - case: Dativ/Akkusativ usage if applicable
+           - synonyms: list of 2 synonyms
+           - example: A natural German example sentence.
            - exampleEn: The English translation of the example sentence.
-           - vowel_change: e.g., "e -> ie" for "sehen".Return "N/A" if regular.
+           - vowel_change: e.g., "e -> ie" for "sehen". Return "N/A" if regular.
            - part_of_speech: "noun", "verb", "adjective", "adverb", "conjunction", "preposition", "pronoun", "interjection".
-           - extra_info: e.g., "Irregular verb".Return "Regular verb" or "Regular noun" if normal.
+           - extra_info: e.g., "Irregular verb". Return "Regular verb" or "Regular noun" if normal.
 
         Return JSON: {
-  "translation": "Main translation",
-    "alternates": ["alt1", "alt2"],
-      "detected_from": "de or en",
-        "detected_to": "en or de",
+          "translation": "Main translation",
+          "alternates": ["alt1", "alt2"],
+          "detected_from": "de or en",
+          "detected_to": "en or de",
           "data": {
-    "artikel": "...", "plural": "...", "perfekt": "...", "praeteritum": "...", "praesens": "...",
-      "case": "...", "gender": "...", "vowel_change": "...", "part_of_speech": "...",
-        "extra_info": "...", "synonyms": [...], "example": "...", "exampleEn": "..."
-  }
-} ` }
+            "artikel": "...", "plural": "...", "perfekt": "...", "praeteritum": "...", "praesens": "...", 
+            "case": "...", "gender": "...", "vowel_change": "...", "part_of_speech": "...", 
+            "extra_info": "...", "synonyms": [...], "example": "...", "exampleEn": "..."
+          }
+        }` }
       ],
       model: aiConfig.model_dict || "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
@@ -1429,7 +1296,7 @@ Rules:
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
     if (!aiData.translation) {
-      console.error(`AI failed to translate: ${queryTerm} `);
+      console.error(`AI failed to translate: ${queryTerm}`);
       return res.status(500).json({ success: false, error: "AI could not find a translation for this term." });
     }
 
@@ -1457,10 +1324,10 @@ Rules:
       finalData.vowel_change = grammarInfo.vowel_change;
       finalData.perfekt = grammarInfo.perfekt;
       finalData.praeteritum = grammarInfo.praeteritum;
-      finalData.praesens = `er / sie / es ${grammarInfo.third_person} `;
+      finalData.praesens = `er/sie/es ${grammarInfo.third_person}`;
       finalData.gender = "N/A";
       finalData.part_of_speech = "verb";
-      finalData.extra_info = `Irregular verb(3rd pers: ${grammarInfo.third_person})`;
+      finalData.extra_info = `Irregular verb (3rd pers: ${grammarInfo.third_person})`;
       if (grammarInfo.is_compound) {
         finalData.extra_info += `; Compound of '${grammarInfo.base_verb}'`;
       }
