@@ -123,13 +123,13 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v6.json"); // v6 for Square-Prioritized Pixabay
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v7.json"); // v7 for Slash-Robust Pixabay
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
   try {
     imageCache = JSON.parse(fs.readFileSync(IMAGE_CACHE_PATH, "utf8"));
-    console.log(`Loaded ${Object.keys(imageCache).length} cached images (v6).`);
+    console.log(`Loaded ${Object.keys(imageCache).length} cached images (v7).`);
   } catch (err) {
     console.error("Failed to load image cache:", err);
   }
@@ -165,7 +165,8 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
   // Remove gendered prefixes (e.g., "female doctor" -> "doctor")
   searchKeyword = searchKeyword.replace(/^female\s+/i, "");
   searchKeyword = searchKeyword.replace(/^male\s+/i, "");
-  searchKeyword = searchKeyword.split(',')[0].trim();
+  // Support both commas and slashes: "box / case" -> "box", "doctor, physician" -> "doctor"
+  searchKeyword = searchKeyword.split(/[,\/]/)[0].trim();
 
   // 1. Check Cache
   if (imageCache[cacheKey]) {
