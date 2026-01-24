@@ -235,7 +235,7 @@ async function getOrSearchImage(word, forceCache = false) {
   }
 
   // 4. Construct Query
-  const searchKeyword = `${cleanWord} ${vInfo.literal_context || ''}`.trim();
+  const searchKeyword = (vInfo.search_terms && vInfo.search_terms.trim()) ? vInfo.search_terms.split(',').map(s => s.trim()).join(' ') : `${cleanWord} ${vInfo.literal_context || ''}`.trim();
   const pixabayCategory = (vInfo.category === 'people') ? 'people' :
     (vInfo.category === 'animals') ? 'animals' :
       (vInfo.category === 'places') ? 'places' :
