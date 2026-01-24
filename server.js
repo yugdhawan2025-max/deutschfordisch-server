@@ -508,6 +508,8 @@ app.get("/api/test_image", async (req, res) => {
 
   try {
     const result = await getOrSearchImage(query, forceCache);
+    // We do NOT use the proxy in the JSON response, because the game client (Flutter) might want the raw URL.
+    // However, the Dashboard HTML (browser) needs the proxy.
     res.json({
       success: true,
       word: query,
@@ -518,6 +520,27 @@ app.get("/api/test_image", async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// PROXY ENDPOINT (Bypasses CORS/Hotlinking)
+app.get("/api/image_proxy", async (req, res) => {
+  const imageUrl = req.query.url;
+  if (!imageUrl) return res.status(400).send("Missing url");
+
+  try {
+    const response = await fetch(imageUrl, {
+      headers: { "User-Agent": "Mozilla/5.0" } // Pretend to be a browser
+    });
+    if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
+
+    // Forward content type (e.g., image/jpeg)
+    res.setHeader("Content-Type", response.headers.get("content-type"));
+    // Pipe the image stream directly to the client
+    response.body.pipe(res);
+  } catch (err) {
+    console.error(`[PROXY] Error fetching ${imageUrl}:`, err);
+    res.status(500).send("Proxy Error");
   }
 });
 
@@ -1050,7 +1073,10 @@ app.get("/", (req, res) => {
                             </div>
                         </div>
                         <div style="text-align: center;">
-                            <img src="\${data.imageUrl}" onerror="this.style.display='none'; this.nextElementSibling.innerText='Image Load Failed: ' + this.src;" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: block; margin: 0 auto;">
+                        <div style="text-align: center;">
+                            <img src="/api/image_proxy?url=\${encodeURIComponent(data.imageUrl)}" onerror="this.style.display='none'; this.nextElementSibling.innerText='Image Load Failed: ' + this.src;" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: block; margin: 0 auto;">
+                            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all; background: #000; padding: 0.4rem; border-radius: 4px;">Original: \${data.imageUrl}</div>
+                        </div>
                             <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all; background: #000; padding: 0.4rem; border-radius: 4px;">\${data.imageUrl}</div>
                         </div>
                     \`;
