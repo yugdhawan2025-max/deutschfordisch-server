@@ -123,13 +123,13 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v9.json"); // v9 for Landscape-Prioritized Pixabay
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v10.json"); // v10 for Category-Mapping Pixabay
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
   try {
     imageCache = JSON.parse(fs.readFileSync(IMAGE_CACHE_PATH, "utf8"));
-    console.log(`Loaded ${Object.keys(imageCache).length} cached images (v9).`);
+    console.log(`Loaded ${Object.keys(imageCache).length} cached images (v10).`);
   } catch (err) {
     console.error("Failed to load image cache:", err);
   }
@@ -149,8 +149,24 @@ const FALLBACK_IMAGE = "https://placehold.co/1000x1000/023047/white.png?text=No+
  * Searches for an image on Pixabay and returns the URL.
  * Includes manual filtering for 'square-ish' images to prevent bad cropping in-app.
  */
-async function getOrSearchImage(germanNoun, englishTranslation) {
-  const cacheKey = germanNoun.toLowerCase().trim();
+async function getOrSearchImage(germanNoun, englishTranslation, category = "") {
+  // Mapping game categories to Pixabay API categories
+  const categoryMap = {
+    'Food': 'food',
+    'Transport': 'transportation',
+    'Tech': 'computer',
+    'Clothes': 'fashion',
+    'Body': 'health',
+    'Places': 'places',
+    'City': 'buildings',
+    'Travel': 'travel',
+    'Shopping': 'business',
+    'Leisure': 'sports',
+    'Home': 'buildings'
+  };
+
+  const pixabayCategory = categoryMap[category] || "";
+  const cacheKey = `${germanNoun.toLowerCase().trim()}_${pixabayCategory}`;
   let searchKeyword = (englishTranslation || germanNoun).toLowerCase().trim();
 
   // Strip German articles
@@ -180,9 +196,14 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
     console.warn(`[IMAGE] No Pixabay API Key found. Using placeholder for "${searchKeyword}".`);
   } else {
     try {
-      console.log(`[IMAGE] Searching Pixabay (Square Priority) for: "${searchKeyword}"`);
+      console.log(`[IMAGE] Searching Pixabay (Landscape Priority) for: "${searchKeyword}" (Category: ${pixabayCategory})`);
       // Get 100 results to have a good pool for filtering
-      const response = await fetch(`https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&per_page=100&safesearch=true`);
+      let url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&per_page=100&safesearch=true`;
+      if (pixabayCategory) {
+        url += `&category=${pixabayCategory}`;
+      }
+
+      const response = await fetch(url);
 
       if (!response.ok) throw new Error(`Pixabay API error: ${response.statusText}`);
 
@@ -262,14 +283,14 @@ io.on("connection", (socket) => {
 
   // Start/Trigger a round with a word (server-authoritative)
   socket.on("trigger_round", async (data) => {
-    const { matchId, noun } = data; // 'noun' is now the English term from the app
+    const { matchId, noun, category } = data; // 'noun' is now English term, 'category' is optional meaning hint
     if (!matchId || !noun) return;
 
-    console.log(`[SOCKET] Round trigger in ${matchId} for: ${noun}`);
+    console.log(`[SOCKET] Round trigger in ${matchId} for: ${noun} (Category: ${category})`);
 
     // 1. Skip strict validation as requested (Allow any English word)
     // 2. Get/Search Image (using provided term for both cache key and search)
-    const imageUrl = await getOrSearchImage(noun, noun);
+    const imageUrl = await getOrSearchImage(noun, noun, category);
     console.log(`[SOCKET] Image found: ${imageUrl}`);
 
     // 3. Broadcast to all players in the match
@@ -281,7 +302,6 @@ io.on("connection", (socket) => {
 
     console.log(`[SOCKET] Broadcasted image for "${noun}" to match ${matchId}`);
   });
-
   socket.on("disconnect", () => {
     console.log(`[SOCKET] Peer disconnected: ${socket.id}`);
   });
