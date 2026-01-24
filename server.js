@@ -282,7 +282,7 @@ async function getOrSearchImage(word, forceCache = false) {
       log(`[FILTER] Candidates remaining: ${candidates.length}`);
 
       if (candidates.length > 0) {
-        const selectedImage = candidates[0].largeImageURL || candidates[0].webformatURL;
+        const selectedImage = candidates[0].webformatURL || candidates[0].largeImageURL;
         imageCache[cacheKey] = selectedImage;
         saveImageCache();
         log(`[SUCCESS] Selected image: ${selectedImage}`);
