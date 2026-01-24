@@ -557,6 +557,22 @@ app.get("/api/populate_all_cache", async (req, res) => {
   res.json({ success: true, message: `Populated ${count} new images.` });
 });
 
+// Admin endpoint to clear a specific word from image cache
+app.get("/api/clear_image_cache", (req, res) => {
+  const { word } = req.query;
+  if (!word) return res.status(400).json({ success: false, error: "Missing word" });
+
+  const cleanWord = word.toLowerCase().trim();
+  if (imageCache[cleanWord]) {
+    delete imageCache[cleanWord];
+    saveImageCache();
+    console.log(`[ADMIN] Cleared image cache for: ${cleanWord}`);
+    res.json({ success: true, message: `Cleared cache for ${cleanWord}` });
+  } else {
+    res.json({ success: true, message: `Word ${cleanWord} was not in cache` });
+  }
+});
+
 /* -------------------- ROOT: PREMIUM DASHBOARD -------------------- */
 app.get("/", (req, res) => {
   res.send(`
@@ -757,7 +773,10 @@ app.get("/", (req, res) => {
                     <label>Keyword</label>
                     <input type="text" id="img-query" placeholder="e.g., Katze" onkeydown="if(event.key==='Enter') runTest('image')">
                 </div>
-                <button onclick="runTest('image')">Test Search</button>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button onclick="runTest('image')" style="flex: 2;">Test Search</button>
+                    <button id="btn-refresh-img" onclick="refreshImage()" style="flex: 1; background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%); display: none;">Clear & Refresh</button>
+                </div>
                 <div id="image-res" class="result-container" style="text-align: center;"></div>
             </div>
 
@@ -1044,6 +1063,7 @@ app.get("/", (req, res) => {
                 });
                 const data = await response.json();
                 if (type === 'image' && data.success) {
+                    document.getElementById('btn-refresh-img').style.display = 'block';
                     const info = data.vocab_info || {};
                     const isCached = data.is_cached;
                     const statusColor = isCached ? '#00ff88' : '#3a7bd5';
@@ -1088,7 +1108,31 @@ app.get("/", (req, res) => {
             }
         }
 
-      async function loadConfig() {
+        async function refreshImage() {
+            const q = document.getElementById('img-query').value;
+            if (!q) return;
+            
+            const btn = document.getElementById('btn-refresh-img');
+            const originalText = btn.innerText;
+            btn.innerText = "Clearing...";
+            btn.disabled = true;
+
+            try {
+                // 1. Clear it
+                await fetch(\`/api/clear_image_cache?word=\${encodeURIComponent(q)}\`);
+                // 2. Run new search
+                const resDiv = document.getElementById('image-res');
+                resDiv.innerHTML = '<span style="color: var(--accent)">Refreshing...</span>';
+                await runTest('image'); 
+            } catch (err) {
+                console.error("Refresh failed:", err);
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function loadConfig() {
             try {
                 const res = await fetch('/admin/ai_config');
       const cfg = await res.json();

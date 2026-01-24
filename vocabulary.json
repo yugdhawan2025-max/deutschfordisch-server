@@ -265,6 +265,13 @@
             "literal_context": "desktop laptop computer",
             "search_terms": "laptop computer",
             "disambiguation": "An electronic device for storing and processing data"
+        },
+        {
+            "word": "television",
+            "category": "objects",
+            "literal_context": "modern flat screen television set",
+            "search_terms": "led television, smart tv",
+            "disambiguation": "An electronic device for receiving television broadcasts"
         }
     ]
 }
