@@ -242,7 +242,7 @@ async function getOrSearchImage(word, forceCache = false) {
       (vInfo.category === 'places') ? 'places' :
         (vInfo.category === 'food') ? 'food' :
           (vInfo.category === 'vehicles') ? 'transportation' :
-            (vInfo.category === 'objects') ? 'items' : '';
+            (vInfo.category === 'objects') ? '' : '';
 
   log(`[QUERY] Keywords: "${searchKeyword}", Category: "${pixabayCategory}"`);
 
@@ -276,7 +276,8 @@ async function getOrSearchImage(word, forceCache = false) {
         if (!isHorizontal) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Bad Ratio (${ratio.toFixed(2)})`);
         if (hasGraphics) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Graphics Detected`);
 
-        return isHorizontal && !hasGraphics;
+        // Relaxation: If it's borderline horizontal (1.1 to 2.1) and NOT graphics, we might allow it if no perfect matches found
+        return (isHorizontal || (ratio >= 1.0 && ratio <= 2.2)) && !hasGraphics;
       });
 
       log(`[FILTER] Candidates remaining: ${candidates.length}`);
@@ -285,7 +286,7 @@ async function getOrSearchImage(word, forceCache = false) {
         const selectedImage = candidates[0].webformatURL || candidates[0].largeImageURL;
         imageCache[cacheKey] = selectedImage;
         saveImageCache();
-        log(`[SUCCESS] Selected image: ${selectedImage}`);
+        log(`[SUCCESS] Selected image for "${cacheKey}": ${selectedImage}`);
         return { url: selectedImage, logs };
       }
     } else {
@@ -1476,8 +1477,8 @@ Rules:
       ...result
     });
   } catch (err) {
-    console.error("Dict error:", err.message);
-    res.status(500).json({ success: false, error: "Dictionary lookup failed" });
+    console.error("Dict error:", err);
+    res.status(500).json({ success: false, error: "Dictionary lookup failed: " + err.message });
   }
 }
 
