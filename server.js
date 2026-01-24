@@ -575,6 +575,18 @@ app.get("/api/clear_image_cache", (req, res) => {
   }
 });
 
+// Admin endpoint to manually override image for a word
+app.get("/api/override_image", (req, res) => {
+  const { word, url } = req.query;
+  if (!word || !url) return res.status(400).json({ success: false, error: "Missing word or url" });
+
+  const cleanWord = word.toLowerCase().trim();
+  imageCache[cleanWord] = url;
+  saveImageCache();
+  console.log(`[ADMIN] MANUAL OVERRIDE: ${cleanWord} -> ${url}`);
+  res.json({ success: true, message: `Manual override set for ${cleanWord}` });
+});
+
 /* -------------------- ROOT: PREMIUM DASHBOARD -------------------- */
 app.get("/", (req, res) => {
   res.send(`
@@ -775,9 +787,16 @@ app.get("/", (req, res) => {
                     <label>Keyword</label>
                     <input type="text" id="img-query" placeholder="e.g., Katze" onkeydown="if(event.key==='Enter') runTest('image')">
                 </div>
-                <div style="display: flex; gap: 0.5rem;">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
                     <button onclick="runTest('image')" style="flex: 2;">Test Search</button>
                     <button id="btn-refresh-img" onclick="refreshImage()" style="flex: 1; background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%); display: none;">Clear & Refresh</button>
+                </div>
+                <div id="manual-override-container" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                    <div class="input-group">
+                        <label>Manual Image URL</label>
+                        <input type="text" id="manual-url" placeholder="https://..." onkeydown="if(event.key==='Enter') setManual()">
+                    </div>
+                    <button id="btn-manual-img" onclick="setManual()" style="width: 100%; height: 2.2rem; font-size: 0.75rem; background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);">Set Manual Override</button>
                 </div>
                 <div id="image-res" class="result-container" style="text-align: center;"></div>
             </div>
@@ -1067,6 +1086,7 @@ app.get("/", (req, res) => {
                 const data = await response.json();
                 if (type === 'image' && data.success) {
                     document.getElementById('btn-refresh-img').style.display = 'block';
+                    document.getElementById('manual-override-container').style.display = 'block';
                     const info = data.vocab_info || {};
                     const isCached = data.is_cached;
                     const statusColor = isCached ? '#00ff88' : '#3a7bd5';
@@ -1128,6 +1148,32 @@ app.get("/", (req, res) => {
                 console.error("Refresh failed:", err);
             } finally {
                 btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function setManual() {
+            const q = document.getElementById('img-query').value;
+            const url = document.getElementById('manual-url').value;
+            if (!q || !url) return alert("Keyword and URL required");
+            
+            const btn = document.getElementById('btn-manual-img');
+            btn.innerText = "Setting...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`/ api / override_image ? word = ${ encodeURIComponent(q) } & url=${ encodeURIComponent(url) }`);
+                const data = await res.json();
+                if (data.success) {
+                    await runTest('image'); // Refresh view
+                    document.getElementById('manual-url').value = '';
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch (err) {
+                console.error("Manual override failed:", err);
+            } finally {
+                btn.innerText = "Set Manual Override";
                 btn.disabled = false;
             }
         }
