@@ -1162,7 +1162,7 @@ app.get("/", (req, res) => {
             btn.disabled = true;
 
             try {
-                const res = await fetch(`/ api / override_image ? word = ${ encodeURIComponent(q) } & url=${ encodeURIComponent(url) }`);
+                const res = await fetch('/api/override_image?word=' + encodeURIComponent(q) + '&url=' + encodeURIComponent(url));
                 const data = await res.json();
                 if (data.success) {
                     await runTest('image'); // Refresh view
