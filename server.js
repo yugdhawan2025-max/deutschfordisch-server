@@ -168,7 +168,7 @@ function loadVocabulary() {
 loadVocabulary();
 
 /**
- * Uses AI to determine the best category and search terms for a noun.
+ * Uses AI only as a strict fallback to resolve dictionary metadata for search.
  */
 async function getWordMetadata(word) {
   try {
@@ -176,7 +176,7 @@ async function getWordMetadata(word) {
       messages: [
         {
           role: "system",
-          content: "You are a professional image search expert. Identify the primary category for this noun and provide the 'best' literal English search query for a high-quality Pixabay photo result. Categories: people, animals, places, objects, food, vehicles."
+          content: "You are a professional image search expert. Identify the primary category for this noun and provide a 2-3 word literal English context for a physical photo. Categories: people, animals, places, objects, food, vehicles."
         },
         { role: "user", content: `Noun: "${word}"` }
       ],
@@ -188,18 +188,17 @@ async function getWordMetadata(word) {
     return {
       word,
       category: data.category || "objects",
-      search_terms: data.search_query || data.search_terms || word,
+      literal_context: data.literal_context || data.search_query || word,
       ai_detected: true
     };
   } catch (err) {
-    console.error(`[AI] Metadata detection failed for ${word}:`, err);
-    return { word, category: "objects", search_terms: word, ai_detected: false };
+    console.error(`[AI Fallback] Metadata detection failed for ${word}:`, err);
+    return { word, category: "objects", literal_context: word, ai_detected: false };
   }
 }
 
 /**
- * Searches for an image on Pixabay and returns the URL.
- * Hybrid: Uses local vocabulary mapping OR AI-detected metadata.
+ * Searches for an image on Pixabay using STRICT deterministic rules.
  * 
  * @param {string} word - The noun to search for
  * @param {boolean} forceCache - If true, refuses to perform a web search (Runtime Flow)
@@ -209,27 +208,26 @@ async function getOrSearchImage(word, forceCache = false) {
   let vInfo = vocabMap[cleanWord];
   let isAiTarget = false;
 
-  // 1. Check local vocab first. If missing, we'll try AI unless cached.
+  // 1. Check verified cache
   const cacheKey = cleanWord;
-  if (imageCache[cacheKey]) {
-    return imageCache[cacheKey];
-  }
+  if (imageCache[cacheKey]) return imageCache[cacheKey];
 
-  // 2. Prevent runtime searches for words we haven't seen before
+  // 2. Strict gameplay enforcement: No live searches during matches
   if (forceCache) {
-    console.warn(`[IMAGE] UNCACHED WORD during runtime: "${cleanWord}". Search skipped.`);
+    console.warn(`[IMAGE] UNCACHED WORD BLOCKED: "${cleanWord}". Matches must use pre-verified images.`);
     return FALLBACK_IMAGE;
   }
 
-  // 3. Fallback to AI for metadata if not in local vocab
+  // 3. Resolve Metadata (Local Vocab > AI Fallback)
   if (!vInfo) {
-    console.log(`[IMAGE] Word "${cleanWord}" not in local vocab. Calling AI for precision metadata...`);
+    console.log(`[IMAGE] Word "${cleanWord}" not in curated vocab. Calling AI fallback for metadata...`);
     vInfo = await getWordMetadata(cleanWord);
     isAiTarget = true;
   }
 
-  // 4. Build Context-Aware Search
-  const searchKeyword = vInfo.search_terms || cleanWord;
+  // 4. Construct Hyper-Specific Query
+  // Format: "word context" (e.g., "boss office manager")
+  const searchKeyword = `${cleanWord} ${vInfo.literal_context || ''}`.trim();
   const pixabayCategory = (vInfo.category === 'people') ? 'people' :
     (vInfo.category === 'animals') ? 'animals' :
       (vInfo.category === 'places') ? 'places' :
@@ -237,50 +235,44 @@ async function getOrSearchImage(word, forceCache = false) {
           (vInfo.category === 'vehicles') ? 'transportation' :
             (vInfo.category === 'objects') ? 'items' : '';
 
-  // 5. Search Pixabay
+  // 5. Search Pixabay (Strict Photographic Mode)
   const apiKey = process.env.PIXABAY_API_KEY;
-  if (!apiKey || apiKey.includes("YOUR_PIXABAY_API_KEY")) {
-    console.warn(`[IMAGE] No Pixabay API Key. Using fallback for "${cleanWord}".`);
-    return FALLBACK_IMAGE;
-  }
+  if (!apiKey || apiKey.includes("YOUR_PIXABAY_API_KEY")) return FALLBACK_IMAGE;
 
   try {
-    const sourceLabel = isAiTarget ? "AI HINTED" : "VOCAB HINTED";
-    console.log(`[IMAGE] Searching (${sourceLabel}) for: "${searchKeyword}" (Category: ${pixabayCategory})`);
+    const sourceLabel = isAiTarget ? "AI FALLBACK" : "CURATED VOCAB";
+    console.log(`[IMAGE] Deterministic Search (${sourceLabel}): "${searchKeyword}"`);
 
-    let url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&per_page=50&safesearch=true&order=popular`;
+    let url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&safesearch=true&order=popular&per_page=20`;
     if (pixabayCategory) url += `&category=${pixabayCategory}`;
 
     const response = await fetch(url);
-    if (!response.ok) throw new Error(`Pixabay API error: ${response.statusText}`);
-
     const data = await response.json();
+
     if (data.hits && data.hits.length > 0) {
-      // 6. Blacklist Filtering & Aspect Ratio Check
-      const blacklist = ["brand", "logo", "illustration", "vector", "drawing", "clipart", "sketch", "graphic", "text", "watermark"];
+      // 6. Aggressive Blacklist (Strictly NO graphics/drawings)
+      const blacklist = ["brand", "logo", "illustration", "vector", "drawing", "clipart", "sketch", "graphic", "text", "watermark", "icon", "abstract", "3d", "rendering"];
 
       const candidates = data.hits.filter(hit => {
         const ratio = hit.imageWidth / hit.imageHeight;
-        const isHorizontal = ratio >= 1.2 && ratio <= 1.8;
-        const tags = hit.tags.toLowerCase();
-        const containsBlacklisted = blacklist.some(tag => tags.includes(tag));
-        return isHorizontal && !containsBlacklisted;
+        const isHorizontal = ratio >= 1.2 && ratio <= 1.9;
+        const tags = (hit.tags || "").toLowerCase();
+        const hasGraphics = blacklist.some(tag => tags.includes(tag));
+        return isHorizontal && !hasGraphics;
       });
 
       if (candidates.length > 0) {
-        // Pick the top candidate (consistency over variety)
         const selectedImage = candidates[0].largeImageURL || candidates[0].webformatURL;
 
-        // 7. Cache Result (Associate with original word)
         imageCache[cacheKey] = selectedImage;
         saveImageCache();
-        console.log(`[IMAGE] Success! Cached "${cleanWord}": ${selectedImage}`);
+        console.log(`[IMAGE] SUCCESS! Verified image for "${cleanWord}": ${selectedImage}`);
         return selectedImage;
       }
     }
-    console.warn(`[IMAGE] No suitable photos found for: ${searchKeyword}`);
+    console.warn(`[IMAGE] FAILED: No high-precision photos found for: ${searchKeyword}`);
   } catch (err) {
-    console.error(`[IMAGE] Search failure for ${searchKeyword}:`, err);
+    console.error(`[IMAGE] API failure:`, err);
   }
 
   return FALLBACK_IMAGE;
@@ -1009,28 +1001,22 @@ app.get("/", (req, res) => {
                 if (type === 'image' && data.success) {
                     const info = data.vocab_info || {};
                     const isCached = data.is_cached;
-                    const isAi = !!info.ai_detected;
-                    
                     const statusColor = isCached ? '#00ff88' : '#3a7bd5';
-                    const statusLabel = isCached ? 'Cached' : 'Direct Search';
+                    const statusLabel = isCached ? 'Verified (Cached)' : 'New Search';
                     
                     resDiv.innerHTML = \`
                         <div style="background: rgba(0,0,0,0.4); padding: 0.8rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.75rem; text-align: left; border: 1px solid var(--border);">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                                <span style="color: var(--text-muted);">Pixabay API Status:</span>
-                                <span style="color: #00ff88; font-weight: bold;">Connected (v10)</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                                <span style="color: var(--text-muted);">Data Source:</span>
-                                <span style="color: \${isAi ? '#ff9f43' : '#00ff88'}; font-weight: bold;">\${isAi ? 'AI Detected' : 'Local Vocabulary'}</span>
+                                <span style="color: var(--text-muted);">Source Mode:</span>
+                                <span style="color: #00ff88; font-weight: bold;">STRICT DETERMINISTIC</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
                                 <span style="color: var(--text-muted);">Category:</span>
                                 <span style="font-family: monospace; color: var(--accent);">\${info.category || 'objects'}</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                                <span style="color: var(--text-muted);">Search Query:</span>
-                                <span style="font-family: monospace; color: #fff;">"\${info.search_terms || data.word}"</span>
+                                <span style="color: var(--text-muted);">Resolved Query:</span>
+                                <span style="font-family: monospace; color: #fff;">"\${data.word} \${info.literal_context || ''}"</span>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
                                 <span style="color: var(--text-muted);">Cache Status:</span>

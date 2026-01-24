@@ -3,228 +3,266 @@
         {
             "word": "boss",
             "category": "people",
+            "literal_context": "office manager leadership",
             "search_terms": "manager, office boss",
             "disambiguation": "A person in charge of a workplace"
         },
         {
             "word": "doctor",
             "category": "people",
+            "literal_context": "medical physician hospital",
             "search_terms": "medical doctor, physician",
             "disambiguation": "A qualified practitioner of medicine"
         },
         {
             "word": "teacher",
             "category": "people",
+            "literal_context": "teacher classroom education",
             "search_terms": "teacher in classroom",
             "disambiguation": "A person who teaches"
         },
         {
             "word": "student",
             "category": "people",
+            "literal_context": "student studying learning",
             "search_terms": "student studying",
             "disambiguation": "A person who is studying"
         },
         {
             "word": "child",
             "category": "people",
+            "literal_context": "child playing young person",
             "search_terms": "child playing",
             "disambiguation": "A young human being"
         },
         {
             "word": "man",
             "category": "people",
+            "literal_context": "adult male person",
             "search_terms": "man standing",
             "disambiguation": "An adult male human"
         },
         {
             "word": "woman",
             "category": "people",
+            "literal_context": "adult female person",
             "search_terms": "woman standing",
             "disambiguation": "An adult female human"
         },
         {
             "word": "cat",
             "category": "animals",
+            "literal_context": "domestic feline cat",
             "search_terms": "cat, feline",
             "disambiguation": "A small domesticated carnivorous mammal"
         },
         {
             "word": "dog",
             "category": "animals",
+            "literal_context": "domestic canine dog",
             "search_terms": "dog, canine",
             "disambiguation": "A domesticated carnivorous mammal"
         },
         {
             "word": "lion",
             "category": "animals",
+            "literal_context": "wild lion big cat",
             "search_terms": "wild lion",
             "disambiguation": "A large wild cat"
         },
         {
             "word": "horse",
             "category": "animals",
+            "literal_context": "domestic horse equine",
             "search_terms": "horse",
             "disambiguation": "A large domesticated animal"
         },
         {
             "word": "bird",
             "category": "animals",
+            "literal_context": "flying bird wing",
             "search_terms": "bird flying",
             "disambiguation": "A warm-blooded egg-laying vertebrate with feathers"
         },
         {
             "word": "elephant",
             "category": "animals",
+            "literal_context": "wild elephant trunk",
             "search_terms": "elephant",
             "disambiguation": "A very large herbivorous mammal with a trunk"
         },
         {
             "word": "house",
             "category": "places",
+            "literal_context": "residential building home",
             "search_terms": "residential house",
             "disambiguation": "A building for human habitation"
         },
         {
             "word": "school",
             "category": "places",
+            "literal_context": "school building exterior",
             "search_terms": "school building",
             "disambiguation": "An institution for educating children"
         },
         {
             "word": "park",
             "category": "places",
+            "literal_context": "public park nature green",
             "search_terms": "public park, green space",
             "disambiguation": "A large public garden"
         },
         {
             "word": "beach",
             "category": "places",
+            "literal_context": "sandy beach ocean",
             "search_terms": "sandy beach",
             "disambiguation": "A pebbly or sandy shore"
         },
         {
             "word": "city",
             "category": "places",
+            "literal_context": "city skyline urban",
             "search_terms": "city skyline",
             "disambiguation": "A large town"
         },
         {
             "word": "forest",
             "category": "places",
+            "literal_context": "lush forest trees nature",
             "search_terms": "lush forest, trees",
             "disambiguation": "A large area covered with trees"
         },
         {
             "word": "apple",
             "category": "food",
+            "literal_context": "ripe apple red green",
             "search_terms": "apple fruit",
             "disambiguation": "A round fruit with red or green skin"
         },
         {
             "word": "bread",
             "category": "food",
+            "literal_context": "fresh bread loaf",
             "search_terms": "fresh bread loaf",
             "disambiguation": "Food made of flour, water, and yeast"
         },
         {
             "word": "milk",
             "category": "food",
+            "literal_context": "glass milk bottle",
             "search_terms": "glass of milk",
             "disambiguation": "An opaque white fluid rich in fat and protein"
         },
         {
             "word": "pizza",
             "category": "food",
+            "literal_context": "baked pizza slice",
             "search_terms": "pizzeria pizza",
             "disambiguation": "A dish of Italian origin"
         },
         {
             "word": "burger",
             "category": "food",
+            "literal_context": "classic beef burger hamburger",
             "search_terms": "hamburger burger",
             "disambiguation": "A round patty of ground beef"
         },
         {
             "word": "cheese",
             "category": "food",
+            "literal_context": "cheese block dairy",
             "search_terms": "cheese block",
             "disambiguation": "A food made from the pressed curds of milk"
         },
         {
             "word": "car",
             "category": "vehicles",
+            "literal_context": "modern automobile car",
             "search_terms": "modern car",
             "disambiguation": "A road vehicle with four wheels"
         },
         {
             "word": "bus",
             "category": "vehicles",
+            "literal_context": "public transportation bus",
             "search_terms": "public bus",
             "disambiguation": "A large motor vehicle carrying passengers"
         },
         {
             "word": "train",
             "category": "vehicles",
+            "literal_context": "railway train locomotive",
             "search_terms": "railway train",
             "disambiguation": "A series of connected railway carriages"
         },
         {
             "word": "plane",
             "category": "vehicles",
+            "literal_context": "passenger airplane flight",
             "search_terms": "airplane in sky",
             "disambiguation": "A powered flying vehicle"
         },
         {
             "word": "bike",
             "category": "vehicles",
+            "literal_context": "bicycle two wheels",
             "search_terms": "bicycle, bike",
             "disambiguation": "A vehicle with two wheels"
         },
         {
             "word": "truck",
             "category": "vehicles",
+            "literal_context": "delivery truck transport",
             "search_terms": "delivery truck",
             "disambiguation": "A motor vehicle for transporting goods"
         },
         {
             "word": "pencil",
             "category": "objects",
+            "literal_context": "writing pencil lead",
             "search_terms": "writing pencil",
             "disambiguation": "An instrument for writing or drawing"
         },
         {
             "word": "plate",
             "category": "objects",
+            "literal_context": "empty dinner plate ceramic",
             "search_terms": "dinner plate, ceramic plate",
             "disambiguation": "A flat dish"
         },
         {
             "word": "table",
             "category": "objects",
+            "literal_context": "wooden furniture table",
             "search_terms": "wooden table",
             "disambiguation": "A piece of furniture with a flat top"
         },
         {
             "word": "chair",
             "category": "objects",
+            "literal_context": "wooden chair furniture",
             "search_terms": "wooden chair",
             "disambiguation": "A separate seat for one person"
         },
         {
             "word": "book",
             "category": "objects",
+            "literal_context": "physical book paper",
             "search_terms": "physical book",
             "disambiguation": "A written or printed work"
         },
         {
             "word": "phone",
             "category": "objects",
+            "literal_context": "modern smartphone mobile",
             "search_terms": "smartphone",
             "disambiguation": "A telecommunications device"
         },
         {
             "word": "computer",
             "category": "objects",
+            "literal_context": "desktop laptop computer",
             "search_terms": "laptop computer",
             "disambiguation": "An electronic device for storing and processing data"
         }
