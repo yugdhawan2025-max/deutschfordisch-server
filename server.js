@@ -501,6 +501,7 @@ app.get("/api/usage", (req, res) => {
 });
 
 app.get("/api/test_image", async (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   const { query, populate = "false" } = req.query;
   if (!query) return res.status(400).json({ success: false, error: "Missing query" });
 
@@ -559,6 +560,7 @@ app.get("/api/populate_all_cache", async (req, res) => {
 
 // Admin endpoint to clear a specific word from image cache
 app.get("/api/clear_image_cache", (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
   const { word } = req.query;
   if (!word) return res.status(400).json({ success: false, error: "Missing word" });
 
@@ -1019,7 +1021,7 @@ app.get("/", (req, res) => {
             }
         }
 
-        async function runTest(type) {
+        async function runTest(type, forceFresh = false) {
             const resDiv = document.getElementById(\`\${type}-res\`);
             if (!resDiv) return console.error("Result div not found for type: " + type);
             resDiv.innerHTML = '<span style="color: var(--accent)">Processing...</span>';
@@ -1052,7 +1054,8 @@ app.get("/", (req, res) => {
                 };
             } else if (type === 'image') {
                 const q = document.getElementById('img-query').value;
-                url = \`/api/test_image?query=\${encodeURIComponent(q)}\`;
+                const pop = forceFresh ? 'true' : 'false';
+                url = `/ api / test_image ? query = ${ encodeURIComponent(q) } & populate=${ pop } & t=${ Date.now() }`;
             }
 
             try {
@@ -1120,10 +1123,10 @@ app.get("/", (req, res) => {
             try {
                 // 1. Clear it
                 await fetch(\`/api/clear_image_cache?word=\${encodeURIComponent(q)}\`);
-                // 2. Run new search
+                // 2. Run new search with forceFresh=true
                 const resDiv = document.getElementById('image-res');
                 resDiv.innerHTML = '<span style="color: var(--accent)">Refreshing...</span>';
-                await runTest('image'); 
+                await runTest('image', true); 
             } catch (err) {
                 console.error("Refresh failed:", err);
             } finally {
