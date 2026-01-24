@@ -1023,8 +1023,10 @@ app.get("/", (req, res) => {
                                 <span style="color: \${statusColor}; font-weight: bold;">\${statusLabel}</span>
                             </div>
                         </div>
-                        <img src="\${data.imageUrl}" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
-                        <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all; background: #000; padding: 0.4rem; border-radius: 4px;">\${data.imageUrl}</div>
+                        <div style="text-align: center;">
+                            <img src="\${data.imageUrl}" onerror="this.style.display='none'; this.nextElementSibling.innerText='Image Load Failed: ' + this.src;" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: block; margin: 0 auto;">
+                            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all; background: #000; padding: 0.4rem; border-radius: 4px;">\${data.imageUrl}</div>
+                        </div>
                     \`;
                 } else {
                     resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
