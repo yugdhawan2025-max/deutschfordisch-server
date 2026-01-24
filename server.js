@@ -220,12 +220,9 @@ async function getOrSearchImage(word, forceCache = false) {
     return { url: imageCache[cacheKey], logs };
   }
 
-  // 2. Strict gameplay enforcement: No live searches during matches (UNLESS in curated vocab)
-  if (forceCache && !vInfo) {
-    log(`[BLOCK] Runtime search blocked for "${cleanWord}". Word must be pre-cached.`);
-    return { url: FALLBACK_IMAGE, logs };
-  } else if (forceCache && vInfo) {
-    log(`[SAFETY] Word "${cleanWord}" is in curated vocab. Allowing one-time live search fallback.`);
+  // 2. Gameplay Info: Log if a live search is occurring during a match
+  if (forceCache && !imageCache[cacheKey]) {
+    log(`[INFO] Live search triggered for "${cleanWord}" during gameplay.`);
   }
 
   // 3. Resolve Metadata (Local Vocab > AI Fallback)
