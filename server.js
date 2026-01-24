@@ -168,43 +168,74 @@ function loadVocabulary() {
 loadVocabulary();
 
 /**
+ * Uses AI to determine the best category and search terms for a noun.
+ */
+async function getWordMetadata(word) {
+  try {
+    const completion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: "You are a professional image search expert. Identify the primary category for this noun and provide the 'best' literal English search query for a high-quality Pixabay photo result. Categories: people, animals, places, objects, food, vehicles."
+        },
+        { role: "user", content: `Noun: "${word}"` }
+      ],
+      model: "llama-3.1-8b-instant",
+      response_format: { type: "json_object" }
+    });
+
+    const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
+    return {
+      word,
+      category: data.category || "objects",
+      search_terms: data.search_query || data.search_terms || word,
+      ai_detected: true
+    };
+  } catch (err) {
+    console.error(`[AI] Metadata detection failed for ${word}:`, err);
+    return { word, category: "objects", search_terms: word, ai_detected: false };
+  }
+}
+
+/**
  * Searches for an image on Pixabay and returns the URL.
- * Strictly uses the structured vocabulary for context and categorization.
+ * Hybrid: Uses local vocabulary mapping OR AI-detected metadata.
  * 
  * @param {string} word - The noun to search for
  * @param {boolean} forceCache - If true, refuses to perform a web search (Runtime Flow)
  */
 async function getOrSearchImage(word, forceCache = false) {
   const cleanWord = word.toLowerCase().trim();
-  const vocabEntry = vocabMap[cleanWord];
+  let vInfo = vocabMap[cleanWord];
+  let isAiTarget = false;
 
-  // 1. Validate Noun exists in approved Vocab
-  if (!vocabEntry) {
-    console.warn(`[IMAGE] Rejected search for non-vocab word: "${word}"`);
-    return FALLBACK_IMAGE;
-  }
-
+  // 1. Check local vocab first. If missing, we'll try AI unless cached.
   const cacheKey = cleanWord;
-
-  // 2. Check Cache
   if (imageCache[cacheKey]) {
     return imageCache[cacheKey];
   }
 
-  // 3. Prevent runtime searches (must populate cache via admin/setup first)
+  // 2. Prevent runtime searches for words we haven't seen before
   if (forceCache) {
-    console.warn(`[IMAGE] UNCACHED WORD during runtime: "${cleanWord}". Populate cache first!`);
+    console.warn(`[IMAGE] UNCACHED WORD during runtime: "${cleanWord}". Search skipped.`);
     return FALLBACK_IMAGE;
   }
 
+  // 3. Fallback to AI for metadata if not in local vocab
+  if (!vInfo) {
+    console.log(`[IMAGE] Word "${cleanWord}" not in local vocab. Calling AI for precision metadata...`);
+    vInfo = await getWordMetadata(cleanWord);
+    isAiTarget = true;
+  }
+
   // 4. Build Context-Aware Search
-  const searchKeyword = vocabEntry.search_terms || cleanWord;
-  const pixabayCategory = (vocabEntry.category === 'people') ? 'people' :
-    (vocabEntry.category === 'animals') ? 'animals' :
-      (vocabEntry.category === 'places') ? 'places' :
-        (vocabEntry.category === 'food') ? 'food' :
-          (vocabEntry.category === 'vehicles') ? 'transportation' :
-            (vocabEntry.category === 'objects') ? 'items' : '';
+  const searchKeyword = vInfo.search_terms || cleanWord;
+  const pixabayCategory = (vInfo.category === 'people') ? 'people' :
+    (vInfo.category === 'animals') ? 'animals' :
+      (vInfo.category === 'places') ? 'places' :
+        (vInfo.category === 'food') ? 'food' :
+          (vInfo.category === 'vehicles') ? 'transportation' :
+            (vInfo.category === 'objects') ? 'items' : '';
 
   // 5. Search Pixabay
   const apiKey = process.env.PIXABAY_API_KEY;
@@ -214,7 +245,9 @@ async function getOrSearchImage(word, forceCache = false) {
   }
 
   try {
-    console.log(`[IMAGE] SEARCHING (Cache Population) for: "${searchKeyword}" (Category: ${pixabayCategory})`);
+    const sourceLabel = isAiTarget ? "AI HINTED" : "VOCAB HINTED";
+    console.log(`[IMAGE] Searching (${sourceLabel}) for: "${searchKeyword}" (Category: ${pixabayCategory})`);
+
     let url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&per_page=50&safesearch=true&order=popular`;
     if (pixabayCategory) url += `&category=${pixabayCategory}`;
 
@@ -227,14 +260,10 @@ async function getOrSearchImage(word, forceCache = false) {
       const blacklist = ["brand", "logo", "illustration", "vector", "drawing", "clipart", "sketch", "graphic", "text", "watermark"];
 
       const candidates = data.hits.filter(hit => {
-        // Enforce horizontal aspect ratio
         const ratio = hit.imageWidth / hit.imageHeight;
         const isHorizontal = ratio >= 1.2 && ratio <= 1.8;
-
-        // Enforce tag blacklist
         const tags = hit.tags.toLowerCase();
         const containsBlacklisted = blacklist.some(tag => tags.includes(tag));
-
         return isHorizontal && !containsBlacklisted;
       });
 
@@ -242,7 +271,7 @@ async function getOrSearchImage(word, forceCache = false) {
         // Pick the top candidate (consistency over variety)
         const selectedImage = candidates[0].largeImageURL || candidates[0].webformatURL;
 
-        // 7. Cache Result
+        // 7. Cache Result (Associate with original word)
         imageCache[cacheKey] = selectedImage;
         saveImageCache();
         console.log(`[IMAGE] Success! Cached "${cleanWord}": ${selectedImage}`);
@@ -291,17 +320,11 @@ io.on("connection", (socket) => {
     const { matchId, noun } = data; // 'noun' is the English term
     if (!matchId || !noun) return;
 
-    // 1. Strict Validation against Structured Vocabulary
-    const vocabEntry = vocabMap[noun.toLowerCase().trim()];
-    if (!vocabEntry) {
-      console.warn(`[SOCKET] Rejected round trigger for non-vocab word: ${noun}`);
-      return;
-    }
+    console.log(`[SOCKET] Round trigger in ${matchId} for: ${noun}`);
 
-    console.log(`[SOCKET] Round trigger in ${matchId} for: ${noun} (Category: ${vocabEntry.category})`);
-
-    // 2. Get Image (ENFORCE CACHE AT RUNTIME)
+    // Resolve Image (Hybrid Cache/AI Flow)
     const imageUrl = await getOrSearchImage(noun, true);
+    const vocabEntry = vocabMap[noun.toLowerCase().trim()] || { category: "objects" };
 
     // 3. Broadcast to all players in the match
     io.to(matchId).emit("new_round_image", {
@@ -986,8 +1009,10 @@ app.get("/", (req, res) => {
                 if (type === 'image' && data.success) {
                     const info = data.vocab_info || {};
                     const isCached = data.is_cached;
+                    const isAi = !!info.ai_detected;
+                    
                     const statusColor = isCached ? '#00ff88' : '#3a7bd5';
-                    const statusLabel = isCached ? 'Cached' : 'Direct (Uncached)';
+                    const statusLabel = isCached ? 'Cached' : 'Direct Search';
                     
                     resDiv.innerHTML = \`
                         <div style="background: rgba(0,0,0,0.4); padding: 0.8rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.75rem; text-align: left; border: 1px solid var(--border);">
@@ -996,11 +1021,15 @@ app.get("/", (req, res) => {
                                 <span style="color: #00ff88; font-weight: bold;">Connected (v10)</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                                <span style="color: var(--text-muted);">Category:</span>
-                                <span style="font-family: monospace; color: var(--accent);">\${info.category || 'Unknown'}</span>
+                                <span style="color: var(--text-muted);">Data Source:</span>
+                                <span style="color: \${isAi ? '#ff9f43' : '#00ff88'}; font-weight: bold;">\${isAi ? 'AI Detected' : 'Local Vocabulary'}</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                                <span style="color: var(--text-muted);">Search Terms:</span>
+                                <span style="color: var(--text-muted);">Category:</span>
+                                <span style="font-family: monospace; color: var(--accent);">\${info.category || 'objects'}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
+                                <span style="color: var(--text-muted);">Search Query:</span>
                                 <span style="font-family: monospace; color: #fff;">"\${info.search_terms || data.word}"</span>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
@@ -1011,8 +1040,7 @@ app.get("/", (req, res) => {
                         <img src="\${data.imageUrl}" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5);">
                         <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all; background: #000; padding: 0.4rem; border-radius: 4px;">\${data.imageUrl}</div>
                     \`;
-                }
- else {
+                } else {
                     resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
                 }
             } catch (err) {
@@ -1020,84 +1048,84 @@ app.get("/", (req, res) => {
             }
         }
 
-        async function loadConfig() {
+      async function loadConfig() {
             try {
                 const res = await fetch('/admin/ai_config');
-                const cfg = await res.json();
-                
-                document.getElementById('cfg-role').value = cfg.system_role || '';
-                document.getElementById('cfg-tone').value = cfg.tone || 'supportive';
-                document.getElementById('cfg-goethe').checked = cfg.goethe_ref || false;
-                
-                // New Fields
-                document.getElementById('cfg-model-dict').value = cfg.model_dict || 'llama-3.3-70b-versatile';
-                document.getElementById('cfg-model-gen').value = cfg.model_general || 'llama-3.1-8b-instant';
-                document.getElementById('cfg-rpm').value = cfg.rpm_limit || 1000;
-                document.getElementById('cfg-tpm').value = cfg.tpm_limit || 100000;
+      const cfg = await res.json();
 
-                if (cfg.word_counts) {
-                    document.getElementById('wc-a1').value = cfg.word_counts.A1 || 5;
-                    document.getElementById('wc-a2').value = cfg.word_counts.A2 || 8;
-                    document.getElementById('wc-b1').value = cfg.word_counts.B1 || 12;
-                    document.getElementById('wc-b2').value = cfg.word_counts.B2 || 15;
-                    document.getElementById('wc-c1').value = cfg.word_counts.C1 || 15;
+      document.getElementById('cfg-role').value = cfg.system_role || '';
+      document.getElementById('cfg-tone').value = cfg.tone || 'supportive';
+      document.getElementById('cfg-goethe').checked = cfg.goethe_ref || false;
+
+      // New Fields
+      document.getElementById('cfg-model-dict').value = cfg.model_dict || 'llama-3.3-70b-versatile';
+      document.getElementById('cfg-model-gen').value = cfg.model_general || 'llama-3.1-8b-instant';
+      document.getElementById('cfg-rpm').value = cfg.rpm_limit || 1000;
+      document.getElementById('cfg-tpm').value = cfg.tpm_limit || 100000;
+
+      if (cfg.word_counts) {
+        document.getElementById('wc-a1').value = cfg.word_counts.A1 || 5;
+      document.getElementById('wc-a2').value = cfg.word_counts.A2 || 8;
+      document.getElementById('wc-b1').value = cfg.word_counts.B1 || 12;
+      document.getElementById('wc-b2').value = cfg.word_counts.B2 || 15;
+      document.getElementById('wc-c1').value = cfg.word_counts.C1 || 15;
                 }
-                document.getElementById('cfg-tuning').value = cfg.tuning_instructions || '';
+      document.getElementById('cfg-tuning').value = cfg.tuning_instructions || '';
             } catch (err) {
-                console.error("Failed to load config", err);
+        console.error("Failed to load config", err);
             }
         }
 
-        async function saveConfig() {
+      async function saveConfig() {
             const resDiv = document.getElementById('config-res');
-            const btn = document.querySelector('button[onclick="saveConfig()"]');
-            
-            // 1. Show immediate feedback
-            btn.innerHTML = "Saving...";
-            btn.disabled = true;
-            resDiv.style.display = 'block'; // Ensure visibility
-            resDiv.innerHTML = '<span style="color: var(--accent)">Connecting to server...</span>';
-            resDiv.classList.add('active');
-            
-            const body = {
-                system_role: document.getElementById('cfg-role').value,
-                tone: document.getElementById('cfg-tone').value,
-                goethe_ref: document.getElementById('cfg-goethe').checked,
-                model_dict: document.getElementById('cfg-model-dict').value,
-                model_general: document.getElementById('cfg-model-gen').value,
-                rpm_limit: parseInt(document.getElementById('cfg-rpm').value) || 1000,
-                tpm_limit: parseInt(document.getElementById('cfg-tpm').value) || 100000,
-                word_counts: {
-                    A1: parseInt(document.getElementById('wc-a1').value) || 5,
-                    A2: parseInt(document.getElementById('wc-a2').value) || 8,
-                    B1: parseInt(document.getElementById('wc-b1').value) || 12,
-                    B2: parseInt(document.getElementById('wc-b2').value) || 15,
-                    C1: parseInt(document.getElementById('wc-c1').value) || 15
+      const btn = document.querySelector('button[onclick="saveConfig()"]');
+
+      // 1. Show immediate feedback
+      btn.innerHTML = "Saving...";
+      btn.disabled = true;
+      resDiv.style.display = 'block'; // Ensure visibility
+      resDiv.innerHTML = '<span style="color: var(--accent)">Connecting to server...</span>';
+      resDiv.classList.add('active');
+
+      const body = {
+        system_role: document.getElementById('cfg-role').value,
+      tone: document.getElementById('cfg-tone').value,
+      goethe_ref: document.getElementById('cfg-goethe').checked,
+      model_dict: document.getElementById('cfg-model-dict').value,
+      model_general: document.getElementById('cfg-model-gen').value,
+      rpm_limit: parseInt(document.getElementById('cfg-rpm').value) || 1000,
+      tpm_limit: parseInt(document.getElementById('cfg-tpm').value) || 100000,
+      word_counts: {
+        A1: parseInt(document.getElementById('wc-a1').value) || 5,
+      A2: parseInt(document.getElementById('wc-a2').value) || 8,
+      B1: parseInt(document.getElementById('wc-b1').value) || 12,
+      B2: parseInt(document.getElementById('wc-b2').value) || 15,
+      C1: parseInt(document.getElementById('wc-c1').value) || 15
                 },
-                tuning_instructions: document.getElementById('cfg-tuning').value
+      tuning_instructions: document.getElementById('cfg-tuning').value
             };
 
-            try {
+      try {
                 const res = await fetch('/admin/ai_config', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json'
+        method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(body)
+      body: JSON.stringify(body)
                 });
-                const data = await res.json();
-                
-                if (data.success) {
+      const data = await res.json();
+
+      if (data.success) {
                     const time = new Date().toLocaleTimeString();
-                    resDiv.innerHTML = \`<span style="color: #00ff88; font-weight: bold;">✅ Saved Successfully at \${time}!</span><br><span style="font-size:0.8em; color: #ccc">Configuration updated on persistent storage.</span>\`;
+      resDiv.innerHTML = \`<span style="color: #00ff88; font-weight: bold;">✅ Saved Successfully at \${time}!</span><br><span style="font-size:0.8em; color: #ccc">Configuration updated on persistent storage.</span>\`;
                 } else {
-                    resDiv.innerHTML = \`<span style="color: #ff4757">❌ Error: \${data.error}</span>\`;
+          resDiv.innerHTML = \`<span style="color: #ff4757">❌ Error: \${data.error}</span>\`;
                 }
             } catch (err) {
-                resDiv.innerHTML = \`<span style="color: #ff4757">❌ Network Error: \${err.message}</span>\`;
+          resDiv.innerHTML = \`<span style="color: #ff4757">❌ Network Error: \${err.message}</span>\`;
             } finally {
-                btn.innerHTML = "Save AI Settings";
-                btn.disabled = false;
+          btn.innerHTML = "Save AI Settings";
+        btn.disabled = false;
             }
         }
 
@@ -1107,119 +1135,119 @@ app.get("/", (req, res) => {
         async function updateUsageStats() {
             try {
                 const res = await fetch('/api/usage');
-                const data = await res.json();
-                if (data.success && data.stats) {
+        const data = await res.json();
+        if (data.success && data.stats) {
                     const stats = data.stats;
-                    const limit = data.limit || 1000;
-                    const tokenLimit = data.token_limit || 100000;
-                    
-                    document.getElementById('total-req').innerText = stats.total_requests || 0;
-                    document.getElementById('total-limit').innerText = limit;
-                    document.getElementById('total-tokens').innerText = (stats.total_tokens || 0).toLocaleString();
-                    document.getElementById('token-limit-display').innerText = tokenLimit.toLocaleString();
-                    
-                    const percent = Math.min(100, ((stats.total_requests || 0) / limit) * 100);
-                    document.getElementById('usage-progress').style.width = percent + '%';
+        const limit = data.limit || 1000;
+        const tokenLimit = data.token_limit || 100000;
 
-                    const tokenPercent = Math.min(100, ((stats.total_tokens || 0) / tokenLimit) * 100);
-                    document.getElementById('token-progress').style.width = tokenPercent + '%';
-                    
-                    // Endpoint Stats Table
-                    const endpointDiv = document.getElementById('endpoint-stats');
-                    endpointDiv.innerHTML = '';
-                    
-                    for (const [name, data] of Object.entries(stats.endpoints || {})) {
+        document.getElementById('total-req').innerText = stats.total_requests || 0;
+        document.getElementById('total-limit').innerText = limit;
+        document.getElementById('total-tokens').innerText = (stats.total_tokens || 0).toLocaleString();
+        document.getElementById('token-limit-display').innerText = tokenLimit.toLocaleString();
+
+        const percent = Math.min(100, ((stats.total_requests || 0) / limit) * 100);
+        document.getElementById('usage-progress').style.width = percent + '%';
+
+        const tokenPercent = Math.min(100, ((stats.total_tokens || 0) / tokenLimit) * 100);
+        document.getElementById('token-progress').style.width = tokenPercent + '%';
+
+        // Endpoint Stats Table
+        const endpointDiv = document.getElementById('endpoint-stats');
+        endpointDiv.innerHTML = '';
+
+        for (const [name, data] of Object.entries(stats.endpoints || { })) {
                         const count = typeof data === 'object' ? data.requests : data;
-                        const tokens = typeof data === 'object' ? data.tokens : 0;
-                        endpointDiv.innerHTML += \`
-                            <div class="endpoint-row" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
-                                <span class="endpoint-name" style="font-weight: 500; font-family: monospace; color: var(--text);">\${name}</span>
-                                <div style="text-align: right;">
-                                    <div style="font-weight: bold; color: var(--accent);">\${count} reqs</div>
-                                    <div style="font-size: 0.65rem; color: var(--text-muted);">\${tokens.toLocaleString()} tokens</div>
-                                </div>
-                            </div>
-                        \`;
+        const tokens = typeof data === 'object' ? data.tokens : 0;
+        endpointDiv.innerHTML += \`
+        <div class="endpoint-row" style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+          <span class="endpoint-name" style="font-weight: 500; font-family: monospace; color: var(--text);">\${name}</span>
+          <div style="text-align: right;">
+            <div style="font-weight: bold; color: var(--accent);">\${count} reqs</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted);">\${tokens.toLocaleString()} tokens</div>
+          </div>
+        </div>
+        \`;
                     }
-                    
-                    // Recent Logs Table
-                    const logsBody = document.getElementById('recent-logs-body');
+
+        // Recent Logs Table
+        const logsBody = document.getElementById('recent-logs-body');
                     if (stats.recent_logs && stats.recent_logs.length > 0) {
-                        logsBody.innerHTML = stats.recent_logs.map(log => {
-                            const time = new Date(log.timestamp).toLocaleTimeString();
-                            return \`
-                                <tr style="border-bottom: 1px solid var(--border);">
-                                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">\${time}</td>
-                                    <td style="padding: 0.75rem 1rem; font-family: monospace; color: #fff;">\${log.endpoint}</td>
-                                    <td style="padding: 0.75rem 1rem; color: var(--text-muted);">\${log.model}</td>
-                                    <td style="padding: 0.75rem 1rem; text-align: right; font-weight: bold; color: var(--accent);">\${log.tokens.toLocaleString()}</td>
-                                </tr>
-                            \`;
+          logsBody.innerHTML = stats.recent_logs.map(log => {
+            const time = new Date(log.timestamp).toLocaleTimeString();
+            return \`
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 0.75rem 1rem; color: var(--text-muted);">\${time}</td>
+          <td style="padding: 0.75rem 1rem; font-family: monospace; color: #fff;">\${log.endpoint}</td>
+          <td style="padding: 0.75rem 1rem; color: var(--text-muted);">\${log.model}</td>
+          <td style="padding: 0.75rem 1rem; text-align: right; font-weight: bold; color: var(--accent);">\${log.tokens.toLocaleString()}</td>
+        </tr>
+        \`;
                         }).join('');
                     } else {
-                        logsBody.innerHTML = '<tr><td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-muted);">No recent activity tracked yet.</td></tr>';
+          logsBody.innerHTML = '<tr><td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-muted);">No recent activity tracked yet.</td></tr>';
                     }
 
-                    // Live Indicator logic
-                    if (stats.last_request && stats.last_request !== lastRequestTimestamp) {
+        // Live Indicator logic
+        if (stats.last_request && stats.last_request !== lastRequestTimestamp) {
                         const indicator = document.getElementById('live-indicator');
-                        if (lastRequestTimestamp !== null) { // Don't flash on first load
-                            indicator.style.opacity = '1';
+        if (lastRequestTimestamp !== null) { // Don't flash on first load
+          indicator.style.opacity = '1';
                             setTimeout(() => indicator.style.opacity = '0', 2000);
                         }
-                        lastRequestTimestamp = stats.last_request;
-                        const date = new Date(stats.last_request);
-                        document.getElementById('usage-last-update').innerText = 'Last Activity: ' + date.toLocaleTimeString();
+        lastRequestTimestamp = stats.last_request;
+        const date = new Date(stats.last_request);
+        document.getElementById('usage-last-update').innerText = 'Last Activity: ' + date.toLocaleTimeString();
                     }
                 }
-            } catch (e) { console.error("Stats poll failed", e); }
+            } catch (e) {console.error("Stats poll failed", e); }
         }
 
         window.onload = () => {
-            loadConfig();
-            updateUsageStats();
-            setInterval(updateUsageStats, 2000);
+          loadConfig();
+        updateUsageStats();
+        setInterval(updateUsageStats, 2000);
         };
-    </script>
-</body>
-</html>
-  `);
+      </script>
+    </body>
+</html >
+    `);
 });
 
 app.get("/test-ai", (req, res) => {
   res.send(`
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body { background: #111; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-button { padding: 15px 30px; font-size: 18px; background: #00d2ff; border: none; border-radius: 8px; cursor: pointer; }
-#log { margin-top: 20px; font-family: monospace; color: #0f0; }
-</style>
-</head>
-<body>
-<h1>AI Speed Test</h1>
-<button onclick="testSpeed()">Run Test</button>
-<div id="log"></div>
-<script>
-async function testSpeed() {
+    < !DOCTYPE html >
+  <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          body {background: #111; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+          button {padding: 15px 30px; font-size: 18px; background: #00d2ff; border: none; border-radius: 8px; cursor: pointer; }
+          #log {margin - top: 20px; font-family: monospace; color: #0f0; }
+        </style>
+    </head>
+    <body>
+      <h1>AI Speed Test</h1>
+      <button onclick="testSpeed()">Run Test</button>
+      <div id="log"></div>
+      <script>
+        async function testSpeed() {
     const log = document.getElementById('log');
-    log.innerHTML = "Testing...";
-    const start = Date.now();
-    try {
+        log.innerHTML = "Testing...";
+        const start = Date.now();
+        try {
         const res = await fetch('/sentence?word=test&level=A1');
         const data = await res.json();
         const end = Date.now();
         const duration = (end - start) / 1000;
         log.innerHTML = \`Success!\nTime: \${duration}s\n\nResponse:\n\${JSON.stringify(data, null, 2)}\`;
     } catch (e) {
-        log.innerHTML = "Error: " + e.message;
+          log.innerHTML = "Error: " + e.message;
     }
 }
-</script>
-</body>
-</html>
+      </script>
+    </body>
+  </html>
   `);
 });
 
@@ -1244,34 +1272,34 @@ async function handleDict(req, res) {
 
   // Create a context-aware cache key
   const normalizedTerm = queryTerm.toLowerCase().trim();
-  const contextHash = context ? `-${Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8)}` : "";
-  const dictCacheKey = `${from}-${to}-${normalizedTerm}${contextHash}`;
+  const contextHash = context ? `- ${Buffer.from(context.toLowerCase().trim()).toString('hex').slice(0, 8)}` : "";
+  const dictCacheKey = `${from} - ${to} - ${normalizedTerm}${contextHash}`;
 
   // Skip cache if bypass_cache is enabled (for AI learn mode)
   if (!shouldBypassCache) {
     // 1. Check Primary Cache (Directional + Contextual)
     if (dictCache[dictCacheKey]) {
-      console.log(`Cache Hit (Primary): ${dictCacheKey}`);
+      console.log(`Cache Hit(Primary): ${dictCacheKey}`);
       return serveCachedEntry(dictCacheKey, res);
     }
 
     // 2. Fallback to Generic cache (if context-less entry exists)
-    const genericKey = `${from}-${to}-${normalizedTerm}`;
+    const genericKey = `${from} - ${to} - ${normalizedTerm}`;
     if (!context && dictCache[genericKey]) {
-      console.log(`Cache Hit (Generic): ${genericKey}`);
+      console.log(`Cache Hit(Generic): ${genericKey}`);
       return serveCachedEntry(genericKey, res);
     }
 
     // 3. Global Cache Search (Direction-Agnostic, ONLY Generic or Exact match)
     const globalMatch = Object.keys(dictCache).find(k => {
       // Must end with the term, and either be context-less OR match the current context hash
-      const endsWithTerm = k.endsWith(`-${normalizedTerm}`);
+      const endsWithTerm = k.endsWith(`- ${normalizedTerm}`);
       const isGeneric = k === `${from === 'de' ? 'en' : 'de'}-${from === 'de' ? 'de' : 'en'}-${normalizedTerm}`;
       const isSameContext = k.endsWith(`${normalizedTerm}${contextHash}`);
       return endsWithTerm && (isGeneric || isSameContext);
     });
     if (globalMatch) {
-      console.log(`Cache Hit (Global): ${globalMatch} for ${queryTerm}`);
+      console.log(`Cache Hit(Global): ${globalMatch} for ${queryTerm}`);
       return serveCachedEntry(globalMatch, res);
     }
   } else {
@@ -1298,41 +1326,41 @@ async function handleDict(req, res) {
       messages: [
         { role: "system", content: "You are a German Grammar Expert and professional dictionary API. Respond ONLY in valid JSON." },
         {
-          role: "user", content: `Lookup "${queryTerm}" (Source: ${from}, Target: ${to}).
-        ${context ? `CONTEXT: "${context}" (Please provide the meaning that fits this specific sentence).` : ""}
+          role: "user", content: `Lookup "${queryTerm}"(Source: ${from}, Target: ${to}).
+  ${context ? `CONTEXT: "${context}" (Please provide the meaning that fits this specific sentence).` : ""}
 
-        Rules:
-        1. Identify the 'best' translation.
-        2. Detect the language of the term (English or German).
-        3. If the German term is a noun, you MUST include the definite article (der/die/das) and capitalize it (e.g., 'der Hund').
+Rules:
+1. Identify the 'best' translation.
+        2. Detect the language of the term(English or German).
+        3. If the German term is a noun, you MUST include the definite article(der / die / das) and capitalize it(e.g., 'der Hund').
         4. Even if source is German, ensure 'german_full' is the explicit Article + Noun form.
-        5. Provide gender (m/f/n) for German nouns.
+        5. Provide gender(m / f / n) for German nouns.
         6. Provide exactly 2 common alternate translations in the 'alternates' array.
         7. For German words, provide additional grammar data:
-           - artikel: "der", "die", or "das" (if noun)
-           - plural: Plural form (if noun)
-           - perfekt: Partizip II form (if verb)
-           - praeteritum: Simple past form (if verb)
-           - praesens: Present tense form for 2nd and 3rd person (e.g., "du liest, er liest") (if verb)
-           - case: Dativ/Akkusativ usage if applicable
-           - synonyms: list of 2 synonyms
-           - example: A natural German example sentence.
+- artikel: "der", "die", or "das"(if noun)
+  - plural: Plural form(if noun)
+  - perfekt: Partizip II form(if verb)
+  - praeteritum: Simple past form(if verb)
+  - praesens: Present tense form for 2nd and 3rd person(e.g., "du liest, er liest")(if verb)
+  - case: Dativ / Akkusativ usage if applicable
+    - synonyms: list of 2 synonyms
+      - example: A natural German example sentence.
            - exampleEn: The English translation of the example sentence.
-           - vowel_change: e.g., "e -> ie" for "sehen". Return "N/A" if regular.
+           - vowel_change: e.g., "e -> ie" for "sehen".Return "N/A" if regular.
            - part_of_speech: "noun", "verb", "adjective", "adverb", "conjunction", "preposition", "pronoun", "interjection".
-           - extra_info: e.g., "Irregular verb". Return "Regular verb" or "Regular noun" if normal.
+           - extra_info: e.g., "Irregular verb".Return "Regular verb" or "Regular noun" if normal.
 
         Return JSON: {
-          "translation": "Main translation",
-          "alternates": ["alt1", "alt2"],
-          "detected_from": "de or en",
-          "detected_to": "en or de",
+  "translation": "Main translation",
+    "alternates": ["alt1", "alt2"],
+      "detected_from": "de or en",
+        "detected_to": "en or de",
           "data": {
-            "artikel": "...", "plural": "...", "perfekt": "...", "praeteritum": "...", "praesens": "...", 
-            "case": "...", "gender": "...", "vowel_change": "...", "part_of_speech": "...", 
-            "extra_info": "...", "synonyms": [...], "example": "...", "exampleEn": "..."
-          }
-        }` }
+    "artikel": "...", "plural": "...", "perfekt": "...", "praeteritum": "...", "praesens": "...",
+      "case": "...", "gender": "...", "vowel_change": "...", "part_of_speech": "...",
+        "extra_info": "...", "synonyms": [...], "example": "...", "exampleEn": "..."
+  }
+} ` }
       ],
       model: aiConfig.model_dict || "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
@@ -1343,7 +1371,7 @@ async function handleDict(req, res) {
     const aiData = JSON.parse(completion.choices[0]?.message?.content || "{}");
 
     if (!aiData.translation) {
-      console.error(`AI failed to translate: ${queryTerm}`);
+      console.error(`AI failed to translate: ${queryTerm} `);
       return res.status(500).json({ success: false, error: "AI could not find a translation for this term." });
     }
 
@@ -1371,10 +1399,10 @@ async function handleDict(req, res) {
       finalData.vowel_change = grammarInfo.vowel_change;
       finalData.perfekt = grammarInfo.perfekt;
       finalData.praeteritum = grammarInfo.praeteritum;
-      finalData.praesens = `er/sie/es ${grammarInfo.third_person}`;
+      finalData.praesens = `er / sie / es ${grammarInfo.third_person} `;
       finalData.gender = "N/A";
       finalData.part_of_speech = "verb";
-      finalData.extra_info = `Irregular verb (3rd pers: ${grammarInfo.third_person})`;
+      finalData.extra_info = `Irregular verb(3rd pers: ${grammarInfo.third_person})`;
       if (grammarInfo.is_compound) {
         finalData.extra_info += `; Compound of '${grammarInfo.base_verb}'`;
       }
