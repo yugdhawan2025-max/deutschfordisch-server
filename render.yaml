@@ -2,7 +2,6 @@ services:
   - type: web
     name: deutschfordisch-server
     runtime: node
-    buildCommand: npm install
     startCommand: node server.js
     envVars:
       - key: GROQ_API_KEY
@@ -12,7 +11,7 @@ services:
       - key: PEXELS_API_KEY
         sync: false # Manual entry required in Render
       - key: NODE_VERSION
-        value: 18.0.0
+        value: 18
     disk:
       name: uploads-data
       mountPath: /var/lib/data
