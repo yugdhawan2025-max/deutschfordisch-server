@@ -220,10 +220,12 @@ async function getOrSearchImage(word, forceCache = false) {
     return { url: imageCache[cacheKey], logs };
   }
 
-  // 2. Strict gameplay enforcement: No live searches during matches
-  if (forceCache) {
+  // 2. Strict gameplay enforcement: No live searches during matches (UNLESS in curated vocab)
+  if (forceCache && !vInfo) {
     log(`[BLOCK] Runtime search blocked for "${cleanWord}". Word must be pre-cached.`);
     return { url: FALLBACK_IMAGE, logs };
+  } else if (forceCache && vInfo) {
+    log(`[SAFETY] Word "${cleanWord}" is in curated vocab. Allowing one-time live search fallback.`);
   }
 
   // 3. Resolve Metadata (Local Vocab > AI Fallback)
@@ -1945,6 +1947,26 @@ app.post("/admin/ai_config", (req, res) => {
 });
 
 /* -------------------- START -------------------- */
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`Server live on port ${PORT} `);
+
+  // Background Cache Population
+  console.log("[CACHE] Starting background population of curated vocab...");
+  setTimeout(async () => {
+    let populatedCount = 0;
+    for (const entry of vocabulary) {
+      const word = entry.word.toLowerCase();
+      if (!imageCache[word]) {
+        try {
+          await getOrSearchImage(word, false);
+          populatedCount++;
+          // Minimal delay to avoid Pixabay rate limits during startup
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (err) {
+          console.error(`[CACHE] Failed to auto-populate ${word}:`, err.message);
+        }
+      }
+    }
+    console.log(`[CACHE] Background population complete. Added ${populatedCount} images.`);
+  }, 5000); // Wait 5s after start to avoid competing with startup IO
 });
