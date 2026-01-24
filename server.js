@@ -168,6 +168,7 @@ function loadVocabulary() {
 loadVocabulary();
 
 /**
+/**
  * Uses AI only as a strict fallback to resolve dictionary metadata for search.
  */
 async function getWordMetadata(word) {
@@ -199,34 +200,42 @@ async function getWordMetadata(word) {
 
 /**
  * Searches for an image on Pixabay using STRICT deterministic rules.
- * 
- * @param {string} word - The noun to search for
- * @param {boolean} forceCache - If true, refuses to perform a web search (Runtime Flow)
+ * Returns { url: string, logs: string[] }
  */
 async function getOrSearchImage(word, forceCache = false) {
   const cleanWord = word.toLowerCase().trim();
   let vInfo = vocabMap[cleanWord];
   let isAiTarget = false;
+  let logs = [];
+
+  const log = (msg) => {
+    console.log(msg);
+    logs.push(msg);
+  };
 
   // 1. Check verified cache
   const cacheKey = cleanWord;
-  if (imageCache[cacheKey]) return imageCache[cacheKey];
+  if (imageCache[cacheKey]) {
+    log(`[CACHE] Found pre-verified image for "${cleanWord}"`);
+    return { url: imageCache[cacheKey], logs };
+  }
 
   // 2. Strict gameplay enforcement: No live searches during matches
   if (forceCache) {
-    console.warn(`[IMAGE] UNCACHED WORD BLOCKED: "${cleanWord}". Matches must use pre-verified images.`);
-    return FALLBACK_IMAGE;
+    log(`[BLOCK] Runtime search blocked for "${cleanWord}". Word must be pre-cached.`);
+    return { url: FALLBACK_IMAGE, logs };
   }
 
   // 3. Resolve Metadata (Local Vocab > AI Fallback)
   if (!vInfo) {
-    console.log(`[IMAGE] Word "${cleanWord}" not in curated vocab. Calling AI fallback for metadata...`);
+    log(`[METADATA] Word "${cleanWord}" not in curated vocab. Calling AI fallback...`);
     vInfo = await getWordMetadata(cleanWord);
     isAiTarget = true;
+  } else {
+    log(`[METADATA] Using curated vocab entry for "${cleanWord}".`);
   }
 
-  // 4. Construct Hyper-Specific Query
-  // Format: "word context" (e.g., "boss office manager")
+  // 4. Construct Query
   const searchKeyword = `${cleanWord} ${vInfo.literal_context || ''}`.trim();
   const pixabayCategory = (vInfo.category === 'people') ? 'people' :
     (vInfo.category === 'animals') ? 'animals' :
@@ -235,19 +244,24 @@ async function getOrSearchImage(word, forceCache = false) {
           (vInfo.category === 'vehicles') ? 'transportation' :
             (vInfo.category === 'objects') ? 'items' : '';
 
+  log(`[QUERY] Keywords: "${searchKeyword}", Category: "${pixabayCategory}"`);
+
   // 5. Search Pixabay (Strict Photographic Mode)
   const apiKey = process.env.PIXABAY_API_KEY;
-  if (!apiKey || apiKey.includes("YOUR_PIXABAY_API_KEY")) return FALLBACK_IMAGE;
+  if (!apiKey || apiKey.includes("YOUR_PIXABAY_API_KEY")) {
+    log(`[ERROR] Pixabay API Key missing or invalid.`);
+    return { url: FALLBACK_IMAGE, logs };
+  }
 
   try {
-    const sourceLabel = isAiTarget ? "AI FALLBACK" : "CURATED VOCAB";
-    console.log(`[IMAGE] Deterministic Search (${sourceLabel}): "${searchKeyword}"`);
-
     let url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&safesearch=true&order=popular&per_page=20`;
     if (pixabayCategory) url += `&category=${pixabayCategory}`;
 
+    log(`[API] sending request to Pixabay...`);
     const response = await fetch(url);
     const data = await response.json();
+
+    log(`[API] Hits received: ${data.hits ? data.hits.length : 0}`);
 
     if (data.hits && data.hits.length > 0) {
       // 6. Aggressive Blacklist (Strictly NO graphics/drawings)
@@ -258,24 +272,31 @@ async function getOrSearchImage(word, forceCache = false) {
         const isHorizontal = ratio >= 1.2 && ratio <= 1.9;
         const tags = (hit.tags || "").toLowerCase();
         const hasGraphics = blacklist.some(tag => tags.includes(tag));
+
+        if (!isHorizontal) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Bad Ratio (${ratio.toFixed(2)})`);
+        if (hasGraphics) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Graphics Detected`);
+
         return isHorizontal && !hasGraphics;
       });
 
+      log(`[FILTER] Candidates remaining: ${candidates.length}`);
+
       if (candidates.length > 0) {
         const selectedImage = candidates[0].largeImageURL || candidates[0].webformatURL;
-
         imageCache[cacheKey] = selectedImage;
         saveImageCache();
-        console.log(`[IMAGE] SUCCESS! Verified image for "${cleanWord}": ${selectedImage}`);
-        return selectedImage;
+        log(`[SUCCESS] Selected image: ${selectedImage}`);
+        return { url: selectedImage, logs };
       }
+    } else {
+      log(`[FAIL] No hits returned from Pixabay.`);
     }
-    console.warn(`[IMAGE] FAILED: No high-precision photos found for: ${searchKeyword}`);
+    log(`[FAIL] All candidates filtered out.`);
   } catch (err) {
-    console.error(`[IMAGE] API failure:`, err);
+    log(`[ERROR] API Request failed: ${err.message}`);
   }
 
-  return FALLBACK_IMAGE;
+  return { url: FALLBACK_IMAGE, logs };
 }
 
 /**
@@ -315,13 +336,13 @@ io.on("connection", (socket) => {
     console.log(`[SOCKET] Round trigger in ${matchId} for: ${noun}`);
 
     // Resolve Image (Hybrid Cache/AI Flow)
-    const imageUrl = await getOrSearchImage(noun, true);
+    const result = await getOrSearchImage(noun, true);
     const vocabEntry = vocabMap[noun.toLowerCase().trim()] || { category: "objects" };
 
     // 3. Broadcast to all players in the match
     io.to(matchId).emit("new_round_image", {
       noun: noun,
-      imageUrl: imageUrl,
+      imageUrl: result.url,
       category: vocabEntry.category,
       round: Math.floor(data.round || 1)
     });
@@ -486,11 +507,12 @@ app.get("/api/test_image", async (req, res) => {
   const forceCache = populate !== "true";
 
   try {
-    const imageUrl = await getOrSearchImage(query, forceCache);
+    const result = await getOrSearchImage(query, forceCache);
     res.json({
       success: true,
       word: query,
-      imageUrl,
+      imageUrl: result.url,
+      logs: result.logs,
       is_cached: !!imageCache[query.toLowerCase().trim()],
       vocab_info: vocabMap[query.toLowerCase().trim()] || "Not in Vocab"
     });
@@ -1021,6 +1043,10 @@ app.get("/", (req, res) => {
                             <div style="display: flex; justify-content: space-between;">
                                 <span style="color: var(--text-muted);">Cache Status:</span>
                                 <span style="color: \${statusColor}; font-weight: bold;">\${statusLabel}</span>
+                            </div>
+                            <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                                <span style="color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Server Logs:</span>
+                                <pre style="font-size: 0.6rem; color: #aaa; white-space: pre-wrap;">\${(data.logs || []).join('\\n')}</pre>
                             </div>
                         </div>
                         <div style="text-align: center;">
