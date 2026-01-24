@@ -123,13 +123,13 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v8.json"); // v8 for Strict-Square Pixabay
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v9.json"); // v9 for Landscape-Prioritized Pixabay
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
   try {
     imageCache = JSON.parse(fs.readFileSync(IMAGE_CACHE_PATH, "utf8"));
-    console.log(`Loaded ${Object.keys(imageCache).length} cached images (v8).`);
+    console.log(`Loaded ${Object.keys(imageCache).length} cached images (v9).`);
   } catch (err) {
     console.error("Failed to load image cache:", err);
   }
@@ -188,26 +188,26 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
 
       const data = await response.json();
       if (data.hits && data.hits.length > 0) {
-        // Find strictly square-ish images (aspect ratio between 0.9 and 1.1)
-        // We look through all 100 hits but favor those in the top results
+        // Find horizontal/landscape images (aspect ratio between 1.2 and 1.8)
+        // This naturally fits 3:2 or 16:9 shots which are common on Pixabay
         const candidates = data.hits.filter(hit => {
           const ratio = hit.imageWidth / hit.imageHeight;
-          return ratio >= 0.9 && ratio <= 1.1;
+          return ratio >= 1.2 && ratio <= 1.8;
         });
 
-        // Use the most relevant square image (favoring top results from Pixabay) 
+        // Use the most relevant landscape image
         let selectedImage = null;
         if (candidates.length > 0) {
-          // Pick from top 5 square candidates for slight variety, prioritizing high relevance
+          // Pick from top 5 landscape candidates
           const poolSize = Math.min(candidates.length, 5);
           const luckyIndex = Math.floor(Math.random() * poolSize);
           const photo = candidates[luckyIndex];
           selectedImage = photo.largeImageURL || photo.webformatURL;
-          console.log(`[IMAGE] Picked strict square candidate (Pool Size: ${candidates.length}, Selected Rank: ${luckyIndex}) for "${searchKeyword}"`);
+          console.log(`[IMAGE] Picked landscape candidate (Pool Size: ${candidates.length}, Selected Rank: ${luckyIndex}) for "${searchKeyword}"`);
         } else {
-          // Absolute fallback to first result if no square image exists
+          // Absolute fallback to first result
           selectedImage = data.hits[0].largeImageURL || data.hits[0].webformatURL;
-          console.warn(`[IMAGE] No strictly square images found for "${searchKeyword}". Using top general result.`);
+          console.warn(`[IMAGE] No landscape images found for "${searchKeyword}". Using top general result.`);
         }
 
         // 3. Cache Result
