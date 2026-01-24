@@ -1,0 +1,40 @@
+{
+    "vocabulary": [
+        {
+            "word": "boss",
+            "category": "people",
+            "search_terms": "manager, office boss",
+            "disambiguation": "A person in charge of a workplace"
+        },
+        {
+            "word": "lion",
+            "category": "animals",
+            "search_terms": "lion",
+            "disambiguation": "A large wild cat"
+        },
+        {
+            "word": "house",
+            "category": "places",
+            "search_terms": "residential house",
+            "disambiguation": "A building for human habitation"
+        },
+        {
+            "word": "apple",
+            "category": "food",
+            "search_terms": "apple fruit",
+            "disambiguation": "A round fruit with red or green skin"
+        },
+        {
+            "word": "car",
+            "category": "vehicles",
+            "search_terms": "modern car",
+            "disambiguation": "A road vehicle with four wheels"
+        },
+        {
+            "word": "pencil",
+            "category": "objects",
+            "search_terms": "writing pencil",
+            "disambiguation": "An instrument for writing or drawing"
+        }
+    ]
+}

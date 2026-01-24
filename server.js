@@ -145,111 +145,116 @@ function saveImageCache() {
 
 const FALLBACK_IMAGE = "https://placehold.co/1000x1000/023047/white.png?text=No+Image+Found"; // Stable placeholder
 
-/**
- * Searches for an image on Pixabay and returns the URL.
- * Includes manual filtering for 'square-ish' images to prevent bad cropping in-app.
- */
-async function getOrSearchImage(germanNoun, englishTranslation, category = "") {
-  // Mapping game categories to Pixabay API categories
-  const categoryMap = {
-    'Food': 'food',
-    'Transport': 'transportation',
-    'Tech': 'computer',
-    'Clothes': 'fashion',
-    'Body': 'health',
-    'Places': 'places',
-    'City': 'buildings',
-    'Travel': 'travel',
-    'Shopping': 'business',
-    'Leisure': 'sports',
-    'Home': 'buildings'
-  };
+/* -------------------- STRUCTURED VOCABULARY -------------------- */
+const VOCAB_PATH = path.join(__dirname, "vocabulary.json");
+let vocabulary = [];
+let vocabMap = {};
 
-  const pixabayCategory = categoryMap[category] || "";
-  const cacheKey = `${germanNoun.toLowerCase().trim()}_${pixabayCategory}`;
-  let searchKeyword = (englishTranslation || germanNoun).toLowerCase().trim();
-
-  // Strip German articles
-  const articles = ["der ", "die ", "das ", "ein ", "eine "];
-  for (const article of articles) {
-    if (searchKeyword.startsWith(article)) {
-      searchKeyword = searchKeyword.replace(article, "").trim();
-      break;
+function loadVocabulary() {
+  if (fs.existsSync(VOCAB_PATH)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(VOCAB_PATH, "utf8"));
+      vocabulary = data.vocabulary || [];
+      vocabMap = {};
+      vocabulary.forEach(v => {
+        vocabMap[v.word.toLowerCase().trim()] = v;
+      });
+      console.log(`[VOCAB] Loaded ${vocabulary.length} structured words.`);
+    } catch (err) {
+      console.error("[VOCAB] Failed to load vocabulary:", err);
     }
   }
+}
+loadVocabulary();
 
-  // Remove gendered prefixes (e.g., "female doctor" -> "doctor")
-  searchKeyword = searchKeyword.replace(/^female\s+/i, "");
-  searchKeyword = searchKeyword.replace(/^male\s+/i, "");
-  // Support both commas and slashes: "box / case" -> "box", "doctor, physician" -> "doctor"
-  searchKeyword = searchKeyword.split(/[,\/]/)[0].trim();
+/**
+ * Searches for an image on Pixabay and returns the URL.
+ * Strictly uses the structured vocabulary for context and categorization.
+ * 
+ * @param {string} word - The noun to search for
+ * @param {boolean} forceCache - If true, refuses to perform a web search (Runtime Flow)
+ */
+async function getOrSearchImage(word, forceCache = false) {
+  const cleanWord = word.toLowerCase().trim();
+  const vocabEntry = vocabMap[cleanWord];
 
-  // 1. Check Cache
+  // 1. Validate Noun exists in approved Vocab
+  if (!vocabEntry) {
+    console.warn(`[IMAGE] Rejected search for non-vocab word: "${word}"`);
+    return FALLBACK_IMAGE;
+  }
+
+  const cacheKey = cleanWord;
+
+  // 2. Check Cache
   if (imageCache[cacheKey]) {
-    console.log(`[IMAGE] Cache Hit for "${cacheKey}": ${imageCache[cacheKey]}`);
     return imageCache[cacheKey];
   }
 
-  // 2. Search Pixabay
-  const apiKey = process.env.PIXABAY_API_KEY;
-  if (!apiKey || apiKey.includes("YOUR_PIXABAY_API_KEY")) {
-    console.warn(`[IMAGE] No Pixabay API Key found. Using placeholder for "${searchKeyword}".`);
-  } else {
-    try {
-      console.log(`[IMAGE] Searching Pixabay (Landscape Priority) for: "${searchKeyword}" (Category: ${pixabayCategory})`);
-      // Get 100 results to have a good pool for filtering
-      let url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&per_page=100&safesearch=true`;
-      if (pixabayCategory) {
-        url += `&category=${pixabayCategory}`;
-      }
-
-      const response = await fetch(url);
-
-      if (!response.ok) throw new Error(`Pixabay API error: ${response.statusText}`);
-
-      const data = await response.json();
-      if (data.hits && data.hits.length > 0) {
-        // Find horizontal/landscape images (aspect ratio between 1.2 and 1.8)
-        // This naturally fits 3:2 or 16:9 shots which are common on Pixabay
-        const candidates = data.hits.filter(hit => {
-          const ratio = hit.imageWidth / hit.imageHeight;
-          return ratio >= 1.2 && ratio <= 1.8;
-        });
-
-        // Use the most relevant landscape image
-        let selectedImage = null;
-        if (candidates.length > 0) {
-          // Pick from top 5 landscape candidates
-          const poolSize = Math.min(candidates.length, 5);
-          const luckyIndex = Math.floor(Math.random() * poolSize);
-          const photo = candidates[luckyIndex];
-          selectedImage = photo.largeImageURL || photo.webformatURL;
-          console.log(`[IMAGE] Picked landscape candidate (Pool Size: ${candidates.length}, Selected Rank: ${luckyIndex}) for "${searchKeyword}"`);
-        } else {
-          // Absolute fallback to first result
-          selectedImage = data.hits[0].largeImageURL || data.hits[0].webformatURL;
-          console.warn(`[IMAGE] No landscape images found for "${searchKeyword}". Using top general result.`);
-        }
-
-        // 3. Cache Result
-        if (selectedImage) {
-          imageCache[cacheKey] = selectedImage;
-          saveImageCache();
-          return selectedImage;
-        }
-      } else {
-        console.warn(`[IMAGE] No photos found on Pixabay for keyword: ${searchKeyword}`);
-        // Try secondary search with just "noun" if it was different
-        if (searchKeyword !== germanNoun) {
-          return await getOrSearchImage(germanNoun, germanNoun);
-        }
-      }
-    } catch (err) {
-      console.error(`[IMAGE] Pixabay Search failure for ${searchKeyword}:`, err);
-    }
+  // 3. Prevent runtime searches (must populate cache via admin/setup first)
+  if (forceCache) {
+    console.warn(`[IMAGE] UNCACHED WORD during runtime: "${cleanWord}". Populate cache first!`);
+    return FALLBACK_IMAGE;
   }
 
-  return `https://placehold.co/1000x1000/023047/FFB703.png?text=${encodeURIComponent(searchKeyword)}`;
+  // 4. Build Context-Aware Search
+  const searchKeyword = vocabEntry.search_terms || cleanWord;
+  const pixabayCategory = (vocabEntry.category === 'people') ? 'people' :
+    (vocabEntry.category === 'animals') ? 'animals' :
+      (vocabEntry.category === 'places') ? 'places' :
+        (vocabEntry.category === 'food') ? 'food' :
+          (vocabEntry.category === 'vehicles') ? 'transportation' :
+            (vocabEntry.category === 'objects') ? 'items' : '';
+
+  // 5. Search Pixabay
+  const apiKey = process.env.PIXABAY_API_KEY;
+  if (!apiKey || apiKey.includes("YOUR_PIXABAY_API_KEY")) {
+    console.warn(`[IMAGE] No Pixabay API Key. Using fallback for "${cleanWord}".`);
+    return FALLBACK_IMAGE;
+  }
+
+  try {
+    console.log(`[IMAGE] SEARCHING (Cache Population) for: "${searchKeyword}" (Category: ${pixabayCategory})`);
+    let url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&per_page=50&safesearch=true&order=popular`;
+    if (pixabayCategory) url += `&category=${pixabayCategory}`;
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Pixabay API error: ${response.statusText}`);
+
+    const data = await response.json();
+    if (data.hits && data.hits.length > 0) {
+      // 6. Blacklist Filtering & Aspect Ratio Check
+      const blacklist = ["brand", "logo", "illustration", "vector", "drawing", "clipart", "sketch", "graphic", "text", "watermark"];
+
+      const candidates = data.hits.filter(hit => {
+        // Enforce horizontal aspect ratio
+        const ratio = hit.imageWidth / hit.imageHeight;
+        const isHorizontal = ratio >= 1.2 && ratio <= 1.8;
+
+        // Enforce tag blacklist
+        const tags = hit.tags.toLowerCase();
+        const containsBlacklisted = blacklist.some(tag => tags.includes(tag));
+
+        return isHorizontal && !containsBlacklisted;
+      });
+
+      if (candidates.length > 0) {
+        // Pick the top candidate (consistency over variety)
+        const selectedImage = candidates[0].largeImageURL || candidates[0].webformatURL;
+
+        // 7. Cache Result
+        imageCache[cacheKey] = selectedImage;
+        saveImageCache();
+        console.log(`[IMAGE] Success! Cached "${cleanWord}": ${selectedImage}`);
+        return selectedImage;
+      }
+    }
+    console.warn(`[IMAGE] No suitable photos found for: ${searchKeyword}`);
+  } catch (err) {
+    console.error(`[IMAGE] Search failure for ${searchKeyword}:`, err);
+  }
+
+  return FALLBACK_IMAGE;
 }
 
 /**
@@ -283,20 +288,26 @@ io.on("connection", (socket) => {
 
   // Start/Trigger a round with a word (server-authoritative)
   socket.on("trigger_round", async (data) => {
-    const { matchId, noun, category } = data; // 'noun' is now English term, 'category' is optional meaning hint
+    const { matchId, noun } = data; // 'noun' is the English term
     if (!matchId || !noun) return;
 
-    console.log(`[SOCKET] Round trigger in ${matchId} for: ${noun} (Category: ${category})`);
+    // 1. Strict Validation against Structured Vocabulary
+    const vocabEntry = vocabMap[noun.toLowerCase().trim()];
+    if (!vocabEntry) {
+      console.warn(`[SOCKET] Rejected round trigger for non-vocab word: ${noun}`);
+      return;
+    }
 
-    // 1. Skip strict validation as requested (Allow any English word)
-    // 2. Get/Search Image (using provided term for both cache key and search)
-    const imageUrl = await getOrSearchImage(noun, noun, category);
-    console.log(`[SOCKET] Image found: ${imageUrl}`);
+    console.log(`[SOCKET] Round trigger in ${matchId} for: ${noun} (Category: ${vocabEntry.category})`);
+
+    // 2. Get Image (ENFORCE CACHE AT RUNTIME)
+    const imageUrl = await getOrSearchImage(noun, true);
 
     // 3. Broadcast to all players in the match
     io.to(matchId).emit("new_round_image", {
       noun: noun,
       imageUrl: imageUrl,
+      category: vocabEntry.category,
       round: Math.floor(data.round || 1)
     });
 
@@ -454,28 +465,36 @@ app.get("/api/usage", (req, res) => {
 });
 
 app.get("/api/test_image", async (req, res) => {
-  const { query } = req.query;
+  const { query, populate = "false" } = req.query;
   if (!query) return res.status(400).json({ success: false, error: "Missing query" });
 
-  const apiKey = process.env.PIXABAY_API_KEY;
-  const isKeyMissing = !apiKey || apiKey.includes("YOUR_PIXABAY_API_KEY");
-  const keyPrefix = apiKey ? apiKey.substring(0, 5) + "..." : "NONE";
+  const forceCache = populate !== "true";
 
   try {
-    const imageUrl = await getOrSearchImage(query, query);
-    // Since we standardized getOrSearchImage to always return a string
-    const cleaned = "N/A"; // We could track this if needed, but keeping it simple for now
-
+    const imageUrl = await getOrSearchImage(query, forceCache);
     res.json({
       success: true,
+      word: query,
       imageUrl,
-      apiKeyStatus: isKeyMissing ? "missing" : "active",
-      apiKeyPrefix: keyPrefix,
-      cleanedKeyword: cleaned
+      is_cached: !!imageCache[query.toLowerCase().trim()],
+      vocab_info: vocabMap[query.toLowerCase().trim()] || "Not in Vocab"
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
+});
+
+// Admin endpoint to populate cache for all vocab words
+app.get("/api/populate_all_cache", async (req, res) => {
+  console.log("[ADMIN] Starting batch cache population...");
+  let count = 0;
+  for (const entry of vocabulary) {
+    if (!imageCache[entry.word.toLowerCase()]) {
+      await getOrSearchImage(entry.word, false);
+      count++;
+    }
+  }
+  res.json({ success: true, message: `Populated ${count} new images.` });
 });
 
 /* -------------------- ROOT: PREMIUM DASHBOARD -------------------- */
