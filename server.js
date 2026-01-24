@@ -179,46 +179,16 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
     return imageCache[cacheKey];
   }
 
-  // 2. PRIMARY: Pixabay API (Previously Secondary)
-  console.log(`[IMAGE] Searching Pixabay for: "${searchKeyword}"`);
-  const pixabayKey = process.env.PIXABAY_API_KEY || "48043864-d62c26207b9a23992224090c2"; // Use hardcoded fallback if provided or from Env
-  if (!pixabayKey || pixabayKey.includes("YOUR_PIXABAY_API_KEY")) {
-    console.warn(`[IMAGE] No Pixabay API Key found. Skipping.`);
-  } else {
-    try {
-      const response = await fetch(`https://pixabay.com/api/?key=${pixabayKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&per_page=3`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.hits && data.hits.length > 0) {
-          const randomIndex = Math.floor(Math.random() * Math.min(data.hits.length, 3));
-          const hit = data.hits[randomIndex];
-
-          // Select size based on preference
-          const sizePref = aiConfig.image_size_preference || "medium";
-          let selectedUrl = hit.webformatURL; // default medium
-
-          if (sizePref === "small") selectedUrl = hit.previewURL; // ~150px
-          else if (sizePref === "medium") selectedUrl = hit.webformatURL; // ~640px
-          else selectedUrl = hit.largeImageURL || hit.fullHDURL || hit.webformatURL; // ~1280px+
-
-          return cacheAndReturn(selectedUrl);
-        } else {
-          console.warn(`[IMAGE] Pixabay found no matches for "${searchKeyword}".`);
-        }
-      }
-    } catch (err) {
-      console.error(`[IMAGE] Pixabay Search critical failure:`, err);
-    }
-  }
-
-  // 3. SECONDARY: Pexels API (Backup)
+  // 2. PRIMARY: Pexels API
   const pexelsKey = process.env.PEXELS_API_KEY || "S8v27Hs4NMFgPJsm9ztEjhvEMDeMlcsplvzdAFcdGq5ycHzArCap4PJJ";
   try {
-    console.log(`[IMAGE] Falling back to Pexels for: "${searchKeyword}" (German: ${cacheKey})`);
+    console.log(`[IMAGE] Searching Pexels for: "${searchKeyword}" (German: ${cacheKey})`);
 
-    // Pexels API: Search for square images to avoid cropping issues
     const response = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(searchKeyword)}&orientation=square&per_page=1`, {
-      headers: { Authorization: pexelsKey }
+      headers: {
+        Authorization: pexelsKey,
+        'User-Agent': 'Mozilla/5.0 (Node.js/Server) AppleWebKit/537.36'
+      }
     });
 
     if (response.ok) {
@@ -226,12 +196,12 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
       if (data.photos && data.photos.length > 0) {
         const photo = data.photos[0];
         // Select size based on preference
-        const sizePref = aiConfig.image_size_preference || "medium"; // default medium
-        let selectedUrl = photo.src.large; // Default fallback to large (quality)
+        const sizePref = aiConfig.image_size_preference || "medium";
+        let selectedUrl = photo.src.large;
 
-        if (sizePref === "small") selectedUrl = photo.src.tiny || photo.src.small; // tiny is ~280px
-        else if (sizePref === "medium") selectedUrl = photo.src.medium || photo.src.large; // medium is ~350px
-        else selectedUrl = photo.src.large2x || photo.src.large; // large is 940px
+        if (sizePref === "small") selectedUrl = photo.src.tiny || photo.src.small;
+        else if (sizePref === "medium") selectedUrl = photo.src.medium || photo.src.large;
+        else selectedUrl = photo.src.large2x || photo.src.large;
 
         return cacheAndReturn(selectedUrl);
       } else {
@@ -242,6 +212,35 @@ async function getOrSearchImage(germanNoun, englishTranslation) {
     }
   } catch (err) {
     console.error(`[IMAGE] Pexels Search critical failure for ${searchKeyword}:`, err);
+  }
+
+  // 3. SECONDARY: Pixabay API (Backup)
+  console.log(`[IMAGE] Falling back to Pixabay for: "${searchKeyword}"`);
+  const pixabayKey = process.env.PIXABAY_API_KEY; // Only use Env var, no hardcoded invalid key
+  if (!pixabayKey || pixabayKey.includes("YOUR_PIXABAY_API_KEY")) {
+    console.warn(`[IMAGE] No Pixabay API Key found. Skipping fallback.`);
+  } else {
+    try {
+      const response = await fetch(`https://pixabay.com/api/?key=${pixabayKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&per_page=3`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.hits && data.hits.length > 0) {
+          const randomIndex = Math.floor(Math.random() * Math.min(data.hits.length, 3));
+          const hit = data.hits[randomIndex];
+
+          const sizePref = aiConfig.image_size_preference || "medium";
+          let selectedUrl = hit.webformatURL;
+
+          if (sizePref === "small") selectedUrl = hit.previewURL;
+          else if (sizePref === "medium") selectedUrl = hit.webformatURL;
+          else selectedUrl = hit.largeImageURL || hit.fullHDURL || hit.webformatURL;
+
+          return cacheAndReturn(selectedUrl);
+        }
+      }
+    } catch (err) {
+      console.error(`[IMAGE] Pixabay Search critical failure:`, err);
+    }
   }
 
   // Final attempt: Placehold.co is the most stable
