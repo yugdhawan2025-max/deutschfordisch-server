@@ -177,7 +177,16 @@ async function getWordMetadata(word) {
       messages: [
         {
           role: "system",
-          content: "You are a professional image search expert. Identify the primary category for this noun and provide a 2-3 word literal English context for a physical photo. Categories: people, animals, places, objects, food, vehicles."
+          content: `You are a professional image search expert. Goal: Identify the literal, physical representation of a noun for a high-quality photo. 
+
+1. Identify Category: people, animals, places, objects, food, vehicles.
+2. Create 'literal_context': A 2-3 word English phrase describing a concrete, isolated, and unambiguous physical instance of the word. 
+   - For 'orange': 'fruit citrus tree-product'
+   - For 'box': 'cardboard storage packaging'
+   - For 'spice': 'powdered seasonings in bowls'
+3. IMPORTANT: If the category is NOT 'people', explicitly avoid human-centric contexts (no hands, no people holding it).
+
+Return JSON: { "category", "literal_context" }`
         },
         { role: "user", content: `Noun: "${word}"` }
       ],
@@ -235,7 +244,15 @@ async function getOrSearchImage(word, forceCache = false) {
   }
 
   // 4. Construct Query
-  let searchKeyword = (vInfo.search_terms && vInfo.search_terms.trim()) ? vInfo.search_terms.split(',').map(s => s.trim()).join(' ') : `${cleanWord} ${vInfo.literal_context || ''}`.trim();
+  let searchKeyword = "";
+  if (vInfo.search_terms && vInfo.search_terms.trim()) {
+    searchKeyword = vInfo.search_terms.split(',').map(s => s.trim()).join(' ');
+  } else {
+    // Smart merge: word + literal context + category
+    const context = vInfo.literal_context || '';
+    const categoryModifier = (vInfo.category && vInfo.category !== 'objects') ? vInfo.category : '';
+    searchKeyword = `${cleanWord} ${context} ${categoryModifier}`.trim();
+  }
 
   // Normalize Query: Replace slashes and other symbols that break Pixabay search with spaces
   searchKeyword = searchKeyword.replace(/\//g, ' ').replace(/\s+/g, ' ').trim();
@@ -268,19 +285,23 @@ async function getOrSearchImage(word, forceCache = false) {
 
     if (data.hits && data.hits.length > 0) {
       // 6. Aggressive Blacklist (Strictly NO graphics/drawings)
-      const blacklist = ["brand", "logo", "illustration", "vector", "drawing", "clipart", "sketch", "graphic", "text", "watermark", "icon", "abstract", "3d", "rendering"];
+      const graphicsBlacklist = ["brand", "logo", "illustration", "vector", "drawing", "clipart", "sketch", "graphic", "text", "watermark", "icon", "abstract", "3d", "rendering", "photoshop", "unreal", "cg"];
+      const personBlacklist = ["person", "woman", "man", "child", "human", "face", "portrait", "people", "girl", "boy"];
 
       const candidates = data.hits.filter(hit => {
         const ratio = hit.imageWidth / hit.imageHeight;
         const isHorizontal = ratio >= 1.2 && ratio <= 1.9;
         const tags = (hit.tags || "").toLowerCase();
-        const hasGraphics = blacklist.some(tag => tags.includes(tag));
+
+        const hasGraphics = graphicsBlacklist.some(tag => tags.includes(tag));
+        const isNonPeopleWithPeople = (vInfo.category !== 'people') && personBlacklist.some(tag => tags.includes(tag));
 
         if (!isHorizontal) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Bad Ratio (${ratio.toFixed(2)})`);
         if (hasGraphics) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Graphics Detected`);
+        if (isNonPeopleWithPeople) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Human detected in non-people search`);
 
         // Relaxation: If it's borderline horizontal (1.1 to 2.1) and NOT graphics, we might allow it if no perfect matches found
-        return (isHorizontal || (ratio >= 1.0 && ratio <= 2.2)) && !hasGraphics;
+        return (isHorizontal || (ratio >= 1.0 && ratio <= 2.2)) && !hasGraphics && !isNonPeopleWithPeople;
       });
 
       log(`[FILTER] Candidates remaining: ${candidates.length}`);
