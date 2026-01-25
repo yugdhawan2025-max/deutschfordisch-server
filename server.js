@@ -1033,150 +1033,91 @@ app.get("/", (req, res) => {
 
     <script>
         function updateToggle(type) {
-            const isChecked = document.getElementById(\`\${type}-toggle\`).checked;
+            var isChecked = document.getElementById(type + '-toggle').checked;
             if (type === 'dict') {
-                const labelDe = document.getElementById('dict-label-de');
-                const labelEn = document.getElementById('dict-label-en');
-                const queryLabel = document.getElementById('dict-query-label');
-                const queryInput = document.getElementById('dict-query');
-                
+                var labelDe = document.getElementById('dict-label-de');
+                var labelEn = document.getElementById('dict-label-en');
+                var queryLabel = document.getElementById('dict-query-label');
+                var queryInput = document.getElementById('dict-query');
                 if (isChecked) {
-                    labelDe.classList.remove('active');
-                    labelEn.classList.add('active');
-                    queryLabel.innerText = "English Word";
-                    queryInput.placeholder = "e.g., House";
+                    labelDe.classList.remove('active'); labelEn.classList.add('active');
+                    queryLabel.innerText = "English Word"; queryInput.placeholder = "e.g., House";
                 } else {
-                    labelDe.classList.add('active');
-                    labelEn.classList.remove('active');
-                    queryLabel.innerText = "German Word";
-                    queryInput.placeholder = "e.g., Haus";
+                    labelDe.classList.add('active'); labelEn.classList.remove('active');
+                    queryLabel.innerText = "German Word"; queryInput.placeholder = "e.g., Haus";
                 }
             } else if (type === 'eval') {
-                const labelDe = document.getElementById('eval-label-de');
-                const labelEn = document.getElementById('eval-label-en');
-                const labelSent = document.getElementById('label-sentence');
-                const areaSent = document.getElementById('eval-sent');
-                const labelUser = document.getElementById('label-translation');
-                const areaUser = document.getElementById('eval-user');
-
+                var labelDe = document.getElementById('eval-label-de');
+                var labelEn = document.getElementById('eval-label-en');
+                var labelSent = document.getElementById('label-sentence');
+                var areaSent = document.getElementById('eval-sent');
+                var labelUser = document.getElementById('label-translation');
+                var areaUser = document.getElementById('eval-user');
                 if (isChecked) {
-                    labelDe.classList.remove('active');
-                    labelEn.classList.add('active');
-                    labelSent.innerText = "Source Sentence (EN)";
-                    areaSent.placeholder = "The dog is sleeping.";
-                    labelUser.innerText = "User Translation (DE)";
-                    areaUser.placeholder = "Der Hund schläft.";
+                    labelDe.classList.remove('active'); labelEn.classList.add('active');
+                    labelSent.innerText = "Source Sentence (EN)"; areaSent.placeholder = "The dog is sleeping.";
+                    labelUser.innerText = "User Translation (DE)"; areaUser.placeholder = "Der Hund schläft.";
                 } else {
-                    labelDe.classList.add('active');
-                    labelEn.classList.remove('active');
-                    labelSent.innerText = "Source Sentence (DE)";
-                    areaSent.placeholder = "Der Hund schläft.";
-                    labelUser.innerText = "User Translation (EN)";
-                    areaUser.placeholder = "The dog is sleeping.";
+                    labelDe.classList.add('active'); labelEn.classList.remove('active');
+                    labelSent.innerText = "Source Sentence (DE)"; areaSent.placeholder = "Der Hund schläft.";
+                    labelUser.innerText = "User Translation (EN)"; areaUser.placeholder = "The dog is sleeping.";
                 }
             }
         }
 
-        async function runTest(type, forceFresh = false) {
-            const resDiv = document.getElementById(type + '-res');
-            if (!resDiv) return console.error("Result div not found for type: " + type);
+        async function runTest(type, forceFresh) {
+            var resDiv = document.getElementById(type + '-res');
+            if (!resDiv) return;
             resDiv.innerHTML = '<span style="color: var(--accent)">Processing...</span>';
             resDiv.classList.add('active');
-
-            let url = '';
-            let method = 'GET';
-            let body = null;
-
+            var url = '';
+            var body = null;
             if (type === 'dict') {
-                const q = document.getElementById('dict-query').value;
-                const isEnToDe = document.getElementById('dict-toggle').checked;
-                const f = isEnToDe ? "en" : "de";
-                const t = isEnToDe ? "de" : "en";
-                url = '/dict?term=' + q + '&from=' + f + '&to=' + t;
+                var q = document.getElementById('dict-query').value;
+                var isEn = document.getElementById('dict-toggle').checked;
+                url = '/dict?term=' + encodeURIComponent(q) + '&from=' + (isEn ? 'en' : 'de') + '&to=' + (isEn ? 'de' : 'en');
             } else if (type === 'sentence') {
-                const w = document.getElementById('sent-word').value;
-                const l = document.getElementById('sent-level').value;
-                url = '/sentence?word=' + w + '&level=' + l;
+                url = '/sentence?word=' + encodeURIComponent(document.getElementById('sent-word').value) + '&level=' + document.getElementById('sent-level').value;
             } else if (type === 'evaluate') {
                 url = '/evaluate';
-                method = 'POST';
-                const isEnToDe = document.getElementById('eval-toggle').checked;
-                body = {
+                body = JSON.stringify({
                     sentence: document.getElementById('eval-sent').value,
                     translation: document.getElementById('eval-user').value,
-                    from: isEnToDe ? "en" : "de",
-                    to: isEnToDe ? "de" : "en",
-                    level: "A1"
-                };
-            } else if (type === 'image') {
-                const q = document.getElementById('img-query').value;
-                const pop = forceFresh ? 'true' : 'false';
-                url = '/api/test_image?query=' + encodeURIComponent(q) + '&populate=' + pop + '&t=' + Date.now();
-            }
-
-            try {
-                const response = await fetch(url, {
-                    method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: body ? JSON.stringify(body) : null
+                    from: document.getElementById('eval-toggle').checked ? 'en' : 'de',
+                    to: document.getElementById('eval-toggle').checked ? 'de' : 'en'
                 });
-                const data = await response.json();
+            } else if (type === 'image') {
+                url = '/api/test_image?query=' + encodeURIComponent(document.getElementById('img-query').value) + '&populate=' + (forceFresh ? 'true' : 'false') + '&t=' + Date.now();
+            }
+            try {
+                var res = await fetch(url, { method: (body ? 'POST' : 'GET'), headers: {'Content-Type': 'application/json'}, body: body });
+                var data = await res.json();
                 if (type === 'image' && data.success) {
                     document.getElementById('btn-refresh-img').style.display = 'block';
-                    const info = data.vocab_info || {};
-                    const isCached = data.is_cached;
-                    const statusColor = isCached ? '#00ff88' : '#3a7bd5';
-                    const statusLabel = isCached ? 'Verified (Cached)' : 'New Search';
-                    
-                    let html = '<div style="background: rgba(0,0,0,0.4); padding: 0.8rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.75rem; text-align: left; border: 1px solid var(--border);">';
-                    html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">';
-                    html += '<span style="color: var(--text-muted);">Source Mode:</span><span style="color: #00ff88; font-weight: bold;">STRICT DETERMINISTIC</span></div>';
-                    html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">';
-                    html += '<span style="color: var(--text-muted);">Category:</span><span style="font-family: monospace; color: var(--accent);">' + (info.category || 'objects') + '</span></div>';
-                    html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">';
-                    html += '<span style="color: var(--text-muted);">Resolved Query:</span><span style="font-family: monospace; color: #fff;">\"' + data.word + ' ' + (info.literal_context || '') + '\"</span></div>';
-                    html += '<div style="display: flex; justify-content: space-between;">';
-                    html += '<span style="color: var(--text-muted);">Cache Status:</span><span style="color: ' + statusColor + '; font-weight: bold;">' + statusLabel + '</span></div>';
-                    html += '<div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1);">';
-                    html += '<span style="color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Server Logs:</span>';
-                    html += '<pre style="font-size: 0.6rem; color: #aaa; white-space: pre-wrap;">' + (data.logs || []).join('\n') + '</pre></div></div>';
-                    
-                    const imgUrl = data.imageUrl.includes('?') ? (data.imageUrl + '&t=' + Date.now()) : (data.imageUrl + '?t=' + Date.now());
-                    html += '<div style="text-align: center; margin-top: 1rem;">';
-                    html += '<img src="/api/image_proxy?url=' + encodeURIComponent(data.imageUrl) + '&t=' + Date.now() + '" onerror="this.style.display=\'none\'; this.nextElementSibling.innerText=\'Image Load Failed\';" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: block; margin: 0 auto;">';
-                    html += '<div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all; background: #000; padding: 0.4rem; border-radius: 4px;">' + data.imageUrl + '</div></div>';
-                    
+                    var html = '<div style="background: rgba(0,0,0,0.4); padding: 0.8rem; border-radius: 10px; border: 1px solid var(--border); text-align: left;">';
+                    html += '<div><b>Query:</b> ' + data.word + ' ' + (data.vocab_info.literal_context || '') + '</div>';
+                    html += '<div><b>Cache:</b> ' + data.is_cached + '</div>';
+                    html += '<div style="margin-top:0.5rem;"><pre style="font-size:0.6rem; color:#aaa;">' + (data.logs || []).join('\\n') + '</pre></div></div>';
+                    html += '<div style="margin-top:1rem; text-align:center;">';
+                    html += '<img src="/api/image_proxy?url=' + encodeURIComponent(data.imageUrl) + '&t=' + Date.now() + '" style="max-width:100%; border-radius:12px; border: 1px solid var(--border); shadow: 0 10px 30px rgba(0,0,0,0.5);">';
+                    html += '<div style="font-size:0.6rem; color:#888; word-break:break-all;">' + data.imageUrl + '</div></div>';
                     resDiv.innerHTML = html;
                 } else {
-                    resDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    resDiv.innerHTML = '<pre style="text-align:left;">' + JSON.stringify(data, null, 2) + '</pre>';
                 }
-            } catch (err) {
-                resDiv.innerHTML = '<span style="color: #ff4757">Error: ' + err.message + '</span>';
-            }
+            } catch (e) { resDiv.innerHTML = '<span style="color:#ff4757">Error: ' + e.message + '</span>'; }
         }
 
-async function refreshImage() {
-  const q = document.getElementById('img-query').value;
-  if (!q) return;
-
-  const btn = document.getElementById('btn-refresh-img');
-  const originalText = btn.innerText;
-  btn.innerText = "Clearing...";
-  btn.disabled = true;
-
-  try {
-    // 1. Clear it
-    await fetch(\`/api/clear_image_cache?word=\${encodeURIComponent(q)}\`);
-                // 2. Run new search with forceFresh=true
-                const resDiv = document.getElementById('image-res');
-                resDiv.innerHTML = '<span style="color: var(--accent)">Refreshing...</span>';
-                await runTest('image', true); 
-            } catch (err) {
-                console.error("Refresh failed:", err);
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
+        async function refreshImage() {
+            var q = document.getElementById('img-query').value;
+            if (!q) return;
+            var btn = document.getElementById('btn-refresh-img');
+            btn.innerText = "Clearing..."; btn.disabled = true;
+            try {
+                await fetch('/api/clear_image_cache?word=' + encodeURIComponent(q));
+                await runTest('image', true);
+            } catch (e) { console.error(e); }
+            finally { btn.innerText = "Clear & Refresh"; btn.disabled = false; }
         }
 
         async function loadConfig() {
@@ -1338,17 +1279,14 @@ async function refreshImage() {
           loadConfig();
         updateUsageStats();
         setInterval(updateUsageStats, 2000);
-        };
+        }
       </script>
     </body>
-</html >
-    `);
+</html>`);
 });
 
 app.get("/test-ai", (req, res) => {
-  res.send(`
-    < !DOCTYPE html >
-  <html>
+  res.send(`<!DOCTYPE html><html>
     <head>
       <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
