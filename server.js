@@ -123,7 +123,7 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v14.json"); // v14 for Absolute Scored & Symbolic Focus
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v15.json"); // v15 for Scored & Forced Fresh
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
@@ -1027,7 +1027,7 @@ app.get("/", (req, res) => {
         </div>
 
         <div class="status-footer">
-            <span class="indicator"></span> API Version 2.1.0 • Stateless Layer • AI Refinement Active
+            <span class="indicator"></span> API Version 2.2.0 • Cache v15 • AI Refinement Active
         </div>
     </div>
 
@@ -1078,7 +1078,7 @@ app.get("/", (req, res) => {
         }
 
         async function runTest(type, forceFresh = false) {
-            const resDiv = document.getElementById(\`\${type}-res\`);
+            const resDiv = document.getElementById(type + '-res');
             if (!resDiv) return console.error("Result div not found for type: " + type);
             resDiv.innerHTML = '<span style="color: var(--accent)">Processing...</span>';
             resDiv.classList.add('active');
@@ -1092,11 +1092,11 @@ app.get("/", (req, res) => {
                 const isEnToDe = document.getElementById('dict-toggle').checked;
                 const f = isEnToDe ? "en" : "de";
                 const t = isEnToDe ? "de" : "en";
-                url = \`/dict?term=\${q}&from=\${f}&to=\${t}\`;
+                url = '/dict?term=' + q + '&from=' + f + '&to=' + t;
             } else if (type === 'sentence') {
                 const w = document.getElementById('sent-word').value;
                 const l = document.getElementById('sent-level').value;
-                url = \`/sentence?word=\${w}&level=\${l}\`;
+                url = '/sentence?word=' + w + '&level=' + l;
             } else if (type === 'evaluate') {
                 url = '/evaluate';
                 method = 'POST';
@@ -1128,54 +1128,45 @@ app.get("/", (req, res) => {
                     const statusColor = isCached ? '#00ff88' : '#3a7bd5';
                     const statusLabel = isCached ? 'Verified (Cached)' : 'New Search';
                     
-                    resDiv.innerHTML = \`
-                        <div style="background: rgba(0,0,0,0.4); padding: 0.8rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.75rem; text-align: left; border: 1px solid var(--border);">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                                <span style="color: var(--text-muted);">Source Mode:</span>
-                                <span style="color: #00ff88; font-weight: bold;">STRICT DETERMINISTIC</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                                <span style="color: var(--text-muted);">Category:</span>
-                                <span style="font-family: monospace; color: var(--accent);">\${info.category || 'objects'}</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                                <span style="color: var(--text-muted);">Resolved Query:</span>
-                                <span style="font-family: monospace; color: #fff;">"\${data.word} \${info.literal_context || ''}"</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span style="color: var(--text-muted);">Cache Status:</span>
-                                <span style="color: \${statusColor}; font-weight: bold;">\${statusLabel}</span>
-                            </div>
-                            <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
-                                <span style="color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Server Logs:</span>
-                                <pre style="font-size: 0.6rem; color: #aaa; white-space: pre-wrap;">\${(data.logs || []).join('\\n')}</pre>
-                            </div>
-                        </div>
-                        <div style="text-align: center; margin-top: 1rem;">
-                            <img src="/api/image_proxy?url=\${encodeURIComponent(data.imageUrl)}" onerror="this.style.display='none'; this.nextElementSibling.innerText='Image Load Failed';" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: block; margin: 0 auto;">
-                            <div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all; background: #000; padding: 0.4rem; border-radius: 4px;">\${data.imageUrl}</div>
-                        </div>
-                    \`;
+                    let html = '<div style="background: rgba(0,0,0,0.4); padding: 0.8rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.75rem; text-align: left; border: 1px solid var(--border);">';
+                    html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">';
+                    html += '<span style="color: var(--text-muted);">Source Mode:</span><span style="color: #00ff88; font-weight: bold;">STRICT DETERMINISTIC</span></div>';
+                    html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">';
+                    html += '<span style="color: var(--text-muted);">Category:</span><span style="font-family: monospace; color: var(--accent);">' + (info.category || 'objects') + '</span></div>';
+                    html += '<div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">';
+                    html += '<span style="color: var(--text-muted);">Resolved Query:</span><span style="font-family: monospace; color: #fff;">\"' + data.word + ' ' + (info.literal_context || '') + '\"</span></div>';
+                    html += '<div style="display: flex; justify-content: space-between;">';
+                    html += '<span style="color: var(--text-muted);">Cache Status:</span><span style="color: ' + statusColor + '; font-weight: bold;">' + statusLabel + '</span></div>';
+                    html += '<div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.1);">';
+                    html += '<span style="color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Server Logs:</span>';
+                    html += '<pre style="font-size: 0.6rem; color: #aaa; white-space: pre-wrap;">' + (data.logs || []).join('\n') + '</pre></div></div>';
+                    
+                    const imgUrl = data.imageUrl.includes('?') ? (data.imageUrl + '&t=' + Date.now()) : (data.imageUrl + '?t=' + Date.now());
+                    html += '<div style="text-align: center; margin-top: 1rem;">';
+                    html += '<img src="/api/image_proxy?url=' + encodeURIComponent(data.imageUrl) + '&t=' + Date.now() + '" onerror="this.style.display=\'none\'; this.nextElementSibling.innerText=\'Image Load Failed\';" style="max-width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 5px 15px rgba(0,0,0,0.5); display: block; margin: 0 auto;">';
+                    html += '<div style="font-size: 0.6rem; color: var(--text-muted); margin-top: 0.5rem; word-break: break-all; background: #000; padding: 0.4rem; border-radius: 4px;">' + data.imageUrl + '</div></div>';
+                    
+                    resDiv.innerHTML = html;
                 } else {
-                    resDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
+                    resDiv.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
                 }
             } catch (err) {
-                resDiv.innerHTML = \`<span style="color: #ff4757">Error: \${err.message}</span>\`;
+                resDiv.innerHTML = '<span style="color: #ff4757">Error: ' + err.message + '</span>';
             }
         }
 
-        async function refreshImage() {
-            const q = document.getElementById('img-query').value;
-            if (!q) return;
-            
-            const btn = document.getElementById('btn-refresh-img');
-            const originalText = btn.innerText;
-            btn.innerText = "Clearing...";
-            btn.disabled = true;
+async function refreshImage() {
+  const q = document.getElementById('img-query').value;
+  if (!q) return;
 
-            try {
-                // 1. Clear it
-                await fetch(\`/api/clear_image_cache?word=\${encodeURIComponent(q)}\`);
+  const btn = document.getElementById('btn-refresh-img');
+  const originalText = btn.innerText;
+  btn.innerText = "Clearing...";
+  btn.disabled = true;
+
+  try {
+    // 1. Clear it
+    await fetch(\`/api/clear_image_cache?word=\${encodeURIComponent(q)}\`);
                 // 2. Run new search with forceFresh=true
                 const resDiv = document.getElementById('image-res');
                 resDiv.innerHTML = '<span style="color: var(--accent)">Refreshing...</span>';
