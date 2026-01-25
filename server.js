@@ -123,7 +123,7 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v12.json"); // v12 for Iconic & Disambiguated Search
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v13.json"); // v13 for Scored & Safer Search
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
@@ -282,7 +282,7 @@ async function getOrSearchImage(word, forceCache = false) {
   }
 
   try {
-    let url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&safesearch=true&order=popular&per_page=20`;
+    let url = `https://pixabay.com/api/?key=${apiKey}&q=${encodeURIComponent(searchKeyword)}&image_type=photo&safesearch=true&order=popular&per_page=40`;
     if (pixabayCategory) url += `&category=${pixabayCategory}`;
 
     log(`[API] sending request to Pixabay...`);
@@ -292,12 +292,13 @@ async function getOrSearchImage(word, forceCache = false) {
     log(`[API] Hits received: ${data.hits ? data.hits.length : 0}`);
 
     if (data.hits && data.hits.length > 0) {
-      // 6. Aggressive Blacklist (Strictly NO graphics/drawings/old styles)
+      // 6. Aggressive Blacklist (Strictly NO graphics/drawings/old/horror styles)
       const graphicsBlacklist = ["brand", "logo", "illustration", "vector", "drawing", "clipart", "sketch", "graphic", "text", "watermark", "icon", "abstract", "3d", "rendering", "photoshop", "unreal", "cg", "collage", "painting", "art", "sepia"];
       const personBlacklist = ["person", "woman", "man", "child", "human", "face", "portrait", "people", "girl", "boy", "male", "female"];
       const styleBlacklist = ["ruin", "abandoned", "old", "vintage", "ancient", "antique", "retro", "decrepit", "dilapidated", "historical", "heritage"];
+      const safetyBlacklist = ["horror", "scary", "creepy", "nightmare", "dark", "macabre", "sinister", "strange", "weird", "fobia", "creepy", "monster"];
 
-      const candidates = data.hits.filter(hit => {
+      const candidates = data.hits.map(hit => {
         const ratio = hit.imageWidth / hit.imageHeight;
         const isHorizontal = ratio >= 1.2 && ratio <= 1.9;
         const tags = (hit.tags || "").toLowerCase();
@@ -305,27 +306,40 @@ async function getOrSearchImage(word, forceCache = false) {
         const hasGraphics = graphicsBlacklist.some(tag => tags.includes(tag));
         const isNonPeopleWithPeople = (vInfo.category !== 'people') && personBlacklist.some(tag => tags.includes(tag));
         const hasBadStyle = styleBlacklist.some(tag => tags.includes(tag));
+        const isUnsafe = safetyBlacklist.some(tag => tags.includes(tag));
 
-        // Relevance Check: The word itself OR the category OR a key part of the context should be in the tags
+        // Relevance Scoring
+        let score = 0;
         const contextWords = (vInfo.literal_context || "").toLowerCase().split(' ').filter(w => w.length > 3);
-        const hasRelevance = tags.includes(cleanWord) || tags.includes(vInfo.category) || contextWords.some(w => tags.includes(w));
+
+        // +5: Exact word match
+        if (tags.includes(cleanWord)) score += 5;
+        // +3: Context match
+        contextWords.forEach(w => { if (tags.includes(w)) score += 3; });
+        // +1: Category match (Selective)
+        const skipCatMatch = ['places', 'objects'].includes(vInfo.category);
+        if (!skipCatMatch && tags.includes(vInfo.category)) score += 1;
+
+        const hasMinRelevance = score >= 3; // Must match at least the word or a context word
 
         if (!isHorizontal) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Bad Ratio (${ratio.toFixed(2)})`);
         if (hasGraphics) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Graphics Detected`);
         if (isNonPeopleWithPeople) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Human detected in non-people search`);
         if (hasBadStyle) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Bad Style (Old/Ruin)`);
-        if (!hasRelevance) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Low Relevance Match`);
+        if (isUnsafe) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Safety Blacklist (Horror/Creepy)`);
+        if (!hasMinRelevance) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Low Relevance Score (${score})`);
 
-        return (isHorizontal || (ratio >= 1.0 && ratio <= 2.2)) && !hasGraphics && !isNonPeopleWithPeople && !hasBadStyle && hasRelevance;
-      });
+        const valid = (isHorizontal || (ratio >= 1.0 && ratio <= 2.2)) && !hasGraphics && !isNonPeopleWithPeople && !hasBadStyle && !isUnsafe && hasMinRelevance;
+        return { hit, valid, score };
+      }).filter(c => c.valid).sort((a, b) => b.score - a.score);
 
       log(`[FILTER] Candidates remaining: ${candidates.length}`);
 
       if (candidates.length > 0) {
-        const selectedImage = candidates[0].webformatURL || candidates[0].largeImageURL;
+        const selectedImage = candidates[0].hit.webformatURL || candidates[0].hit.largeImageURL;
         imageCache[cacheKey] = selectedImage;
         saveImageCache();
-        log(`[SUCCESS] Selected image for "${cacheKey}": ${selectedImage}`);
+        log(`[SUCCESS] Selected image for "${cacheKey}" (Score: ${candidates[0].score}): ${selectedImage}`);
         return { url: selectedImage, logs };
       }
     } else {
