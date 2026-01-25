@@ -123,7 +123,7 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v11.json"); // v11 for Strict Filtering & 70B Metadata
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v10.json"); // v10 for Category-Mapping Pixabay
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
@@ -177,21 +177,20 @@ async function getWordMetadata(word) {
       messages: [
         {
           role: "system",
-          content: `You are a professional image search expert. Goal: Disambiguate and identify the most concrete, literal, physical representation of a noun for an educational photo. 
+          content: `You are a professional image search expert. Goal: Identify the literal, physical representation of a noun for a high-quality photo. 
 
 1. Identify Category: people, animals, places, objects, food, vehicles.
-2. Create 'literal_context': A 3-4 word descriptive phrase that uniquely identifies the PHYSICAL appearance of the item in its most common form. 
-   - For 'orange': 'ripe citrus fruit with peel'
-   - For 'bank': 'modern financial building exterior' (NOT a bench)
-   - For 'spring': 'spiral metal coil tool' (NOT a season)
-   - For 'spice': 'dried herbal powders in wooden bowls'
-3. IMPORTANT: If the category is NOT 'people', strictly avoid any words related to humans, hands, or activities. Focus ONLY on the object/item itself.
+2. Create 'literal_context': A 2-3 word English phrase describing a concrete, isolated, and unambiguous physical instance of the word. 
+   - For 'orange': 'fruit citrus tree-product'
+   - For 'box': 'cardboard storage packaging'
+   - For 'spice': 'powdered seasonings in bowls'
+3. IMPORTANT: If the category is NOT 'people', explicitly avoid human-centric contexts (no hands, no people holding it).
 
 Return JSON: { "category", "literal_context" }`
         },
         { role: "user", content: `Noun: "${word}"` }
       ],
-      model: aiConfig.model_dict || "llama-3.3-70b-versatile",
+      model: "llama-3.1-8b-instant",
       response_format: { type: "json_object" }
     });
 
@@ -286,8 +285,8 @@ async function getOrSearchImage(word, forceCache = false) {
 
     if (data.hits && data.hits.length > 0) {
       // 6. Aggressive Blacklist (Strictly NO graphics/drawings)
-      const graphicsBlacklist = ["brand", "logo", "illustration", "vector", "drawing", "clipart", "sketch", "graphic", "text", "watermark", "icon", "abstract", "3d", "rendering", "photoshop", "unreal", "cg", "collage", "painting", "art"];
-      const personBlacklist = ["person", "woman", "man", "child", "human", "face", "portrait", "people", "girl", "boy", "male", "female", "adult", "kid", "lady", "gentleman", "guy", "crowd"];
+      const graphicsBlacklist = ["brand", "logo", "illustration", "vector", "drawing", "clipart", "sketch", "graphic", "text", "watermark", "icon", "abstract", "3d", "rendering", "photoshop", "unreal", "cg"];
+      const personBlacklist = ["person", "woman", "man", "child", "human", "face", "portrait", "people", "girl", "boy"];
 
       const candidates = data.hits.filter(hit => {
         const ratio = hit.imageWidth / hit.imageHeight;
@@ -301,13 +300,8 @@ async function getOrSearchImage(word, forceCache = false) {
         if (hasGraphics) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Graphics Detected`);
         if (isNonPeopleWithPeople) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Human detected in non-people search`);
 
-        // Strict Tag Check: The word itself (or a synonym from AI) should ideally be in the tags
-        const wordMatch = tags.includes(cleanWord) || tags.includes(vInfo.category) || (vInfo.literal_context && vInfo.literal_context.split(' ').some(w => w.length > 3 && tags.includes(w.toLowerCase())));
-
-        if (!wordMatch) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Missing relevance match for "${cleanWord}" or "${vInfo.category}"`);
-
         // Relaxation: If it's borderline horizontal (1.1 to 2.1) and NOT graphics, we might allow it if no perfect matches found
-        return (isHorizontal || (ratio >= 1.0 && ratio <= 2.2)) && !hasGraphics && !isNonPeopleWithPeople && wordMatch;
+        return (isHorizontal || (ratio >= 1.0 && ratio <= 2.2)) && !hasGraphics && !isNonPeopleWithPeople;
       });
 
       log(`[FILTER] Candidates remaining: ${candidates.length}`);
