@@ -123,7 +123,7 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v10.json"); // v10 for Category-Mapping Pixabay
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v11.json"); // v11 for Category-Mapping & Strict Filtering
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
@@ -177,20 +177,22 @@ async function getWordMetadata(word) {
       messages: [
         {
           role: "system",
-          content: `You are a professional image search expert. Goal: Identify the literal, physical representation of a noun for a high-quality photo. 
+          content: `You are a professional image search expert. Goal: Disambiguate and identify the most concrete, literal, physical representation of a noun for an educational photo. 
 
 1. Identify Category: people, animals, places, objects, food, vehicles.
-2. Create 'literal_context': A 2-3 word English phrase describing a concrete, isolated, and unambiguous physical instance of the word. 
-   - For 'orange': 'fruit citrus tree-product'
-   - For 'box': 'cardboard storage packaging'
-   - For 'spice': 'powdered seasonings in bowls'
-3. IMPORTANT: If the category is NOT 'people', explicitly avoid human-centric contexts (no hands, no people holding it).
+2. Create 'literal_context': A 3-4 word descriptive phrase that uniquely identifies the PHYSICAL appearance of the item in its most common, MODERN form. 
+   - For 'orange': 'ripe citrus fruit with peel'
+   - For 'bank': 'modern financial building exterior' (NOT a bench)
+   - For 'spring': 'spiral metal coil tool' (NOT a season)
+   - For 'spice': 'dried herbal powders in wooden bowls'
+3. IMPORTANT: Strictly avoid 'ruins', 'historical sites', 'old history', or 'artistic' interpretations. Focus on modern, active versions.
+4. IMPORTANT: If the category is NOT 'people', strictly avoid any words related to humans, hands, or activities. Focus ONLY on the object/item itself.
 
 Return JSON: { "category", "literal_context" }`
         },
         { role: "user", content: `Noun: "${word}"` }
       ],
-      model: "llama-3.1-8b-instant",
+      model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
     });
 
@@ -284,9 +286,10 @@ async function getOrSearchImage(word, forceCache = false) {
     log(`[API] Hits received: ${data.hits ? data.hits.length : 0}`);
 
     if (data.hits && data.hits.length > 0) {
-      // 6. Aggressive Blacklist (Strictly NO graphics/drawings)
-      const graphicsBlacklist = ["brand", "logo", "illustration", "vector", "drawing", "clipart", "sketch", "graphic", "text", "watermark", "icon", "abstract", "3d", "rendering", "photoshop", "unreal", "cg"];
-      const personBlacklist = ["person", "woman", "man", "child", "human", "face", "portrait", "people", "girl", "boy"];
+      // 6. Aggressive Blacklist (Strictly NO graphics/drawings/old styles)
+      const graphicsBlacklist = ["brand", "logo", "illustration", "vector", "drawing", "clipart", "sketch", "graphic", "text", "watermark", "icon", "abstract", "3d", "rendering", "photoshop", "unreal", "cg", "collage", "painting", "art", "sepia"];
+      const personBlacklist = ["person", "woman", "man", "child", "human", "face", "portrait", "people", "girl", "boy", "male", "female"];
+      const styleBlacklist = ["ruin", "abandoned", "old", "vintage", "ancient", "antique", "retro", "decrepit", "dilapidated", "historical", "heritage"];
 
       const candidates = data.hits.filter(hit => {
         const ratio = hit.imageWidth / hit.imageHeight;
@@ -295,13 +298,19 @@ async function getOrSearchImage(word, forceCache = false) {
 
         const hasGraphics = graphicsBlacklist.some(tag => tags.includes(tag));
         const isNonPeopleWithPeople = (vInfo.category !== 'people') && personBlacklist.some(tag => tags.includes(tag));
+        const hasBadStyle = styleBlacklist.some(tag => tags.includes(tag));
+
+        // Relevance Check: The word itself OR the category OR a key part of the context should be in the tags
+        const contextWords = (vInfo.literal_context || "").toLowerCase().split(' ').filter(w => w.length > 3);
+        const hasRelevance = tags.includes(cleanWord) || tags.includes(vInfo.category) || contextWords.some(w => tags.includes(w));
 
         if (!isHorizontal) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Bad Ratio (${ratio.toFixed(2)})`);
         if (hasGraphics) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Graphics Detected`);
         if (isNonPeopleWithPeople) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Human detected in non-people search`);
+        if (hasBadStyle) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Bad Style (Old/Ruin)`);
+        if (!hasRelevance) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Low Relevance Match`);
 
-        // Relaxation: If it's borderline horizontal (1.1 to 2.1) and NOT graphics, we might allow it if no perfect matches found
-        return (isHorizontal || (ratio >= 1.0 && ratio <= 2.2)) && !hasGraphics && !isNonPeopleWithPeople;
+        return (isHorizontal || (ratio >= 1.0 && ratio <= 2.2)) && !hasGraphics && !isNonPeopleWithPeople && !hasBadStyle && hasRelevance;
       });
 
       log(`[FILTER] Candidates remaining: ${candidates.length}`);
