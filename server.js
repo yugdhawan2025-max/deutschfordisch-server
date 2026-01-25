@@ -123,7 +123,7 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v11.json"); // v11 for Category-Mapping & Strict Filtering
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v12.json"); // v12 for Iconic & Disambiguated Search
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
@@ -177,16 +177,17 @@ async function getWordMetadata(word) {
       messages: [
         {
           role: "system",
-          content: `You are a professional image search expert. Goal: Disambiguate and identify the most concrete, literal, physical representation of a noun for an educational photo. 
+          content: `You are a professional image search expert. Goal: Identify the MOST ICONIC, immediately recognizable literal physical representation of a noun for a language learner. 
 
 1. Identify Category: people, animals, places, objects, food, vehicles.
-2. Create 'literal_context': A 3-4 word descriptive phrase that uniquely identifies the PHYSICAL appearance of the item in its most common, MODERN form. 
-   - For 'orange': 'ripe citrus fruit with peel'
-   - For 'bank': 'modern financial building exterior' (NOT a bench)
-   - For 'spring': 'spiral metal coil tool' (NOT a season)
-   - For 'spice': 'dried herbal powders in wooden bowls'
-3. IMPORTANT: Strictly avoid 'ruins', 'historical sites', 'old history', or 'artistic' interpretations. Focus on modern, active versions.
-4. IMPORTANT: If the category is NOT 'people', strictly avoid any words related to humans, hands, or activities. Focus ONLY on the object/item itself.
+2. Create 'literal_context': A 3-4 word phrase describing the MOST SYMBOLIC visual instance.
+   - For 'hospital': Choose 'medical ward with beds' or 'operating room' (Interiors are often more iconic than generic glass buildings).
+   - For 'bank': Choose 'financial teller counter' or 'bank vault' (NOT a bench).
+   - For 'spring': Choose 'spiral metal coil tool' (NOT a season).
+   - For 'pepper': Choose 'whole bell pepper vegetable' or 'hot chili pepper'.
+3. IMPORTANT: Prioritize the view (interior or exterior) that is most SYMBOLIC of the word.
+4. IMPORTANT: Still avoid 'ruins' or 'old history'. Focus on modern, high-quality photos.
+5. IMPORTANT: If the category is NOT 'people', strictly avoid any words related to humans, hands, or activities.
 
 Return JSON: { "category", "literal_context" }`
         },
@@ -250,10 +251,15 @@ async function getOrSearchImage(word, forceCache = false) {
   if (vInfo.search_terms && vInfo.search_terms.trim()) {
     searchKeyword = vInfo.search_terms.split(',').map(s => s.trim()).join(' ');
   } else {
-    // Smart merge: word + literal context + category
+    // Smart merge: word + literal context + sharpened category
     const context = vInfo.literal_context || '';
-    const categoryModifier = (vInfo.category && vInfo.category !== 'objects') ? vInfo.category : '';
-    searchKeyword = `${cleanWord} ${context} ${categoryModifier}`.trim();
+    // Sharpen category for disambiguation (e.g. 'bank' -> 'financial bank')
+    const sharpCategory = (cleanWord === 'bank') ? 'financial banking' :
+      (cleanWord === 'spring') ? 'metal tool coil' :
+        (cleanWord === 'pepper') ? 'vegetable food' :
+          (vInfo.category && vInfo.category !== 'objects') ? vInfo.category : '';
+
+    searchKeyword = `${cleanWord} ${context} ${sharpCategory}`.trim();
   }
 
   // Normalize Query: Replace slashes and other symbols that break Pixabay search with spaces
