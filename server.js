@@ -123,7 +123,7 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v13.json"); // v13 for Scored & Safer Search
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v14.json"); // v14 for Absolute Scored & Symbolic Focus
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
@@ -186,8 +186,9 @@ async function getWordMetadata(word) {
    - For 'spring': Choose 'spiral metal coil tool' (NOT a season).
    - For 'pepper': Choose 'whole bell pepper vegetable' or 'hot chili pepper'.
 3. IMPORTANT: Prioritize the view (interior or exterior) that is most SYMBOLIC of the word.
-4. IMPORTANT: Still avoid 'ruins' or 'old history'. Focus on modern, high-quality photos.
-5. IMPORTANT: If the category is NOT 'people', strictly avoid any words related to humans, hands, or activities.
+4. IMPORTANT: Strictly avoid 'ruins', 'historical sites', 'old history', 'themed quest rooms', or 'staged' interpretations.
+5. IMPORTANT: ALWAYS include 1-2 very specific iconic objects in context (e.g. for 'hospital' MUST include 'beds' and 'medical monitor').
+6. IMPORTANT: If the category is NOT 'people', strictly avoid any words related to humans, hands, or activities.
 
 Return JSON: { "category", "literal_context" }`
         },
@@ -296,7 +297,7 @@ async function getOrSearchImage(word, forceCache = false) {
       const graphicsBlacklist = ["brand", "logo", "illustration", "vector", "drawing", "clipart", "sketch", "graphic", "text", "watermark", "icon", "abstract", "3d", "rendering", "photoshop", "unreal", "cg", "collage", "painting", "art", "sepia"];
       const personBlacklist = ["person", "woman", "man", "child", "human", "face", "portrait", "people", "girl", "boy", "male", "female"];
       const styleBlacklist = ["ruin", "abandoned", "old", "vintage", "ancient", "antique", "retro", "decrepit", "dilapidated", "historical", "heritage"];
-      const safetyBlacklist = ["horror", "scary", "creepy", "nightmare", "dark", "macabre", "sinister", "strange", "weird", "fobia", "creepy", "monster"];
+      const safetyBlacklist = ["horror", "scary", "creepy", "nightmare", "dark", "macabre", "sinister", "strange", "weird", "fobia", "themed", "mystery"];
 
       const candidates = data.hits.map(hit => {
         const ratio = hit.imageWidth / hit.imageHeight;
@@ -330,6 +331,7 @@ async function getOrSearchImage(word, forceCache = false) {
         if (!hasMinRelevance) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Low Relevance Score (${score})`);
 
         const valid = (isHorizontal || (ratio >= 1.0 && ratio <= 2.2)) && !hasGraphics && !isNonPeopleWithPeople && !hasBadStyle && !isUnsafe && hasMinRelevance;
+        if (valid) log(`[CANDIDATE] ID ${hit.id} Score: ${score} (Tags: ${tags.substring(0, 50)}...)`);
         return { hit, valid, score };
       }).filter(c => c.valid).sort((a, b) => b.score - a.score);
 
