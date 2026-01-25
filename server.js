@@ -123,7 +123,7 @@ function saveDictCache() {
 }
 
 /* -------------------- IMAGE CACHE & SEARCH -------------------- */
-const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v15.json"); // v15 for Scored & Forced Fresh
+const IMAGE_CACHE_PATH = path.join(STORAGE_ROOT, "image_cache_v16.json"); // v16 for Gold Standard Symbolic Focus
 let imageCache = {};
 
 if (fs.existsSync(IMAGE_CACHE_PATH)) {
@@ -256,9 +256,10 @@ async function getOrSearchImage(word, forceCache = false) {
     const context = vInfo.literal_context || '';
     // Sharpen category for disambiguation (e.g. 'bank' -> 'financial bank')
     const sharpCategory = (cleanWord === 'bank') ? 'financial banking' :
-      (cleanWord === 'spring') ? 'metal tool coil' :
-        (cleanWord === 'pepper') ? 'vegetable food' :
-          (vInfo.category && vInfo.category !== 'objects') ? vInfo.category : '';
+      (cleanWord === 'hospital') ? 'medical ward beds' :
+        (cleanWord === 'spring') ? 'metal tool coil' :
+          (cleanWord === 'pepper') ? 'vegetable food' :
+            (vInfo.category && vInfo.category !== 'objects') ? vInfo.category : '';
 
     searchKeyword = `${cleanWord} ${context} ${sharpCategory}`.trim();
   }
@@ -298,6 +299,7 @@ async function getOrSearchImage(word, forceCache = false) {
       const personBlacklist = ["person", "woman", "man", "child", "human", "face", "portrait", "people", "girl", "boy", "male", "female"];
       const styleBlacklist = ["ruin", "abandoned", "old", "vintage", "ancient", "antique", "retro", "decrepit", "dilapidated", "historical", "heritage"];
       const safetyBlacklist = ["horror", "scary", "creepy", "nightmare", "dark", "macabre", "sinister", "strange", "weird", "fobia", "themed", "mystery"];
+      const idBlacklist = [1331773, 1331774]; // Block specific "Kuhifobia" street IDs
 
       const candidates = data.hits.map(hit => {
         const ratio = hit.imageWidth / hit.imageHeight;
@@ -330,7 +332,7 @@ async function getOrSearchImage(word, forceCache = false) {
         if (isUnsafe) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Safety Blacklist (Horror/Creepy)`);
         if (!hasMinRelevance) log(`[FILTER] Rejected ID ${hit.id} (Tags: ${tags}): Low Relevance Score (${score})`);
 
-        const valid = (isHorizontal || (ratio >= 1.0 && ratio <= 2.2)) && !hasGraphics && !isNonPeopleWithPeople && !hasBadStyle && !isUnsafe && hasMinRelevance;
+        const valid = (isHorizontal || (ratio >= 1.0 && ratio <= 2.2)) && !hasGraphics && !isNonPeopleWithPeople && !hasBadStyle && !isUnsafe && !idBlacklist.includes(hit.id) && hasMinRelevance;
         if (valid) log(`[CANDIDATE] ID ${hit.id} Score: ${score} (Tags: ${tags.substring(0, 50)}...)`);
         return { hit, valid, score };
       }).filter(c => c.valid).sort((a, b) => b.score - a.score);
@@ -1027,7 +1029,7 @@ app.get("/", (req, res) => {
         </div>
 
         <div class="status-footer">
-            <span class="indicator"></span> API Version 2.2.0 • Cache v15 • AI Refinement Active
+            <span class="indicator"></span> API Version 2.3.0 • Cache v16 • Gold Standard Search Active
         </div>
     </div>
 
