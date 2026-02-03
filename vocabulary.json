@@ -1,277 +1,4100 @@
 {
-    "vocabulary": [
-        {
-            "word": "boss",
-            "category": "people",
-            "literal_context": "office manager leadership",
-            "search_terms": "manager, office boss",
-            "disambiguation": "A person in charge of a workplace"
-        },
-        {
-            "word": "doctor",
-            "category": "people",
-            "literal_context": "medical physician hospital",
-            "search_terms": "medical doctor, physician",
-            "disambiguation": "A qualified practitioner of medicine"
-        },
-        {
-            "word": "teacher",
-            "category": "people",
-            "literal_context": "teacher classroom education",
-            "search_terms": "teacher in classroom",
-            "disambiguation": "A person who teaches"
-        },
-        {
-            "word": "student",
-            "category": "people",
-            "literal_context": "student studying learning",
-            "search_terms": "student studying",
-            "disambiguation": "A person who is studying"
-        },
-        {
-            "word": "child",
-            "category": "people",
-            "literal_context": "child playing young person",
-            "search_terms": "child playing",
-            "disambiguation": "A young human being"
-        },
-        {
-            "word": "man",
-            "category": "people",
-            "literal_context": "adult male person",
-            "search_terms": "man standing",
-            "disambiguation": "An adult male human"
-        },
-        {
-            "word": "woman",
-            "category": "people",
-            "literal_context": "adult female person",
-            "search_terms": "woman standing",
-            "disambiguation": "An adult female human"
-        },
-        {
-            "word": "cat",
-            "category": "animals",
-            "literal_context": "domestic feline cat",
-            "search_terms": "cat, feline",
-            "disambiguation": "A small domesticated carnivorous mammal"
-        },
-        {
-            "word": "dog",
-            "category": "animals",
-            "literal_context": "domestic canine dog",
-            "search_terms": "dog, canine",
-            "disambiguation": "A domesticated carnivorous mammal"
-        },
-        {
-            "word": "lion",
-            "category": "animals",
-            "literal_context": "wild lion big cat",
-            "search_terms": "wild lion",
-            "disambiguation": "A large wild cat"
-        },
-        {
-            "word": "horse",
-            "category": "animals",
-            "literal_context": "domestic horse equine",
-            "search_terms": "horse",
-            "disambiguation": "A large domesticated animal"
-        },
-        {
-            "word": "bird",
-            "category": "animals",
-            "literal_context": "flying bird wing",
-            "search_terms": "bird flying",
-            "disambiguation": "A warm-blooded egg-laying vertebrate with feathers"
-        },
-        {
-            "word": "elephant",
-            "category": "animals",
-            "literal_context": "wild elephant trunk",
-            "search_terms": "elephant",
-            "disambiguation": "A very large herbivorous mammal with a trunk"
-        },
-        {
-            "word": "house",
-            "category": "places",
-            "literal_context": "residential building home",
-            "search_terms": "residential house",
-            "disambiguation": "A building for human habitation"
-        },
-        {
-            "word": "school",
-            "category": "places",
-            "literal_context": "school building exterior",
-            "search_terms": "school building",
-            "disambiguation": "An institution for educating children"
-        },
-        {
-            "word": "park",
-            "category": "places",
-            "literal_context": "public park nature green",
-            "search_terms": "public park, green space",
-            "disambiguation": "A large public garden"
-        },
-        {
-            "word": "beach",
-            "category": "places",
-            "literal_context": "sandy beach ocean",
-            "search_terms": "sandy beach",
-            "disambiguation": "A pebbly or sandy shore"
-        },
-        {
-            "word": "city",
-            "category": "places",
-            "literal_context": "city skyline urban",
-            "search_terms": "city skyline",
-            "disambiguation": "A large town"
-        },
-        {
-            "word": "forest",
-            "category": "places",
-            "literal_context": "lush forest trees nature",
-            "search_terms": "lush forest, trees",
-            "disambiguation": "A large area covered with trees"
-        },
-        {
-            "word": "apple",
-            "category": "food",
-            "literal_context": "ripe apple red green",
-            "search_terms": "apple fruit",
-            "disambiguation": "A round fruit with red or green skin"
-        },
-        {
-            "word": "bread",
-            "category": "food",
-            "literal_context": "fresh bread loaf",
-            "search_terms": "fresh bread loaf",
-            "disambiguation": "Food made of flour, water, and yeast"
-        },
-        {
-            "word": "milk",
-            "category": "food",
-            "literal_context": "glass milk bottle",
-            "search_terms": "glass of milk",
-            "disambiguation": "An opaque white fluid rich in fat and protein"
-        },
-        {
-            "word": "pizza",
-            "category": "food",
-            "literal_context": "baked pizza slice",
-            "search_terms": "pizzeria pizza",
-            "disambiguation": "A dish of Italian origin"
-        },
-        {
-            "word": "burger",
-            "category": "food",
-            "literal_context": "classic beef burger hamburger",
-            "search_terms": "hamburger burger",
-            "disambiguation": "A round patty of ground beef"
-        },
-        {
-            "word": "cheese",
-            "category": "food",
-            "literal_context": "cheese block dairy",
-            "search_terms": "cheese block",
-            "disambiguation": "A food made from the pressed curds of milk"
-        },
-        {
-            "word": "car",
-            "category": "vehicles",
-            "literal_context": "modern automobile car",
-            "search_terms": "modern car",
-            "disambiguation": "A road vehicle with four wheels"
-        },
-        {
-            "word": "bus",
-            "category": "vehicles",
-            "literal_context": "public transportation bus",
-            "search_terms": "public bus",
-            "disambiguation": "A large motor vehicle carrying passengers"
-        },
-        {
-            "word": "train",
-            "category": "vehicles",
-            "literal_context": "railway train locomotive",
-            "search_terms": "railway train",
-            "disambiguation": "A series of connected railway carriages"
-        },
-        {
-            "word": "plane",
-            "category": "vehicles",
-            "literal_context": "passenger airplane flight",
-            "search_terms": "airplane in sky",
-            "disambiguation": "A powered flying vehicle"
-        },
-        {
-            "word": "bike",
-            "category": "vehicles",
-            "literal_context": "bicycle two wheels",
-            "search_terms": "bicycle, bike",
-            "disambiguation": "A vehicle with two wheels"
-        },
-        {
-            "word": "truck",
-            "category": "vehicles",
-            "literal_context": "delivery truck transport",
-            "search_terms": "delivery truck",
-            "disambiguation": "A motor vehicle for transporting goods"
-        },
-        {
-            "word": "pencil",
-            "category": "objects",
-            "literal_context": "writing pencil lead",
-            "search_terms": "writing pencil",
-            "disambiguation": "An instrument for writing or drawing"
-        },
-        {
-            "word": "plate",
-            "category": "objects",
-            "literal_context": "empty dinner plate ceramic",
-            "search_terms": "dinner plate, ceramic plate",
-            "disambiguation": "A flat dish"
-        },
-        {
-            "word": "table",
-            "category": "objects",
-            "literal_context": "wooden furniture table",
-            "search_terms": "wooden table",
-            "disambiguation": "A piece of furniture with a flat top"
-        },
-        {
-            "word": "chair",
-            "category": "objects",
-            "literal_context": "wooden chair furniture",
-            "search_terms": "wooden chair",
-            "disambiguation": "A separate seat for one person"
-        },
-        {
-            "word": "book",
-            "category": "objects",
-            "literal_context": "physical book paper",
-            "search_terms": "physical book",
-            "disambiguation": "A written or printed work"
-        },
-        {
-            "word": "phone",
-            "category": "objects",
-            "literal_context": "modern smartphone mobile",
-            "search_terms": "smartphone",
-            "disambiguation": "A telecommunications device"
-        },
-        {
-            "word": "computer",
-            "category": "objects",
-            "literal_context": "desktop laptop computer",
-            "search_terms": "laptop computer",
-            "disambiguation": "An electronic device for storing and processing data"
-        },
-        {
-            "word": "television",
-            "category": "objects",
-            "literal_context": "modern flat screen television set",
-            "search_terms": "led television, smart tv",
-            "disambiguation": "An electronic device for receiving television broadcasts"
-        }
-    ]
+  "updatedAt": "2026-01-27T23:39:24.868Z",
+  "vocabulary": [
+    {
+      "word": "all",
+      "german": "alle",
+      "category": "Basics"
+    },
+    {
+      "word": "as",
+      "german": "als",
+      "category": "Basics"
+    },
+    {
+      "word": "also",
+      "german": "auch",
+      "category": "Basics"
+    },
+    {
+      "word": "in English",
+      "german": "auf Englisch",
+      "category": "Basics"
+    },
+    {
+      "word": "Goodbye",
+      "german": "Auf Wiedersehen",
+      "category": "Basics"
+    },
+    {
+      "word": "from, out of",
+      "german": "aus",
+      "category": "Basics"
+    },
+    {
+      "word": "at (place of)",
+      "german": "bei",
+      "category": "Basics"
+    },
+    {
+      "word": "please",
+      "german": "bitte",
+      "category": "Basics"
+    },
+    {
+      "word": "there",
+      "german": "da",
+      "category": "Basics"
+    },
+    {
+      "word": "thank you",
+      "german": "danke",
+      "category": "Basics"
+    },
+    {
+      "word": "for",
+      "german": "für",
+      "category": "Basics"
+    },
+    {
+      "word": "Hello",
+      "german": "Hallo",
+      "category": "Basics"
+    },
+    {
+      "word": "today",
+      "german": "heute",
+      "category": "Basics"
+    },
+    {
+      "word": "here",
+      "german": "hier",
+      "category": "Basics"
+    },
+    {
+      "word": "always",
+      "german": "immer",
+      "category": "Basics"
+    },
+    {
+      "word": "in",
+      "german": "in",
+      "category": "Basics"
+    },
+    {
+      "word": "nearby",
+      "german": "in der Nähe",
+      "category": "Basics"
+    },
+    {
+      "word": "yes",
+      "german": "ja",
+      "category": "Basics"
+    },
+    {
+      "word": "now",
+      "german": "jetzt",
+      "category": "Basics"
+    },
+    {
+      "word": "later",
+      "german": "später",
+      "category": "Basics"
+    },
+    {
+      "word": "with",
+      "german": "mit",
+      "category": "Basics"
+    },
+    {
+      "word": "to (with country/city)",
+      "german": "nach",
+      "category": "Basics"
+    },
+    {
+      "word": "no",
+      "german": "nein",
+      "category": "Basics"
+    },
+    {
+      "word": "once again",
+      "german": "noch einmal",
+      "category": "Basics"
+    },
+    {
+      "word": "or",
+      "german": "oder",
+      "category": "Basics"
+    },
+    {
+      "word": "already",
+      "german": "schon",
+      "category": "Basics"
+    },
+    {
+      "word": "very",
+      "german": "sehr",
+      "category": "Basics"
+    },
+    {
+      "word": "since/for",
+      "german": "seit",
+      "category": "Basics"
+    },
+    {
+      "word": "bye",
+      "german": "Tschüss",
+      "category": "Basics"
+    },
+    {
+      "word": "and",
+      "german": "und",
+      "category": "Basics"
+    },
+    {
+      "word": "on the way",
+      "german": "unterwegs",
+      "category": "Basics"
+    },
+    {
+      "word": "much, many",
+      "german": "viel, viele",
+      "category": "Basics"
+    },
+    {
+      "word": "from, of, by, about",
+      "german": "von",
+      "category": "Basics"
+    },
+    {
+      "word": "what?",
+      "german": "was?",
+      "category": "Basics"
+    },
+    {
+      "word": "little",
+      "german": "wenig",
+      "category": "Basics"
+    },
+    {
+      "word": "a little",
+      "german": "ein wenig",
+      "category": "Basics"
+    },
+    {
+      "word": "how?",
+      "german": "wie?",
+      "category": "Basics"
+    },
+    {
+      "word": "where?",
+      "german": "wo?",
+      "category": "Basics"
+    },
+    {
+      "word": "where from?",
+      "german": "woher?",
+      "category": "Basics"
+    },
+    {
+      "word": "where to?",
+      "german": "wohin?",
+      "category": "Basics"
+    },
+    {
+      "word": "to",
+      "german": "zu",
+      "category": "Basics"
+    },
+    {
+      "word": "big, tall",
+      "german": "groß",
+      "category": "Adjectives"
+    },
+    {
+      "word": "good",
+      "german": "gut",
+      "category": "Adjectives"
+    },
+    {
+      "word": "polite",
+      "german": "höflich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "correct",
+      "german": "richtig",
+      "category": "Adjectives"
+    },
+    {
+      "word": "welcome",
+      "german": "willkommen",
+      "category": "Basics"
+    },
+    {
+      "word": "old",
+      "german": "alt",
+      "category": "Adjectives"
+    },
+    {
+      "word": "young",
+      "german": "jung",
+      "category": "Adjectives"
+    },
+    {
+      "word": "new",
+      "german": "neu",
+      "category": "Adjectives"
+    },
+    {
+      "word": "old fashioned",
+      "german": "altmodisch",
+      "category": "Adjectives"
+    },
+    {
+      "word": "modern",
+      "german": "modern",
+      "category": "Adjectives"
+    },
+    {
+      "word": "comfortable, pleasant",
+      "german": "angenehm",
+      "category": "Adjectives"
+    },
+    {
+      "word": "uncomfortable",
+      "german": "unangenehm",
+      "category": "Adjectives"
+    },
+    {
+      "word": "present",
+      "german": "anwesend",
+      "category": "Adjectives"
+    },
+    {
+      "word": "absent",
+      "german": "abwesend",
+      "category": "Adjectives"
+    },
+    {
+      "word": "known",
+      "german": "bekannt",
+      "category": "Adjectives"
+    },
+    {
+      "word": "unknown",
+      "german": "unbekannt",
+      "category": "Adjectives"
+    },
+    {
+      "word": "comfortable",
+      "german": "bequem",
+      "category": "Adjectives"
+    },
+    {
+      "word": "uncomfortable, inconvenient",
+      "german": "unbequem",
+      "category": "Adjectives"
+    },
+    {
+      "word": "wide",
+      "german": "breit",
+      "category": "Adjectives"
+    },
+    {
+      "word": "tight",
+      "german": "eng",
+      "category": "Adjectives"
+    },
+    {
+      "word": "thin, skinny",
+      "german": "dünn",
+      "category": "Adjectives"
+    },
+    {
+      "word": "square",
+      "german": "eckig",
+      "category": "Adjectives"
+    },
+    {
+      "word": "round",
+      "german": "rund",
+      "category": "Adjectives"
+    },
+    {
+      "word": "honest",
+      "german": "ehrlich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "dishonest",
+      "german": "unehrlich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "sensitive",
+      "german": "empfindlich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "not sensitive",
+      "german": "unempfindlich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "first",
+      "german": "erster",
+      "category": "Adjectives"
+    },
+    {
+      "word": "last",
+      "german": "letzter",
+      "category": "Adjectives"
+    },
+    {
+      "word": "to answer",
+      "german": "antworten",
+      "category": "Verbs"
+    },
+    {
+      "word": "to work",
+      "german": "arbeiten",
+      "category": "Verbs"
+    },
+    {
+      "word": "to last",
+      "german": "dauern",
+      "category": "Verbs"
+    },
+    {
+      "word": "to apologise",
+      "german": "entschuldigen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to fly",
+      "german": "fliegen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to ask",
+      "german": "fragen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to be called",
+      "german": "heißen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to hear",
+      "german": "hören",
+      "category": "Verbs"
+    },
+    {
+      "word": "to know (person, place, object)",
+      "german": "kennen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to come",
+      "german": "kommen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to live",
+      "german": "leben",
+      "category": "Verbs"
+    },
+    {
+      "word": "to learn",
+      "german": "lernen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to read",
+      "german": "lesen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to love",
+      "german": "lieben",
+      "category": "Verbs"
+    },
+    {
+      "word": "would like",
+      "german": "möchten",
+      "category": "Verbs"
+    },
+    {
+      "word": "to say",
+      "german": "sagen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to write",
+      "german": "schreiben",
+      "category": "Verbs"
+    },
+    {
+      "word": "to play",
+      "german": "spielen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to speak",
+      "german": "sprechen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to look for",
+      "german": "suchen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to live",
+      "german": "wohnen",
+      "category": "Verbs"
+    },
+    {
+      "word": "speaking",
+      "german": "das Sprechen",
+      "category": "Nouns"
+    },
+    {
+      "word": "evening",
+      "german": "der Abend",
+      "category": "Nouns"
+    },
+    {
+      "word": "address",
+      "german": "die Adresse",
+      "category": "Nouns"
+    },
+    {
+      "word": "answer",
+      "german": "die Antwort",
+      "category": "Nouns"
+    },
+    {
+      "word": "doctor",
+      "german": "der Arzt",
+      "category": "Nouns"
+    },
+    {
+      "word": "female doctor",
+      "german": "die Ärztin",
+      "category": "Nouns"
+    },
+    {
+      "word": "example",
+      "german": "das Beispiel",
+      "category": "Nouns"
+    },
+    {
+      "word": "job, profession",
+      "german": "der Beruf",
+      "category": "Nouns"
+    },
+    {
+      "word": "picture",
+      "german": "das Bild",
+      "category": "Nouns"
+    },
+    {
+      "word": "computer",
+      "german": "der Computer",
+      "category": "Nouns"
+    },
+    {
+      "word": "German language",
+      "german": "das Deutsch",
+      "category": "Nouns"
+    },
+    {
+      "word": "Germany",
+      "german": "das Deutschland",
+      "category": "Nouns"
+    },
+    {
+      "word": "apology",
+      "german": "die Entschuldigung",
+      "category": "Nouns"
+    },
+    {
+      "word": "Europe",
+      "german": "das Europa",
+      "category": "Nouns"
+    },
+    {
+      "word": "driver",
+      "german": "der Fahrer",
+      "category": "Nouns"
+    },
+    {
+      "word": "family",
+      "german": "die Familie",
+      "category": "Nouns"
+    },
+    {
+      "word": "surname",
+      "german": "der Familienname",
+      "category": "Nouns"
+    },
+    {
+      "word": "flight",
+      "german": "der Flug",
+      "category": "Nouns"
+    },
+    {
+      "word": "airport",
+      "german": "der Flughafen",
+      "category": "Nouns"
+    },
+    {
+      "word": "photograph",
+      "german": "das Foto",
+      "category": "Nouns"
+    },
+    {
+      "word": "question",
+      "german": "die Frage",
+      "category": "Nouns"
+    },
+    {
+      "word": "woman",
+      "german": "die Frau",
+      "category": "Nouns"
+    },
+    {
+      "word": "friend",
+      "german": "der Freund",
+      "category": "Nouns"
+    },
+    {
+      "word": "hairdresser",
+      "german": "der Friseur",
+      "category": "Nouns"
+    },
+    {
+      "word": "guitar",
+      "german": "die Gitarre",
+      "category": "Nouns"
+    },
+    {
+      "word": "Mister",
+      "german": "der Herr",
+      "category": "Nouns"
+    },
+    {
+      "word": "information",
+      "german": "die Information",
+      "category": "Nouns"
+    },
+    {
+      "word": "engineer",
+      "german": "der Ingenieur",
+      "category": "Nouns"
+    },
+    {
+      "word": "year",
+      "german": "das Jahr",
+      "category": "Nouns"
+    },
+    {
+      "word": "coffee",
+      "german": "der Kaffee",
+      "category": "Nouns"
+    },
+    {
+      "word": "waitress",
+      "german": "die Kellnerin",
+      "category": "Nouns"
+    },
+    {
+      "word": "child",
+      "german": "das Kind",
+      "category": "Nouns"
+    },
+    {
+      "word": "kiosk",
+      "german": "der Kiosk",
+      "category": "Nouns"
+    },
+    {
+      "word": "course",
+      "german": "der Kurs",
+      "category": "Nouns"
+    },
+    {
+      "word": "country",
+      "german": "das Land",
+      "category": "Nouns"
+    },
+    {
+      "word": "female teacher",
+      "german": "die Lehrerin",
+      "category": "Nouns"
+    },
+    {
+      "word": "people",
+      "german": "Leute",
+      "category": "Nouns"
+    },
+    {
+      "word": "man",
+      "german": "der Mann",
+      "category": "Nouns"
+    },
+    {
+      "word": "minute",
+      "german": "die Minute",
+      "category": "Nouns"
+    },
+    {
+      "word": "moment",
+      "german": "der Moment",
+      "category": "Nouns"
+    },
+    {
+      "word": "morning",
+      "german": "der Morgen",
+      "category": "Nouns"
+    },
+    {
+      "word": "surname",
+      "german": "der Nachname",
+      "category": "Nouns"
+    },
+    {
+      "word": "name",
+      "german": "der Name",
+      "category": "Nouns"
+    },
+    {
+      "word": "new year",
+      "german": "das Neujahr",
+      "category": "Nouns"
+    },
+    {
+      "word": "number",
+      "german": "die Nummer",
+      "category": "Nouns"
+    },
+    {
+      "word": "Austria",
+      "german": "das Österreich",
+      "category": "Nouns"
+    },
+    {
+      "word": "passport",
+      "german": "der Pass",
+      "category": "Nouns"
+    },
+    {
+      "word": "person",
+      "german": "die Person",
+      "category": "Nouns"
+    },
+    {
+      "word": "place",
+      "german": "der Platz",
+      "category": "Nouns"
+    },
+    {
+      "word": "radio",
+      "german": "das Radio",
+      "category": "Nouns"
+    },
+    {
+      "word": "risk",
+      "german": "das Risiko",
+      "category": "Nouns"
+    },
+    {
+      "word": "chocolate",
+      "german": "die Schokolade",
+      "category": "Nouns"
+    },
+    {
+      "word": "Switzerland",
+      "german": "die Schweiz",
+      "category": "Nouns"
+    },
+    {
+      "word": "sofa",
+      "german": "das Sofa",
+      "category": "Nouns"
+    },
+    {
+      "word": "language",
+      "german": "die Sprache",
+      "category": "Nouns"
+    },
+    {
+      "word": "city",
+      "german": "die Stadt",
+      "category": "Nouns"
+    },
+    {
+      "word": "day",
+      "german": "der Tag",
+      "category": "Nouns"
+    },
+    {
+      "word": "taxi driver",
+      "german": "der Taxifahrer",
+      "category": "Nouns"
+    },
+    {
+      "word": "tea",
+      "german": "der Tee",
+      "category": "Nouns"
+    },
+    {
+      "word": "telephone",
+      "german": "das Telefon",
+      "category": "Nouns"
+    },
+    {
+      "word": "telephone number",
+      "german": "die Telefonnummer",
+      "category": "Nouns"
+    },
+    {
+      "word": "text",
+      "german": "der Text",
+      "category": "Nouns"
+    },
+    {
+      "word": "tourist",
+      "german": "der Tourist",
+      "category": "Nouns"
+    },
+    {
+      "word": "first name",
+      "german": "der Vorname",
+      "category": "Nouns"
+    },
+    {
+      "word": "word",
+      "german": "das Wort",
+      "category": "Nouns"
+    },
+    {
+      "word": "number",
+      "german": "die Zahl",
+      "category": "Nouns"
+    },
+    {
+      "word": "time",
+      "german": "die Zeit",
+      "category": "Nouns"
+    },
+    {
+      "word": "slip of paper",
+      "german": "der Zettel",
+      "category": "Nouns"
+    },
+    {
+      "word": "cigarette",
+      "german": "die Zigarette",
+      "category": "Nouns"
+    },
+    {
+      "word": "apartment door",
+      "german": "die Wohnungstür",
+      "category": "Home"
+    },
+    {
+      "word": "at the apartment door",
+      "german": "an der Wohnungstür",
+      "category": "Phrases"
+    },
+    {
+      "word": "stop!",
+      "german": "Halt!",
+      "category": "Basics"
+    },
+    {
+      "word": "middle",
+      "german": "die Mitte",
+      "category": "Home"
+    },
+    {
+      "word": "in the middle",
+      "german": "in der Mitte",
+      "category": "Phrases"
+    },
+    {
+      "word": "gladly",
+      "german": "gerne",
+      "category": "Basics"
+    },
+    {
+      "word": "soon, shortly",
+      "german": "gleich",
+      "category": "Time"
+    },
+    {
+      "word": "someone",
+      "german": "jemand",
+      "category": "Basics"
+    },
+    {
+      "word": "left",
+      "german": "links",
+      "category": "Direction"
+    },
+    {
+      "word": "most",
+      "german": "meist",
+      "category": "Basics"
+    },
+    {
+      "word": "of course",
+      "german": "natürlich",
+      "category": "Basics"
+    },
+    {
+      "word": "only",
+      "german": "nur",
+      "category": "Basics"
+    },
+    {
+      "word": "above",
+      "german": "oben",
+      "category": "Direction"
+    },
+    {
+      "word": "right",
+      "german": "rechts",
+      "category": "Direction"
+    },
+    {
+      "word": "below",
+      "german": "unten",
+      "category": "Direction"
+    },
+    {
+      "word": "perhaps, maybe",
+      "german": "vielleicht",
+      "category": "Basics"
+    },
+    {
+      "word": "when?",
+      "german": "wann?",
+      "category": "Question"
+    },
+    {
+      "word": "who?",
+      "german": "wer?",
+      "category": "Question"
+    },
+    {
+      "word": "how long?",
+      "german": "wie lange?",
+      "category": "Question"
+    },
+    {
+      "word": "really",
+      "german": "wirklich",
+      "category": "Basics"
+    },
+    {
+      "word": "twice",
+      "german": "zweimal",
+      "category": "Basics"
+    },
+    {
+      "word": "clear",
+      "german": "deutlich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "friendly",
+      "german": "freundlich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "pretty",
+      "german": "hübsch",
+      "category": "Adjectives"
+    },
+    {
+      "word": "international",
+      "german": "international",
+      "category": "Adjectives"
+    },
+    {
+      "word": "divorced",
+      "german": "geschieden",
+      "category": "Adjectives"
+    },
+    {
+      "word": "small",
+      "german": "klein",
+      "category": "Adjectives"
+    },
+    {
+      "word": "slow",
+      "german": "langsam",
+      "category": "Adjectives"
+    },
+    {
+      "word": "loud",
+      "german": "laut",
+      "category": "Adjectives"
+    },
+    {
+      "word": "single, unmarried",
+      "german": "ledig",
+      "category": "Adjectives"
+    },
+    {
+      "word": "masculine, male",
+      "german": "männlich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "unfriendly",
+      "german": "unfreundlich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "married",
+      "german": "verheiratet",
+      "category": "Adjectives"
+    },
+    {
+      "word": "feminine, female",
+      "german": "weiblich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "wonderful",
+      "german": "wunderbar",
+      "category": "Adjectives"
+    },
+    {
+      "word": "to greet",
+      "german": "begrüßen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to order",
+      "german": "bestellen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to visit, attend",
+      "german": "besuchen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to spell",
+      "german": "buchstabieren",
+      "category": "Verbs"
+    },
+    {
+      "word": "to eat",
+      "german": "essen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to be missing",
+      "german": "fehlen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to give",
+      "german": "geben",
+      "category": "Verbs"
+    },
+    {
+      "word": "to be born",
+      "german": "geboren sein",
+      "category": "Verbs"
+    },
+    {
+      "word": "to walk, go",
+      "german": "gehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to believe",
+      "german": "glauben",
+      "category": "Verbs"
+    },
+    {
+      "word": "to help",
+      "german": "helfen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to ring",
+      "german": "klingeln",
+      "category": "Verbs"
+    },
+    {
+      "word": "to invite",
+      "german": "einladen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to take",
+      "german": "nehmen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to open",
+      "german": "öffnen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to stand",
+      "german": "stehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to drink",
+      "german": "trinken",
+      "category": "Verbs"
+    },
+    {
+      "word": "to repeat",
+      "german": "wiederholen",
+      "category": "Verbs"
+    },
+    {
+      "word": "age",
+      "german": "das Alter",
+      "category": "Nouns"
+    },
+    {
+      "word": "start",
+      "german": "der Anfang",
+      "category": "Nouns"
+    },
+    {
+      "word": "employee",
+      "german": "der/die Angestellte",
+      "category": "Nouns"
+    },
+    {
+      "word": "apple juice",
+      "german": "der Apfelsaft",
+      "category": "Food"
+    },
+    {
+      "word": "appetite",
+      "german": "der Appetit",
+      "category": "Food"
+    },
+    {
+      "word": "information",
+      "german": "die Auskunft",
+      "category": "Nouns"
+    },
+    {
+      "word": "ID card",
+      "german": "der Ausweis",
+      "category": "Nouns"
+    },
+    {
+      "word": "car",
+      "german": "das Auto",
+      "category": "Transport"
+    },
+    {
+      "word": "visit",
+      "german": "der Besuch",
+      "category": "Nouns"
+    },
+    {
+      "word": "beer",
+      "german": "das Bier",
+      "category": "Food"
+    },
+    {
+      "word": "letter, character",
+      "german": "der Buchstabe",
+      "category": "Nouns"
+    },
+    {
+      "word": "thanks",
+      "german": "der Dank",
+      "category": "Basics"
+    },
+    {
+      "word": "egg",
+      "german": "das Ei",
+      "category": "Food"
+    },
+    {
+      "word": "ice, ice cream",
+      "german": "das Eis",
+      "category": "Food"
+    },
+    {
+      "word": "marital status",
+      "german": "der Familienstand",
+      "category": "Nouns"
+    },
+    {
+      "word": "mistake",
+      "german": "der Fehler",
+      "category": "Nouns"
+    },
+    {
+      "word": "television",
+      "german": "der Fernseher",
+      "category": "Tech"
+    },
+    {
+      "word": "company",
+      "german": "die Firma",
+      "category": "Work"
+    },
+    {
+      "word": "form",
+      "german": "das Formular",
+      "category": "Work"
+    },
+    {
+      "word": "driver’s license",
+      "german": "der Führerschein",
+      "category": "Nouns"
+    },
+    {
+      "word": "year of birth",
+      "german": "das Geburtsjahr",
+      "category": "Nouns"
+    },
+    {
+      "word": "place of birth",
+      "german": "der Geburtsort",
+      "category": "Nouns"
+    },
+    {
+      "word": "house",
+      "german": "das Haus",
+      "category": "Home"
+    },
+    {
+      "word": "colleague",
+      "german": "die Kollegin",
+      "category": "Work"
+    },
+    {
+      "word": "cake",
+      "german": "der Kuchen",
+      "category": "Food"
+    },
+    {
+      "word": "lamp",
+      "german": "die Lampe",
+      "category": "Home"
+    },
+    {
+      "word": "song",
+      "german": "das Lied",
+      "category": "Leisure"
+    },
+    {
+      "word": "coat, jacket",
+      "german": "der Mantel",
+      "category": "Clothes"
+    },
+    {
+      "word": "method",
+      "german": "die Methode",
+      "category": "Nouns"
+    },
+    {
+      "word": "milk",
+      "german": "die Milch",
+      "category": "Food"
+    },
+    {
+      "word": "mineral water",
+      "german": "das Mineralwasser",
+      "category": "Food"
+    },
+    {
+      "word": "month",
+      "german": "der Monat",
+      "category": "Time"
+    },
+    {
+      "word": "neighbor",
+      "german": "der Nachbar",
+      "category": "People"
+    },
+    {
+      "word": "afternoon",
+      "german": "der Nachmittag",
+      "category": "Time"
+    },
+    {
+      "word": "orange juice",
+      "german": "der Orangensaft",
+      "category": "Food"
+    },
+    {
+      "word": "pair",
+      "german": "das Paar",
+      "category": "Basics"
+    },
+    {
+      "word": "portion",
+      "german": "die Portion",
+      "category": "Food"
+    },
+    {
+      "word": "religion",
+      "german": "die Religion",
+      "category": "Nouns"
+    },
+    {
+      "word": "salad",
+      "german": "der Salat",
+      "category": "Food"
+    },
+    {
+      "word": "side, page",
+      "german": "die Seite",
+      "category": "Nouns"
+    },
+    {
+      "word": "situation",
+      "german": "die Situation",
+      "category": "Nouns"
+    },
+    {
+      "word": "menu",
+      "german": "die Speisekarte",
+      "category": "Food"
+    },
+    {
+      "word": "nationality",
+      "german": "die Staatsangehörigkeit",
+      "category": "Nouns"
+    },
+    {
+      "word": "street, road",
+      "german": "die Straße",
+      "category": "City"
+    },
+    {
+      "word": "piece",
+      "german": "das Stück",
+      "category": "Basics"
+    },
+    {
+      "word": "student",
+      "german": "der Student",
+      "category": "Education"
+    },
+    {
+      "word": "soup",
+      "german": "die Suppe",
+      "category": "Food"
+    },
+    {
+      "word": "cup",
+      "german": "die Tasse",
+      "category": "Food"
+    },
+    {
+      "word": "door",
+      "german": "die Tür",
+      "category": "Home"
+    },
+    {
+      "word": "water",
+      "german": "das Wasser",
+      "category": "Food"
+    },
+    {
+      "word": "wine",
+      "german": "der Wein",
+      "category": "Food"
+    },
+    {
+      "word": "week",
+      "german": "die Woche",
+      "category": "Time"
+    },
+    {
+      "word": "flat, apartment",
+      "german": "die Wohnung",
+      "category": "Home"
+    },
+    {
+      "word": "sausage",
+      "german": "das Würstchen",
+      "category": "Food"
+    },
+    {
+      "word": "room",
+      "german": "das Zimmer",
+      "category": "Home"
+    },
+    {
+      "word": "center",
+      "german": "das Zentrum",
+      "category": "City"
+    },
+    {
+      "word": "sugar",
+      "german": "der Zucker",
+      "category": "Food"
+    },
+    {
+      "word": "however, but",
+      "german": "aber",
+      "category": "Grammar"
+    },
+    {
+      "word": "goodbye (on phone)",
+      "german": "auf Wiederhören",
+      "category": "Basics"
+    },
+    {
+      "word": "till",
+      "german": "bis",
+      "category": "Grammar"
+    },
+    {
+      "word": "back there",
+      "german": "da hinten",
+      "category": "Direction"
+    },
+    {
+      "word": "then",
+      "german": "dann",
+      "category": "Grammar"
+    },
+    {
+      "word": "over there (front)",
+      "german": "da vorne",
+      "category": "Direction"
+    },
+    {
+      "word": "there",
+      "german": "dort",
+      "category": "Direction"
+    },
+    {
+      "word": "first",
+      "german": "erst",
+      "category": "Time"
+    },
+    {
+      "word": "almost",
+      "german": "fast",
+      "category": "Basics"
+    },
+    {
+      "word": "expensive",
+      "german": "teuer",
+      "category": "Adjectives"
+    },
+    {
+      "word": "not expensive at all",
+      "german": "gar nicht teuer",
+      "category": "Phrases"
+    },
+    {
+      "word": "very pretty",
+      "german": "ganz hübsch",
+      "category": "Phrases"
+    },
+    {
+      "word": "just/exactly the same",
+      "german": "genauso",
+      "category": "Basics"
+    },
+    {
+      "word": "just as many",
+      "german": "genauso viele",
+      "category": "Basics"
+    },
+    {
+      "word": "to leave alone",
+      "german": "in Ruhe lassen",
+      "category": "Phrases"
+    },
+    {
+      "word": "meanwhile",
+      "german": "inzwischen",
+      "category": "Time"
+    },
+    {
+      "word": "unfortunately",
+      "german": "leider",
+      "category": "Basics"
+    },
+    {
+      "word": "next to",
+      "german": "nächst",
+      "category": "Direction"
+    },
+    {
+      "word": "of course",
+      "german": "na klar",
+      "category": "Basics"
+    },
+    {
+      "word": "often",
+      "german": "oft",
+      "category": "Frequency"
+    },
+    {
+      "word": "without",
+      "german": "ohne",
+      "category": "Grammar"
+    },
+    {
+      "word": "a few, some",
+      "german": "ein paar",
+      "category": "Basics"
+    },
+    {
+      "word": "to be right",
+      "german": "recht haben",
+      "category": "Verbs"
+    },
+    {
+      "word": "why?",
+      "german": "warum / wieso",
+      "category": "Question"
+    },
+    {
+      "word": "again",
+      "german": "wieder",
+      "category": "Basics"
+    },
+    {
+      "word": "how much?",
+      "german": "wie viel?",
+      "category": "Question"
+    },
+    {
+      "word": "how many?",
+      "german": "wie viele?",
+      "category": "Question"
+    },
+    {
+      "word": "approximately",
+      "german": "circa",
+      "category": "Basics"
+    },
+    {
+      "word": "oversized",
+      "german": "zu groß",
+      "category": "Adjectives"
+    },
+    {
+      "word": "other",
+      "german": "andere",
+      "category": "Basics"
+    },
+    {
+      "word": "cheap, inexpensive",
+      "german": "billig",
+      "category": "Adjectives"
+    },
+    {
+      "word": "whatever!",
+      "german": "egal",
+      "category": "Basics"
+    },
+    {
+      "word": "easy, simple",
+      "german": "einfach",
+      "category": "Adjectives"
+    },
+    {
+      "word": "used, second-hand",
+      "german": "gebraucht",
+      "category": "Adjectives"
+    },
+    {
+      "word": "favorable, cheap",
+      "german": "günstig",
+      "category": "Adjectives"
+    },
+    {
+      "word": "interesting",
+      "german": "interessant",
+      "category": "Adjectives"
+    },
+    {
+      "word": "sick, ill",
+      "german": "krank",
+      "category": "Health"
+    },
+    {
+      "word": "boring",
+      "german": "langweilig",
+      "category": "Adjectives"
+    },
+    {
+      "word": "nice, kind",
+      "german": "nett",
+      "category": "Adjectives"
+    },
+    {
+      "word": "practical",
+      "german": "praktisch",
+      "category": "Adjectives"
+    },
+    {
+      "word": "bad",
+      "german": "schlecht",
+      "category": "Adjectives"
+    },
+    {
+      "word": "beautiful",
+      "german": "schön",
+      "category": "Adjectives"
+    },
+    {
+      "word": "great",
+      "german": "super",
+      "category": "Adjectives"
+    },
+    {
+      "word": "amazing, great",
+      "german": "toll",
+      "category": "Adjectives"
+    },
+    {
+      "word": "to spend",
+      "german": "ausgeben",
+      "category": "Verbs"
+    },
+    {
+      "word": "to receive",
+      "german": "bekommen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to need",
+      "german": "brauchen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to find",
+      "german": "finden",
+      "category": "Verbs"
+    },
+    {
+      "word": "to work, function",
+      "german": "funktionieren",
+      "category": "Verbs"
+    },
+    {
+      "word": "to buy",
+      "german": "kaufen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to cost",
+      "german": "kosten",
+      "category": "Verbs"
+    },
+    {
+      "word": "to collect",
+      "german": "sammeln",
+      "category": "Verbs"
+    },
+    {
+      "word": "to look",
+      "german": "schauen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to be correct",
+      "german": "stimmen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to sell",
+      "german": "verkaufen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to change, exchange",
+      "german": "wechseln",
+      "category": "Verbs"
+    },
+    {
+      "word": "department",
+      "german": "die Abteilung",
+      "category": "Nouns"
+    },
+    {
+      "word": "offer, proposal",
+      "german": "das Angebot",
+      "category": "Nouns"
+    },
+    {
+      "word": "advertisement",
+      "german": "die Anzeige",
+      "category": "Nouns"
+    },
+    {
+      "word": "bed",
+      "german": "das Bett",
+      "category": "Home"
+    },
+    {
+      "word": "book",
+      "german": "das Buch",
+      "category": "Education"
+    },
+    {
+      "word": "couch, sofa",
+      "german": "die Couch / das Sofa",
+      "category": "Home"
+    },
+    {
+      "word": "resident",
+      "german": "der Einwohner",
+      "category": "People"
+    },
+    {
+      "word": "ground floor",
+      "german": "das Erdgeschoss",
+      "category": "Home"
+    },
+    {
+      "word": "bicycle",
+      "german": "das Fahrrad",
+      "category": "Transport"
+    },
+    {
+      "word": "color",
+      "german": "die Farbe",
+      "category": "Art"
+    },
+    {
+      "word": "camera",
+      "german": "der Fotoapparat",
+      "category": "Tech"
+    },
+    {
+      "word": "money",
+      "german": "das Geld",
+      "category": "Finance"
+    },
+    {
+      "word": "conversation",
+      "german": "das Gespräch",
+      "category": "Basics"
+    },
+    {
+      "word": "glass",
+      "german": "das Glas",
+      "category": "Home"
+    },
+    {
+      "word": "size, height",
+      "german": "die Größe",
+      "category": "Basics"
+    },
+    {
+      "word": "half",
+      "german": "die Hälfte",
+      "category": "Math"
+    },
+    {
+      "word": "capital city",
+      "german": "die Hauptstadt",
+      "category": "Geography"
+    },
+    {
+      "word": "household",
+      "german": "der Haushalt",
+      "category": "Home"
+    },
+    {
+      "word": "cash register, checkout",
+      "german": "die Kasse",
+      "category": "Shopping"
+    },
+    {
+      "word": "cosmetic",
+      "german": "die Kosmetik",
+      "category": "Shopping"
+    },
+    {
+      "word": "kitchen",
+      "german": "die Küche",
+      "category": "Home"
+    },
+    {
+      "word": "refrigerator",
+      "german": "der Kühlschrank",
+      "category": "Home"
+    },
+    {
+      "word": "customer",
+      "german": "der Kunde",
+      "category": "Shopping"
+    },
+    {
+      "word": "piece of furniture",
+      "german": "das Möbelstück",
+      "category": "Home"
+    },
+    {
+      "word": "note, memo",
+      "german": "die Notiz",
+      "category": "Basics"
+    },
+    {
+      "word": "price",
+      "german": "der Preis",
+      "category": "Shopping"
+    },
+    {
+      "word": "percentage",
+      "german": "das Prozent",
+      "category": "Math"
+    },
+    {
+      "word": "square kilometer",
+      "german": "der Quadratkilometer",
+      "category": "Math"
+    },
+    {
+      "word": "shelf, rack",
+      "german": "das Regal",
+      "category": "Home"
+    },
+    {
+      "word": "closet, cupboard",
+      "german": "der Schrank",
+      "category": "Home"
+    },
+    {
+      "word": "armchair",
+      "german": "der Sessel",
+      "category": "Home"
+    },
+    {
+      "word": "special offer, sale",
+      "german": "das Sonderangebot",
+      "category": "Shopping"
+    },
+    {
+      "word": "vacuum cleaner",
+      "german": "der Staubsauger",
+      "category": "Home"
+    },
+    {
+      "word": "floor, storey",
+      "german": "der Stock",
+      "category": "Home"
+    },
+    {
+      "word": "chair",
+      "german": "der Stuhl",
+      "category": "Home"
+    },
+    {
+      "word": "lesson, hour",
+      "german": "die Stunde",
+      "category": "Time"
+    },
+    {
+      "word": "part, section",
+      "german": "das Teil",
+      "category": "Basics"
+    },
+    {
+      "word": "carpet",
+      "german": "der Teppich",
+      "category": "Home"
+    },
+    {
+      "word": "pot, jar",
+      "german": "der Topf",
+      "category": "Home"
+    },
+    {
+      "word": "salesperson",
+      "german": "der Verkäufer",
+      "category": "Shopping"
+    },
+    {
+      "word": "quarter",
+      "german": "das Viertel",
+      "category": "Time"
+    },
+    {
+      "word": "currency",
+      "german": "die Währung",
+      "category": "Finance"
+    },
+    {
+      "word": "washing machine",
+      "german": "die Waschmaschine",
+      "category": "Home"
+    },
+    {
+      "word": "advertisement, junk mail",
+      "german": "die Werbung",
+      "category": "Shopping"
+    },
+    {
+      "word": "newspaper",
+      "german": "die Zeitung",
+      "category": "Media"
+    },
+    {
+      "word": "condition, state",
+      "german": "der Zustand",
+      "category": "Basics"
+    },
+    {
+      "word": "at the end",
+      "german": "am Ende",
+      "category": "Phrases"
+    },
+    {
+      "word": "besides, moreover",
+      "german": "außerdem",
+      "category": "Grammar"
+    },
+    {
+      "word": "soon, shortly",
+      "german": "bald",
+      "category": "Time"
+    },
+    {
+      "word": "finally, at last",
+      "german": "endlich",
+      "category": "Time"
+    },
+    {
+      "word": "Come in!",
+      "german": "Herein!",
+      "category": "Phrases"
+    },
+    {
+      "word": "alright, in order",
+      "german": "in Ordnung",
+      "category": "Phrases"
+    },
+    {
+      "word": "last",
+      "german": "letzte",
+      "category": "Time"
+    },
+    {
+      "word": "sometimes",
+      "german": "manchmal",
+      "category": "Frequency"
+    },
+    {
+      "word": "volleyball",
+      "german": "der Volleyball",
+      "category": "Leisure"
+    },
+    {
+      "word": "after",
+      "german": "nach",
+      "category": "Time"
+    },
+    {
+      "word": "no longer",
+      "german": "nicht mehr",
+      "category": "Basics"
+    },
+    {
+      "word": "nothing",
+      "german": "nichts",
+      "category": "Basics"
+    },
+    {
+      "word": "nobody, no one",
+      "german": "niemand",
+      "category": "Basics"
+    },
+    {
+      "word": "to take a seat",
+      "german": "Platz nehmen",
+      "category": "Phrases"
+    },
+    {
+      "word": "immediately",
+      "german": "sofort",
+      "category": "Time"
+    },
+    {
+      "word": "even, actually",
+      "german": "sogar",
+      "category": "Basics"
+    },
+    {
+      "word": "otherwise",
+      "german": "sonst",
+      "category": "Grammar"
+    },
+    {
+      "word": "before",
+      "german": "vor",
+      "category": "Time"
+    },
+    {
+      "word": "back, behind",
+      "german": "zurück",
+      "category": "Direction"
+    },
+    {
+      "word": "currently; at the moment",
+      "german": "zurzeit",
+      "category": "Time"
+    },
+    {
+      "word": "August",
+      "german": "der August",
+      "category": "Time"
+    },
+    {
+      "word": "from (e.g., from Aug 24th)",
+      "german": "ab",
+      "category": "Time"
+    },
+    {
+      "word": "in the evening",
+      "german": "abends",
+      "category": "Time"
+    },
+    {
+      "word": "alone",
+      "german": "alleine",
+      "category": "Basics"
+    },
+    {
+      "word": "another time",
+      "german": "ein anderes Mal",
+      "category": "Phrases"
+    },
+    {
+      "word": "fixed working hours",
+      "german": "feste Arbeitszeiten",
+      "category": "Work"
+    },
+    {
+      "word": "to feel like it",
+      "german": "Lust haben",
+      "category": "Phrases"
+    },
+    {
+      "word": "as soon as possible",
+      "german": "möglichst bald",
+      "category": "Phrases"
+    },
+    {
+      "word": "at night",
+      "german": "nachts",
+      "category": "Time"
+    },
+    {
+      "word": "never",
+      "german": "nie",
+      "category": "Frequency"
+    },
+    {
+      "word": "around the clock",
+      "german": "rund um die Uhr",
+      "category": "Phrases"
+    },
+    {
+      "word": "Pity! / Too bad!",
+      "german": "Schade!",
+      "category": "Basics"
+    },
+    {
+      "word": "to call it a day / to finish",
+      "german": "Schluss machen",
+      "category": "Phrases"
+    },
+    {
+      "word": "at the latest",
+      "german": "spätestens",
+      "category": "Time"
+    },
+    {
+      "word": "at (time)",
+      "german": "um",
+      "category": "Time"
+    },
+    {
+      "word": "quarter to / past",
+      "german": "Viertel vor / nach",
+      "category": "Time"
+    },
+    {
+      "word": "Monday",
+      "german": "der Montag",
+      "category": "Time"
+    },
+    {
+      "word": "Wednesday",
+      "german": "der Mittwoch",
+      "category": "Time"
+    },
+    {
+      "word": "from Monday to Wednesday",
+      "german": "von Montag bis Mittwoch",
+      "category": "Phrases"
+    },
+    {
+      "word": "What time is it?",
+      "german": "Wie spät ist es?",
+      "category": "Question"
+    },
+    {
+      "word": "What time is it?",
+      "german": "Wieviel Uhr ist es?",
+      "category": "Question"
+    },
+    {
+      "word": "actually",
+      "german": "eigentlich",
+      "category": "Basics"
+    },
+    {
+      "word": "either…or",
+      "german": "entweder…oder",
+      "category": "Grammar"
+    },
+    {
+      "word": "through",
+      "german": "durch",
+      "category": "Grammar"
+    },
+    {
+      "word": "straight ahead",
+      "german": "geradeaus",
+      "category": "Direction"
+    },
+    {
+      "word": "hopefully",
+      "german": "hoffentlich",
+      "category": "Basics"
+    },
+    {
+      "word": "favorite (prefix)",
+      "german": "Lieblings-",
+      "category": "Basics"
+    },
+    {
+      "word": "more often",
+      "german": "öfter",
+      "category": "Frequency"
+    },
+    {
+      "word": "to have an appointment",
+      "german": "verabredet sein",
+      "category": "Phrases"
+    },
+    {
+      "word": "on foot",
+      "german": "zu Fuß",
+      "category": "Phrases"
+    },
+    {
+      "word": "different",
+      "german": "anders",
+      "category": "Basics"
+    },
+    {
+      "word": "both",
+      "german": "beide",
+      "category": "Basics"
+    },
+    {
+      "word": "especially",
+      "german": "besonders",
+      "category": "Basics"
+    },
+    {
+      "word": "for a start",
+      "german": "erst einmal",
+      "category": "Phrases"
+    },
+    {
+      "word": "before / earlier",
+      "german": "früher",
+      "category": "Time"
+    },
+    {
+      "word": "simultaneously",
+      "german": "gleichzeitig",
+      "category": "Time"
+    },
+    {
+      "word": "Break a leg! / Good luck!",
+      "german": "Hals- und Beinbruch!",
+      "category": "Phrases"
+    },
+    {
+      "word": "behind",
+      "german": "hinter",
+      "category": "Direction"
+    },
+    {
+      "word": "something / anything",
+      "german": "irgendwas",
+      "category": "Basics"
+    },
+    {
+      "word": "to be fed up with",
+      "german": "satthaben",
+      "category": "Phrases"
+    },
+    {
+      "word": "anyway / nonetheless",
+      "german": "trotzdem",
+      "category": "Grammar"
+    },
+    {
+      "word": "under",
+      "german": "unter",
+      "category": "Direction"
+    },
+    {
+      "word": "better",
+      "german": "besser",
+      "category": "Adjectives"
+    },
+    {
+      "word": "fresh",
+      "german": "frisch",
+      "category": "Adjectives"
+    },
+    {
+      "word": "cheerful",
+      "german": "fröhlich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "comfortable / cozy",
+      "german": "gemütlich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "half",
+      "german": "halb",
+      "category": "Adjectives"
+    },
+    {
+      "word": "long",
+      "german": "lang",
+      "category": "Adjectives"
+    },
+    {
+      "word": "empty",
+      "german": "leer",
+      "category": "Adjectives"
+    },
+    {
+      "word": "quiet",
+      "german": "leise",
+      "category": "Adjectives"
+    },
+    {
+      "word": "short",
+      "german": "kurz",
+      "category": "Adjectives"
+    },
+    {
+      "word": "nervous",
+      "german": "nervös",
+      "category": "Adjectives"
+    },
+    {
+      "word": "red",
+      "german": "rot",
+      "category": "Adjectives"
+    },
+    {
+      "word": "angry / sour",
+      "german": "sauer",
+      "category": "Adjectives"
+    },
+    {
+      "word": "late",
+      "german": "spät",
+      "category": "Adjectives"
+    },
+    {
+      "word": "sad",
+      "german": "traurig",
+      "category": "Adjectives"
+    },
+    {
+      "word": "important",
+      "german": "wichtig",
+      "category": "Adjectives"
+    },
+    {
+      "word": "satisfied",
+      "german": "zufrieden",
+      "category": "Adjectives"
+    },
+    {
+      "word": "broken",
+      "german": "kaputt",
+      "category": "Adjectives"
+    },
+    {
+      "word": "best",
+      "german": "beste",
+      "category": "Adjectives"
+    },
+    {
+      "word": "urgent",
+      "german": "dringend",
+      "category": "Adjectives"
+    },
+    {
+      "word": "stupid",
+      "german": "dumm",
+      "category": "Adjectives"
+    },
+    {
+      "word": "own",
+      "german": "eigen",
+      "category": "Adjectives"
+    },
+    {
+      "word": "free / loose",
+      "german": "frei",
+      "category": "Adjectives"
+    },
+    {
+      "word": "quiet / calm",
+      "german": "ruhig",
+      "category": "Adjectives"
+    },
+    {
+      "word": "active",
+      "german": "aktiv",
+      "category": "Adjectives"
+    },
+    {
+      "word": "exhausting / stressful",
+      "german": "anstrengend",
+      "category": "Adjectives"
+    },
+    {
+      "word": "blond",
+      "german": "blond",
+      "category": "Adjectives"
+    },
+    {
+      "word": "lonely",
+      "german": "einsam",
+      "category": "Adjectives"
+    },
+    {
+      "word": "finished / ready",
+      "german": "fertig",
+      "category": "Adjectives"
+    },
+    {
+      "word": "happy",
+      "german": "glücklich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "green",
+      "german": "grün",
+      "category": "Adjectives"
+    },
+    {
+      "word": "tired",
+      "german": "müde",
+      "category": "Adjectives"
+    },
+    {
+      "word": "wet",
+      "german": "nass",
+      "category": "Adjectives"
+    },
+    {
+      "word": "common / normal",
+      "german": "normal",
+      "category": "Adjectives"
+    },
+    {
+      "word": "punctual",
+      "german": "pünktlich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "bad / sad",
+      "german": "schlimm",
+      "category": "Adjectives"
+    },
+    {
+      "word": "awake",
+      "german": "wach",
+      "category": "Adjectives"
+    },
+    {
+      "word": "colourful",
+      "german": "bunt",
+      "category": "Adjectives"
+    },
+    {
+      "word": "direct",
+      "german": "direkt",
+      "category": "Adjectives"
+    },
+    {
+      "word": "foreign / strange",
+      "german": "fremd",
+      "category": "Adjectives"
+    },
+    {
+      "word": "magnificent",
+      "german": "herrlich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "multicultural",
+      "german": "multikulturell",
+      "category": "Adjectives"
+    },
+    {
+      "word": "curious / nosy",
+      "german": "neugierig",
+      "category": "Adjectives"
+    },
+    {
+      "word": "awful / terrible",
+      "german": "schrecklich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "daily",
+      "german": "täglich",
+      "category": "Adjectives"
+    },
+    {
+      "word": "typical",
+      "german": "typisch",
+      "category": "Adjectives"
+    },
+    {
+      "word": "completely",
+      "german": "völlig",
+      "category": "Adjectives"
+    },
+    {
+      "word": "wide / far",
+      "german": "weit",
+      "category": "Adjectives"
+    },
+    {
+      "word": "to bake",
+      "german": "backen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to begin",
+      "german": "beginnen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to observe",
+      "german": "beobachten",
+      "category": "Verbs"
+    },
+    {
+      "word": "to ask for",
+      "german": "bitten um",
+      "category": "Verbs"
+    },
+    {
+      "word": "to stay",
+      "german": "bleiben",
+      "category": "Verbs"
+    },
+    {
+      "word": "to think",
+      "german": "denken",
+      "category": "Verbs"
+    },
+    {
+      "word": "to shop",
+      "german": "einkaufen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to tell / narrate",
+      "german": "erzählen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to please / appeal to",
+      "german": "gefallen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to stop",
+      "german": "aufhören",
+      "category": "Verbs"
+    },
+    {
+      "word": "to smile",
+      "german": "lächeln",
+      "category": "Verbs"
+    },
+    {
+      "word": "to laugh",
+      "german": "lachen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to open up",
+      "german": "aufmachen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to bring along",
+      "german": "mitbringen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to try / taste",
+      "german": "probieren",
+      "category": "Verbs"
+    },
+    {
+      "word": "to give (a gift)",
+      "german": "schenken",
+      "category": "Verbs"
+    },
+    {
+      "word": "to scream",
+      "german": "schreien",
+      "category": "Verbs"
+    },
+    {
+      "word": "to understand",
+      "german": "verstehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to wait for",
+      "german": "warten auf",
+      "category": "Verbs"
+    },
+    {
+      "word": "to cry",
+      "german": "weinen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to wish",
+      "german": "wünschen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to collect / pick up",
+      "german": "abholen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to begin / start",
+      "german": "anfangen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to go out",
+      "german": "ausgehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to get / obtain",
+      "german": "besorgen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to move in",
+      "german": "einziehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to fetch",
+      "german": "holen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to come along",
+      "german": "mitkommen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to pack",
+      "german": "packen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to smoke",
+      "german": "rauchen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to travel",
+      "german": "reisen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to call (phone)",
+      "german": "anrufen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to swim",
+      "german": "schwimmen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to go for a walk",
+      "german": "spazieren gehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to study (college)",
+      "german": "studieren",
+      "category": "Verbs"
+    },
+    {
+      "word": "to dance",
+      "german": "tanzen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to test",
+      "german": "testen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to sign",
+      "german": "unterschreiben",
+      "category": "Verbs"
+    },
+    {
+      "word": "to earn",
+      "german": "verdienen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to become / will",
+      "german": "werden",
+      "category": "Verbs"
+    },
+    {
+      "word": "to dry",
+      "german": "abtrocknen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to wash up",
+      "german": "abwaschen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to dress / put on",
+      "german": "anziehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to pay attention",
+      "german": "aufpassen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to clean up",
+      "german": "aufräumen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to get up",
+      "german": "aufstehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to turn off",
+      "german": "ausmachen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to unpack",
+      "german": "auspacken",
+      "category": "Verbs"
+    },
+    {
+      "word": "to look / appear",
+      "german": "aussehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to hurry",
+      "german": "sich beeilen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to shower",
+      "german": "duschen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to pack in",
+      "german": "einpacken",
+      "category": "Verbs"
+    },
+    {
+      "word": "to decide",
+      "german": "entscheiden",
+      "category": "Verbs"
+    },
+    {
+      "word": "to celebrate",
+      "german": "feiern",
+      "category": "Verbs"
+    },
+    {
+      "word": "to be happy / excited",
+      "german": "sich freuen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to hang",
+      "german": "hängen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to hate",
+      "german": "hassen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to cook",
+      "german": "kochen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to correct",
+      "german": "korrigieren",
+      "category": "Verbs"
+    },
+    {
+      "word": "to run / walk",
+      "german": "laufen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to lay / put",
+      "german": "legen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to lie",
+      "german": "liegen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to go along",
+      "german": "mitgehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to take along",
+      "german": "mitnehmen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to clean",
+      "german": "putzen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to smell",
+      "german": "riechen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to shine",
+      "german": "scheinen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to sleep",
+      "german": "schlafen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to hit / strike",
+      "german": "schlagen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to sit down",
+      "german": "sich setzen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to sit",
+      "german": "sitzen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to rinse",
+      "german": "spülen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to stand",
+      "german": "stehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to place / put",
+      "german": "stellen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to stink",
+      "german": "stinken",
+      "category": "Verbs"
+    },
+    {
+      "word": "to argue",
+      "german": "streiten",
+      "category": "Verbs"
+    },
+    {
+      "word": "to wear / carry",
+      "german": "tragen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to support",
+      "german": "unterstützen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to say goodbye",
+      "german": "sich verabschieden",
+      "category": "Verbs"
+    },
+    {
+      "word": "to forget",
+      "german": "vergessen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to try",
+      "german": "versuchen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to imagine / introduce",
+      "german": "sich vorstellen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to wash",
+      "german": "waschen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to listen to",
+      "german": "zuhören",
+      "category": "Verbs"
+    },
+    {
+      "word": "to depart",
+      "german": "abfahren",
+      "category": "Verbs"
+    },
+    {
+      "word": "to watch / look at",
+      "german": "ansehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to use",
+      "german": "benutzen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to book",
+      "german": "buchen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to drive / go",
+      "german": "fahren",
+      "category": "Verbs"
+    },
+    {
+      "word": "to have breakfast",
+      "german": "frühstücken",
+      "category": "Verbs"
+    },
+    {
+      "word": "to congratulate",
+      "german": "gratulieren",
+      "category": "Verbs"
+    },
+    {
+      "word": "to get to know",
+      "german": "kennenlernen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to work out",
+      "german": "klappen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to lend",
+      "german": "leihen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to report / message",
+      "german": "melden",
+      "category": "Verbs"
+    },
+    {
+      "word": "to do / make",
+      "german": "machen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to happen",
+      "german": "passieren",
+      "category": "Verbs"
+    },
+    {
+      "word": "to create / accomplish",
+      "german": "schaffen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to send",
+      "german": "schicken",
+      "category": "Verbs"
+    },
+    {
+      "word": "to see",
+      "german": "sehen",
+      "category": "Verbs"
+    },
+    {
+      "word": "to connect with",
+      "german": "verbinden mit",
+      "category": "Verbs"
+    },
+    {
+      "word": "to agree / arrange",
+      "german": "vereinbaren",
+      "category": "Verbs"
+    },
+    {
+      "word": "to miss",
+      "german": "vermissen",
+      "category": "Verbs"
+    },
+    {
+      "word": "red (color)",
+      "german": "das Rot",
+      "category": "Art"
+    },
+    {
+      "word": "banana",
+      "german": "die Banane",
+      "category": "Food"
+    },
+    {
+      "word": "candy",
+      "german": "das Bonbon",
+      "category": "Food"
+    },
+    {
+      "word": "bread",
+      "german": "das Brot",
+      "category": "Food"
+    },
+    {
+      "word": "brother",
+      "german": "der Bruder",
+      "category": "People"
+    },
+    {
+      "word": "office",
+      "german": "das Büro",
+      "category": "Work"
+    },
+    {
+      "word": "butter",
+      "german": "die Butter",
+      "category": "Food"
+    },
+    {
+      "word": "chance",
+      "german": "die Chance",
+      "category": "Basics"
+    },
+    {
+      "word": "can / tin",
+      "german": "die Dose",
+      "category": "Shopping"
+    },
+    {
+      "word": "announcement",
+      "german": "die Durchsage",
+      "category": "Media"
+    },
+    {
+      "word": "thirst",
+      "german": "der Durst",
+      "category": "Basics"
+    },
+    {
+      "word": "fish",
+      "german": "der Fisch",
+      "category": "Food"
+    },
+    {
+      "word": "bottle",
+      "german": "die Flasche",
+      "category": "Food"
+    },
+    {
+      "word": "meat",
+      "german": "das Fleisch",
+      "category": "Food"
+    },
+    {
+      "word": "corridor / gear",
+      "german": "der Gang",
+      "category": "Home"
+    },
+    {
+      "word": "birthday",
+      "german": "der Geburtstag",
+      "category": "Time"
+    },
+    {
+      "word": "vegetables",
+      "german": "das Gemüse",
+      "category": "Food"
+    },
+    {
+      "word": "gift",
+      "german": "das Geschenk",
+      "category": "Leisure"
+    },
+    {
+      "word": "history / story",
+      "german": "die Geschichte",
+      "category": "Education"
+    },
+    {
+      "word": "spice",
+      "german": "das Gewürz",
+      "category": "Food"
+    },
+    {
+      "word": "gram",
+      "german": "das Gramm",
+      "category": "Math"
+    },
+    {
+      "word": "hunger",
+      "german": "der Hunger",
+      "category": "Basics"
+    },
+    {
+      "word": "potato",
+      "german": "die Kartoffel",
+      "category": "Food"
+    },
+    {
+      "word": "cheese",
+      "german": "der Käse",
+      "category": "Food"
+    },
+    {
+      "word": "box / case",
+      "german": "der Kasten",
+      "category": "Shopping"
+    },
+    {
+      "word": "kilo",
+      "german": "das Kilo",
+      "category": "Math"
+    },
+    {
+      "word": "pub / bar",
+      "german": "die Kneipe",
+      "category": "Places"
+    },
+    {
+      "word": "colleague",
+      "german": "der Kollege",
+      "category": "Work"
+    },
+    {
+      "word": "suitcase",
+      "german": "der Koffer",
+      "category": "Travel"
+    },
+    {
+      "word": "contact",
+      "german": "der Kontakt",
+      "category": "Basics"
+    },
+    {
+      "word": "ballpoint pen",
+      "german": "der Kugelschreiber",
+      "category": "Education"
+    },
+    {
+      "word": "litre",
+      "german": "der Liter",
+      "category": "Math"
+    },
+    {
+      "word": "flour",
+      "german": "das Mehl",
+      "category": "Food"
+    },
+    {
+      "word": "knife",
+      "german": "das Messer",
+      "category": "Home"
+    },
+    {
+      "word": "mother",
+      "german": "die Mutter",
+      "category": "People"
+    },
+    {
+      "word": "waiter",
+      "german": "der Ober / Kellner",
+      "category": "People"
+    },
+    {
+      "word": "fruit",
+      "german": "das Obst",
+      "category": "Food"
+    },
+    {
+      "word": "orange",
+      "german": "die Orange",
+      "category": "Food"
+    },
+    {
+      "word": "place / location",
+      "german": "der Ort",
+      "category": "Basics"
+    },
+    {
+      "word": "peanut",
+      "german": "die Erdnuss",
+      "category": "Food"
+    },
+    {
+      "word": "pack",
+      "german": "die Packung",
+      "category": "Shopping"
+    },
+    {
+      "word": "detergent",
+      "german": "das Waschmittel",
+      "category": "Home"
+    },
+    {
+      "word": "package / parcel",
+      "german": "das Paket",
+      "category": "Shopping"
+    },
+    {
+      "word": "partner",
+      "german": "der Partner",
+      "category": "People"
+    },
+    {
+      "word": "pepper",
+      "german": "der Pfeffer",
+      "category": "Food"
+    },
+    {
+      "word": "pound",
+      "german": "das Pfund",
+      "category": "Math"
+    },
+    {
+      "word": "problem",
+      "german": "das Problem",
+      "category": "Basics"
+    },
+    {
+      "word": "product",
+      "german": "das Produkt",
+      "category": "Shopping"
+    },
+    {
+      "word": "project",
+      "german": "das Projekt",
+      "category": "Work"
+    },
+    {
+      "word": "cleaning agent",
+      "german": "das Putzmittel",
+      "category": "Home"
+    },
+    {
+      "word": "advice",
+      "german": "der Rat",
+      "category": "Basics"
+    },
+    {
+      "word": "rice",
+      "german": "der Reis",
+      "category": "Food"
+    },
+    {
+      "word": "salt",
+      "german": "das Salz",
+      "category": "Food"
+    },
+    {
+      "word": "box / carton",
+      "german": "die Schachtel",
+      "category": "Shopping"
+    },
+    {
+      "word": "ham",
+      "german": "der Schinken",
+      "category": "Food"
+    },
+    {
+      "word": "son",
+      "german": "der Sohn",
+      "category": "People"
+    },
+    {
+      "word": "supermarket",
+      "german": "der Supermarkt",
+      "category": "Places"
+    },
+    {
+      "word": "candy / sweets",
+      "german": "die Süßigkeit",
+      "category": "Food"
+    },
+    {
+      "word": "taxi",
+      "german": "das Taxi",
+      "category": "Transport"
+    },
+    {
+      "word": "ticket",
+      "german": "das Ticket",
+      "category": "Transport"
+    },
+    {
+      "word": "tip / hint",
+      "german": "der Tipp",
+      "category": "Basics"
+    },
+    {
+      "word": "daughter",
+      "german": "die Tochter",
+      "category": "People"
+    },
+    {
+      "word": "tomato",
+      "german": "die Tomate",
+      "category": "Food"
+    },
+    {
+      "word": "bag / cone",
+      "german": "die Tüte",
+      "category": "Shopping"
+    },
+    {
+      "word": "father",
+      "german": "der Vater",
+      "category": "People"
+    },
+    {
+      "word": "club / association",
+      "german": "der Verein",
+      "category": "People"
+    },
+    {
+      "word": "forgiveness",
+      "german": "die Verzeihung",
+      "category": "Basics"
+    },
+    {
+      "word": "adult education centre",
+      "german": "die Volkshochschule",
+      "category": "Education"
+    },
+    {
+      "word": "wish / desire",
+      "german": "der Wunsch",
+      "category": "Basics"
+    },
+    {
+      "word": "sausage",
+      "german": "die Wurst",
+      "category": "Food"
+    },
+    {
+      "word": "April",
+      "german": "der April",
+      "category": "Time"
+    },
+    {
+      "word": "work / job",
+      "german": "die Arbeit",
+      "category": "Work"
+    },
+    {
+      "word": "working hours",
+      "german": "die Arbeitszeit",
+      "category": "Work"
+    },
+    {
+      "word": "eye",
+      "german": "das Auge",
+      "category": "Body"
+    },
+    {
+      "word": "training",
+      "german": "die Ausbildung",
+      "category": "Education"
+    },
+    {
+      "word": "trip / excursion",
+      "german": "der Ausflug",
+      "category": "Leisure"
+    },
+    {
+      "word": "train / railway",
+      "german": "die Bahn",
+      "category": "Transport"
+    },
+    {
+      "word": "boss",
+      "german": "der Chef",
+      "category": "Work"
+    },
+    {
+      "word": "date",
+      "german": "das Datum",
+      "category": "Time"
+    },
+    {
+      "word": "December",
+      "german": "der Dezember",
+      "category": "Time"
+    },
+    {
+      "word": "Tuesday",
+      "german": "der Dienstag",
+      "category": "Time"
+    },
+    {
+      "word": "disco",
+      "german": "die Disco",
+      "category": "Leisure"
+    },
+    {
+      "word": "Thursday",
+      "german": "der Donnerstag",
+      "category": "Time"
+    },
+    {
+      "word": "income",
+      "german": "das Einkommen",
+      "category": "Finance"
+    },
+    {
+      "word": "parents",
+      "german": "Eltern",
+      "category": "People"
+    },
+    {
+      "word": "experience",
+      "german": "die Erfahrung",
+      "category": "Basics"
+    },
+    {
+      "word": "permission",
+      "german": "die Erlaubnis",
+      "category": "Basics"
+    },
+    {
+      "word": "fax",
+      "german": "das Fax",
+      "category": "Tech"
+    },
+    {
+      "word": "February",
+      "german": "der Februar",
+      "category": "Time"
+    },
+    {
+      "word": "television",
+      "german": "das Fernsehen",
+      "category": "Tech"
+    },
+    {
+      "word": "movie",
+      "german": "der Film",
+      "category": "Leisure"
+    },
+    {
+      "word": "Friday",
+      "german": "der Freitag",
+      "category": "Time"
+    },
+    {
+      "word": "free time",
+      "german": "die Freizeit",
+      "category": "Time"
+    },
+    {
+      "word": "spring",
+      "german": "der Frühling",
+      "category": "Time"
+    },
+    {
+      "word": "football",
+      "german": "der Fußball",
+      "category": "Leisure"
+    },
+    {
+      "word": "hand",
+      "german": "die Hand",
+      "category": "Body"
+    },
+    {
+      "word": "housewife",
+      "german": "die Hausfrau",
+      "category": "People"
+    },
+    {
+      "word": "autumn",
+      "german": "der Herbst",
+      "category": "Time"
+    },
+    {
+      "word": "help",
+      "german": "die Hilfe",
+      "category": "Basics"
+    },
+    {
+      "word": "hotel",
+      "german": "das Hotel",
+      "category": "Places"
+    },
+    {
+      "word": "interest",
+      "german": "das Interesse",
+      "category": "Basics"
+    },
+    {
+      "word": "January",
+      "german": "der Januar",
+      "category": "Time"
+    },
+    {
+      "word": "July",
+      "german": "der Juli",
+      "category": "Time"
+    },
+    {
+      "word": "June",
+      "german": "der Juni",
+      "category": "Time"
+    },
+    {
+      "word": "calendar",
+      "german": "der Kalender",
+      "category": "Time"
+    },
+    {
+      "word": "cinema",
+      "german": "das Kino",
+      "category": "Places"
+    },
+    {
+      "word": "concert",
+      "german": "das Konzert",
+      "category": "Leisure"
+    },
+    {
+      "word": "hospital",
+      "german": "das Krankenhaus",
+      "category": "Places"
+    },
+    {
+      "word": "teacher",
+      "german": "der Lehrer",
+      "category": "People"
+    },
+    {
+      "word": "May",
+      "german": "der Mai",
+      "category": "Time"
+    },
+    {
+      "word": "March",
+      "german": "der März",
+      "category": "Time"
+    },
+    {
+      "word": "human",
+      "german": "der Mensch",
+      "category": "People"
+    },
+    {
+      "word": "noon",
+      "german": "der Mittag",
+      "category": "Time"
+    },
+    {
+      "word": "possibility",
+      "german": "die Möglichkeit",
+      "category": "Basics"
+    },
+    {
+      "word": "museum",
+      "german": "das Museum",
+      "category": "Places"
+    },
+    {
+      "word": "disadvantage",
+      "german": "der Nachteil",
+      "category": "Basics"
+    },
+    {
+      "word": "November",
+      "german": "der November",
+      "category": "Time"
+    },
+    {
+      "word": "October",
+      "german": "der Oktober",
+      "category": "Time"
+    },
+    {
+      "word": "park",
+      "german": "der Park",
+      "category": "Places"
+    },
+    {
+      "word": "female partner",
+      "german": "die Partnerin",
+      "category": "People"
+    },
+    {
+      "word": "party",
+      "german": "die Party",
+      "category": "Leisure"
+    },
+    {
+      "word": "practice",
+      "german": "die Praxis",
+      "category": "Work"
+    },
+    {
+      "word": "restaurant",
+      "german": "das Restaurant",
+      "category": "Places"
+    },
+    {
+      "word": "Saturday",
+      "german": "der Samstag",
+      "category": "Time"
+    },
+    {
+      "word": "actor",
+      "german": "der Schauspieler",
+      "category": "People"
+    },
+    {
+      "word": "school",
+      "german": "die Schule",
+      "category": "Education"
+    },
+    {
+      "word": "female secretary",
+      "german": "die Sekretärin",
+      "category": "People"
+    },
+    {
+      "word": "September",
+      "german": "der September",
+      "category": "Time"
+    },
+    {
+      "word": "summer",
+      "german": "der Sommer",
+      "category": "Time"
+    },
+    {
+      "word": "Sunday",
+      "german": "der Sonntag",
+      "category": "Time"
+    },
+    {
+      "word": "sport",
+      "german": "der Sport",
+      "category": "Leisure"
+    },
+    {
+      "word": "stress",
+      "german": "der Stress",
+      "category": "Basics"
+    },
+    {
+      "word": "position / job",
+      "german": "die Stelle",
+      "category": "Work"
+    },
+    {
+      "word": "team",
+      "german": "das Team",
+      "category": "People"
+    },
+    {
+      "word": "technology",
+      "german": "die Technik",
+      "category": "Tech"
+    },
+    {
+      "word": "tennis",
+      "german": "das Tennis",
+      "category": "Leisure"
+    },
+    {
+      "word": "appointment",
+      "german": "der Termin",
+      "category": "Time"
+    },
+    {
+      "word": "test",
+      "german": "der Test",
+      "category": "Education"
+    },
+    {
+      "word": "theater",
+      "german": "das Theater",
+      "category": "Places"
+    },
+    {
+      "word": "time of day",
+      "german": "die Uhrzeit",
+      "category": "Time"
+    },
+    {
+      "word": "holiday / vacation",
+      "german": "der Urlaub",
+      "category": "Time"
+    },
+    {
+      "word": "event",
+      "german": "die Veranstaltung",
+      "category": "Leisure"
+    },
+    {
+      "word": "prohibition / ban",
+      "german": "das Verbot",
+      "category": "Basics"
+    },
+    {
+      "word": "morning",
+      "german": "der Vormittag",
+      "category": "Time"
+    },
+    {
+      "word": "suggestion",
+      "german": "der Vorschlag",
+      "category": "Basics"
+    },
+    {
+      "word": "introduction",
+      "german": "die Vorstellung",
+      "category": "Basics"
+    },
+    {
+      "word": "advantage",
+      "german": "der Vorteil",
+      "category": "Basics"
+    },
+    {
+      "word": "alarm clock",
+      "german": "der Wecker",
+      "category": "Home"
+    },
+    {
+      "word": "winter",
+      "german": "der Winter",
+      "category": "Time"
+    },
+    {
+      "word": "weekend",
+      "german": "das Wochenende",
+      "category": "Time"
+    },
+    {
+      "word": "zoo",
+      "german": "der Zoo",
+      "category": "Places"
+    },
+    {
+      "word": "running",
+      "german": "das Laufen",
+      "category": "Leisure"
+    },
+    {
+      "word": "school leaving exam",
+      "german": "das Abitur",
+      "category": "Education"
+    },
+    {
+      "word": "sender",
+      "german": "der Absender",
+      "category": "Work"
+    },
+    {
+      "word": "abroad",
+      "german": "das Ausland",
+      "category": "Geography"
+    },
+    {
+      "word": "baby",
+      "german": "das Baby",
+      "category": "People"
+    },
+    {
+      "word": "bathroom",
+      "german": "das Bad",
+      "category": "Home"
+    },
+    {
+      "word": "letter",
+      "german": "der Brief",
+      "category": "Communication"
+    },
+    {
+      "word": "bread roll",
+      "german": "das Brötchen",
+      "category": "Food"
+    },
+    {
+      "word": "compact disc",
+      "german": "die CD",
+      "category": "Tech"
+    },
+    {
+      "word": "thing",
+      "german": "das Ding",
+      "category": "Basics"
+    },
+    {
+      "word": "corner",
+      "german": "die Ecke",
+      "category": "Home"
+    },
+    {
+      "word": "wife",
+      "german": "die Ehefrau",
+      "category": "People"
+    },
+    {
+      "word": "husband",
+      "german": "der Ehemann",
+      "category": "People"
+    },
+    {
+      "word": "purchase / shopping",
+      "german": "der Einkauf",
+      "category": "Shopping"
+    },
+    {
+      "word": "recipient",
+      "german": "der Empfänger",
+      "category": "Work"
+    },
+    {
+      "word": "grandson",
+      "german": "der Enkel",
+      "category": "People"
+    },
+    {
+      "word": "granddaughter",
+      "german": "die Enkelin",
+      "category": "People"
+    },
+    {
+      "word": "memory",
+      "german": "die Erinnerung",
+      "category": "Basics"
+    },
+    {
+      "word": "gravity / seriousness",
+      "german": "der Ernst",
+      "category": "Basics"
+    },
+    {
+      "word": "adult",
+      "german": "der/die Erwachsene",
+      "category": "People"
+    },
+    {
+      "word": "food / meal",
+      "german": "das Essen",
+      "category": "Food"
+    },
+    {
+      "word": "window",
+      "german": "das Fenster",
+      "category": "Home"
+    },
+    {
+      "word": "fire brigade",
+      "german": "die Feuerwehr",
+      "category": "People"
+    },
+    {
+      "word": "hallway",
+      "german": "der Flur",
+      "category": "Home"
+    },
+    {
+      "word": "breakfast",
+      "german": "das Frühstück",
+      "category": "Food"
+    },
+    {
+      "word": "guest",
+      "german": "der Gast",
+      "category": "People"
+    },
+    {
+      "word": "siblings",
+      "german": "die Geschwister",
+      "category": "People"
+    },
+    {
+      "word": "face",
+      "german": "das Gesicht",
+      "category": "Body"
+    },
+    {
+      "word": "luck",
+      "german": "das Glück",
+      "category": "Basics"
+    },
+    {
+      "word": "grandmother",
+      "german": "die Großmutter",
+      "category": "People"
+    },
+    {
+      "word": "grandfather",
+      "german": "der Großvater",
+      "category": "People"
+    },
+    {
+      "word": "high school",
+      "german": "das Gymnasium",
+      "category": "Education"
+    },
+    {
+      "word": "mobile phone",
+      "german": "das Handy",
+      "category": "Tech"
+    },
+    {
+      "word": "house husband",
+      "german": "der Hausmann",
+      "category": "People"
+    },
+    {
+      "word": "hobby",
+      "german": "der Hobby",
+      "category": "Leisure"
+    },
+    {
+      "word": "dog",
+      "german": "der Hund",
+      "category": "Animals"
+    },
+    {
+      "word": "island",
+      "german": "die Insel",
+      "category": "Geography"
+    },
+    {
+      "word": "boy",
+      "german": "der Junge",
+      "category": "People"
+    },
+    {
+      "word": "catastrophe",
+      "german": "die Katastrophe",
+      "category": "Basics"
+    },
+    {
+      "word": "class",
+      "german": "die Klasse",
+      "category": "Education"
+    },
+    {
+      "word": "life",
+      "german": "das Leben",
+      "category": "Basics"
+    },
+    {
+      "word": "light",
+      "german": "das Licht",
+      "category": "Home"
+    },
+    {
+      "word": "girl",
+      "german": "das Mädchen",
+      "category": "People"
+    },
+    {
+      "word": "trash can",
+      "german": "der Mülleimer",
+      "category": "Home"
+    },
+    {
+      "word": "nephew",
+      "german": "der Neffe",
+      "category": "People"
+    },
+    {
+      "word": "niece",
+      "german": "die Nichte",
+      "category": "People"
+    },
+    {
+      "word": "grade / mark",
+      "german": "die Note",
+      "category": "Education"
+    },
+    {
+      "word": "plan",
+      "german": "der Plan",
+      "category": "Work"
+    },
+    {
+      "word": "internship",
+      "german": "das Praktikum",
+      "category": "Work"
+    },
+    {
+      "word": "travel agency",
+      "german": "der Reisebüro",
+      "category": "Places"
+    },
+    {
+      "word": "role",
+      "german": "die Rolle",
+      "category": "Basics"
+    },
+    {
+      "word": "matter / thing",
+      "german": "die Sache",
+      "category": "Basics"
+    },
+    {
+      "word": "stationery",
+      "german": "das Schreibzeug",
+      "category": "Education"
+    },
+    {
+      "word": "student / pupil",
+      "german": "der Schüler",
+      "category": "People"
+    },
+    {
+      "word": "brother-in-law",
+      "german": "der Schwager",
+      "category": "People"
+    },
+    {
+      "word": "sister-in-law",
+      "german": "die Schwägerin",
+      "category": "People"
+    },
+    {
+      "word": "sister",
+      "german": "die Schwester",
+      "category": "People"
+    },
+    {
+      "word": "parents-in-law",
+      "german": "Schwiegereltern",
+      "category": "People"
+    },
+    {
+      "word": "mother-in-law",
+      "german": "die Schwiegermutter",
+      "category": "People"
+    },
+    {
+      "word": "father-in-law",
+      "german": "der Schwiegervater",
+      "category": "People"
+    },
+    {
+      "word": "joke / fun",
+      "german": "der Spaß",
+      "category": "Basics"
+    },
+    {
+      "word": "academic studies",
+      "german": "das Studium",
+      "category": "Education"
+    },
+    {
+      "word": "search",
+      "german": "die Suche",
+      "category": "Basics"
+    },
+    {
+      "word": "aunt",
+      "german": "die Tante",
+      "category": "People"
+    },
+    {
+      "word": "bag / pocket",
+      "german": "die Tasche",
+      "category": "Shopping"
+    },
+    {
+      "word": "plate",
+      "german": "der Teller",
+      "category": "Home"
+    },
+    {
+      "word": "stairs",
+      "german": "die Treppe",
+      "category": "Home"
+    },
+    {
+      "word": "dream",
+      "german": "der Traum",
+      "category": "Basics"
+    },
+    {
+      "word": "instruction / class",
+      "german": "der Unterricht",
+      "category": "Education"
+    },
+    {
+      "word": "signature",
+      "german": "die Unterschrift",
+      "category": "Work"
+    },
+    {
+      "word": "laundry",
+      "german": "die Wäsche",
+      "category": "Home"
+    },
+    {
+      "word": "joke",
+      "german": "der Witz",
+      "category": "Basics"
+    },
+    {
+      "word": "future",
+      "german": "die Zukunft",
+      "category": "Basics"
+    },
+    {
+      "word": "manner / kind",
+      "german": "die Art",
+      "category": "Basics"
+    },
+    {
+      "word": "train station",
+      "german": "der Bahnhof",
+      "category": "Transport"
+    },
+    {
+      "word": "visitor",
+      "german": "der Besucher",
+      "category": "People"
+    },
+    {
+      "word": "view / sight",
+      "german": "der Blick",
+      "category": "Geography"
+    },
+    {
+      "word": "glasses",
+      "german": "die Brille",
+      "category": "Clothes"
+    },
+    {
+      "word": "bus",
+      "german": "der Bus",
+      "category": "Transport"
+    },
+    {
+      "word": "cathedral",
+      "german": "der Dom",
+      "category": "Places"
+    },
+    {
+      "word": "entrance",
+      "german": "der Eingang",
+      "category": "Home"
+    },
+    {
+      "word": "holiday",
+      "german": "Ferien",
+      "category": "Time"
+    },
+    {
+      "word": "celebration",
+      "german": "das Fest",
+      "category": "Leisure"
+    },
+    {
+      "word": "airplane",
+      "german": "das Flugzeug",
+      "category": "Transport"
+    }
+  ]
 }

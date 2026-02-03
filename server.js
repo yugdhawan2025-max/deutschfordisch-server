@@ -13,7 +13,7 @@ import { Server } from "socket.io";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const app = express();
 const server = http.createServer(app);
@@ -52,15 +52,15 @@ if (!fs.existsSync(STORAGE_ROOT)) {
 console.log(`[STORAGE] Root: ${STORAGE_ROOT}`);
 console.log(`[STORAGE] Manifest: ${MANIFEST_PATH}`);
 
-// Configure Multer
+// Configure Multer for general uploads (temp storage)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, STORAGE_ROOT);
   },
   filename: (req, file, cb) => {
-    // Save as 'app-[version].apk' or similar to avoid collisions
-    const version = req.body.version || "unknown";
-    cb(null, `app-${version}.apk`);
+    // Keep original for temp, will rename on move
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 const upload = multer({ storage });
@@ -135,13 +135,57 @@ if (fs.existsSync(IMAGE_CACHE_PATH)) {
   }
 }
 
-function saveImageCache() {
+const NOTIFICATIONS_PATH = path.join(STORAGE_ROOT, "notifications.json");
+let remoteNotifications = [];
+
+if (fs.existsSync(NOTIFICATIONS_PATH)) {
   try {
-    fs.writeFileSync(IMAGE_CACHE_PATH, JSON.stringify(imageCache, null, 2));
+    remoteNotifications = JSON.parse(fs.readFileSync(NOTIFICATIONS_PATH, "utf8"));
   } catch (err) {
-    console.error("Failed to save image cache:", err);
+    console.error("Failed to load notifications:", err);
   }
 }
+
+function saveNotifications() {
+  try {
+    fs.writeFileSync(NOTIFICATIONS_PATH, JSON.stringify(remoteNotifications, null, 2));
+  } catch (err) {
+    console.error("Failed to save notifications:", err);
+  }
+}
+
+function addNotification(title, body, type = "tip") {
+  const newNotif = {
+    id: Date.now().toString(),
+    title,
+    body,
+    type,
+    timestamp: new Date().toISOString()
+  };
+  remoteNotifications.unshift(newNotif);
+  // Keep only last 50 notifications
+  if (remoteNotifications.length > 50) remoteNotifications.pop();
+  saveNotifications();
+  return newNotif;
+}
+
+// Scheduled Background Tips
+const TIPS = [
+  "Tip: Learn articles (der/die/das) with their nouns to build a strong foundation!",
+  "Practice: Try describing what you see around you in German today.",
+  "Reminder: Small daily sessions are better than one long weekly session. Keep it up!",
+  "Vocabulary: Did you know 'Handy' is German for 'mobile phone'?",
+  "Grammar: Remember, German verbs usually go in the second position of a main sentence.",
+  "Culture: 'Mahlzeit' is a common greeting in German cafeterias and workplaces.",
+  "Motivation: Every word you learn brings you closer to fluency! ✨",
+  "Word of the Day: Try to use 'ausgezeichnet' (excellent) in a sentence today!"
+];
+
+setInterval(() => {
+  const randomTip = TIPS[Math.floor(Math.random() * TIPS.length)];
+  addNotification("German Learning Tip 💡", randomTip, "auto_tip");
+  console.log(`[SCHEDULER] Periodic tip sent: ${randomTip}`);
+}, 1000 * 60 * 60 * 6); // Every 6 hours
 
 const FALLBACK_IMAGE = "https://placehold.co/1000x1000/023047/white.png?text=No+Image+Found"; // Stable placeholder
 
@@ -157,7 +201,9 @@ function loadVocabulary() {
       vocabulary = data.vocabulary || [];
       vocabMap = {};
       vocabulary.forEach(v => {
-        vocabMap[v.word.toLowerCase().trim()] = v;
+        if (v && v.word) {
+          vocabMap[v.word.toLowerCase().trim()] = v;
+        }
       });
       console.log(`[VOCAB] Loaded ${vocabulary.length} structured words.`);
     } catch (err) {
@@ -192,7 +238,7 @@ async function getWordMetadata(word) {
 
 Return JSON: { "category", "literal_context" }`
         },
-        { role: "user", content: `Noun: "${word}"` }
+        { role: "user", content: `Noun: "${word}". Respond in JSON.` }
       ],
       model: "llama-3.3-70b-versatile",
       response_format: { type: "json_object" }
@@ -608,7 +654,7 @@ app.get("/api/populate_all_cache", async (req, res) => {
   console.log("[ADMIN] Starting batch cache population...");
   let count = 0;
   for (const entry of vocabulary) {
-    if (!imageCache[entry.word.toLowerCase()]) {
+    if (entry && entry.word && !imageCache[entry.word.toLowerCase()]) {
       await getOrSearchImage(entry.word, false);
       count++;
     }
@@ -630,6 +676,332 @@ app.get("/api/clear_image_cache", (req, res) => {
     res.json({ success: true, message: `Cleared cache for ${cleanWord}` });
   } else {
     res.json({ success: true, message: `Word ${cleanWord} was not in cache` });
+  }
+});
+const FLUTTER_ASSETS_ROOT = "/Users/yugdhawan/Desktop/deutschfordisch/assets/Vocab";
+
+app.post("/api/sync_to_app", async (req, res) => {
+  const { word, category, imageUrl, base64 } = req.body;
+  if (!word || !category) return res.status(400).json({ success: false, error: "Missing word or category" });
+  if (!imageUrl && !base64) return res.status(400).json({ success: false, error: "Missing image data" });
+
+  try {
+    const cleanWord = word.toLowerCase().split(',')[0].trim().replace(/[^a-z0-9]/g, '_');
+    const filename = `${cleanWord}.jpg`;
+    const targetDir = path.join(FLUTTER_ASSETS_ROOT, category);
+    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+
+    const targetPath = path.join(targetDir, filename);
+
+    if (base64) {
+      fs.writeFileSync(targetPath, Buffer.from(base64, 'base64'));
+    } else {
+      const response = await fetch(imageUrl);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      fs.writeFileSync(targetPath, buffer);
+    }
+
+    console.log(`[SYNC] Saved to Flutter App: ${targetPath}`);
+    res.json({ success: true, path: targetPath });
+  } catch (err) {
+    console.error("[SYNC] Failed:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/* -------------------- NOTIFICATION API -------------------- */
+app.get("/api/notifications", (req, res) => {
+  const lastSeenId = req.query.lastSeenId;
+  if (!lastSeenId) {
+    return res.json({ success: true, notifications: remoteNotifications.slice(0, 5) });
+  }
+
+  const index = remoteNotifications.findIndex(n => n.id === lastSeenId);
+  if (index === -1) {
+    // If lastSeenId not found, return newest 5
+    return res.json({ success: true, notifications: remoteNotifications.slice(0, 5) });
+  }
+
+  // Return everything newer than lastSeenId
+  res.json({ success: true, notifications: remoteNotifications.slice(0, index) });
+});
+
+app.post("/api/notifications/send", (req, res) => {
+  const { title, body, type } = req.body;
+  if (!title || !body) return res.status(400).json({ success: false, error: "Missing title or body" });
+
+  const notification = addNotification(title, body, type || "manual");
+  res.json({ success: true, notification });
+});
+
+/* -------------------- CHECKLIST WEBAPP -------------------- */
+app.get("/checklist", (req, res) => {
+  res.send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocab Image Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #0a0c10; --card: #14181f; --accent: #ffd700; --text: #f0f0f0; --success: #00ff88; --danger: #ff4757; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; padding: 2rem; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { font-family: 'Outfit'; color: var(--accent); margin-bottom: 2rem; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem; }
+        .stat-card { background: var(--card); padding: 1.5rem; border-radius: 16px; border: 1px solid #333; text-align: center; }
+        .stat-val { font-size: 3rem; font-weight: bold; font-family: 'Outfit'; display: block; }
+        .stat-label { color: #888; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+        
+        .filter-bar { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        input, select { padding: 0.8rem; border-radius: 8px; border: 1px solid #333; background: #000; color: #fff; }
+        
+        table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #333; }
+        th { background: #222; color: #aaa; font-weight: 500; }
+        tr:hover { background: #1a1e26; }
+        
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+        .done { background: rgba(0, 255, 136, 0.1); color: var(--success); border: 1px solid var(--success); }
+        .missing { background: rgba(255, 71, 87, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+        
+        .upload-btn { background: var(--accent); color: #000; padding: 0.5rem 1rem; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
+        .modal-content { background: var(--card); padding: 2rem; border-radius: 16px; width: 400px; border: 1px solid var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vocab Image Tracker</h1>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span id="total-val" class="stat-val" style="color: #fff">0</span>
+                <span class="stat-label">Total Words</span>
+            </div>
+            <div class="stat-card">
+                <span id="done-val" class="stat-val" style="color: var(--success)">0</span>
+                <span class="stat-label">Images Ready</span>
+            </div>
+            <div class="stat-card">
+                <span id="left-val" class="stat-val" style="color: var(--danger)">0</span>
+                <span class="stat-label">Missing Images</span>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <input type="text" id="search" placeholder="Search word..." onkeyup="filterTable()" style="flex: 1;">
+            <select id="cat-filter" onchange="filterTable()">
+                <option value="all">All Categories</option>
+            </select>
+        </div>
+
+        <table id="vocab-table">
+            <thead>
+                <tr>
+                    <th>Word</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+
+    <div id="upload-modal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">Upload Image</h3>
+            <p id="modal-word" style="color: var(--accent); margin-bottom: 1rem; font-weight: bold;"></p>
+            <form id="upload-form">
+                <input type="hidden" id="target-word" name="word">
+                <input type="hidden" id="target-cat" name="category">
+                <input type="file" id="file-input" name="image" accept="image/*" style="width: 100%; margin-bottom: 1rem;">
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" class="upload-btn" onclick="submitUpload()">Upload</button>
+                    <button type="button" class="upload-btn" style="background: #333; color: #fff;" onclick="closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+
+        async function loadData() {
+            const res = await fetch('/api/checklist_data');
+            const json = await res.json();
+            allData = json.words;
+            
+            document.getElementById('total-val').innerText = json.total;
+            document.getElementById('done-val').innerText = json.done;
+            document.getElementById('left-val').innerText = json.remaining;
+            
+            // Populate Categories
+            const cats = [...new Set(allData.map(d => d.category))].sort();
+            const sel = document.getElementById('cat-filter');
+            sel.innerHTML = '<option value="all">All Categories</option>';
+            cats.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c; opt.innerText = c;
+                sel.appendChild(opt);
+            });
+            
+            renderTable(allData);
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = \`
+                    <td style="font-weight: 500;">\${item.word}</td>
+                    <td style="color: #888;">\${item.category}</td>
+                    <td>\${item.has_image 
+                        ? '<span class="badge done">DONE</span>' 
+                        : '<span class="badge missing">MISSING</span>'}</td>
+                    <td>
+                        <button class="upload-btn" style="font-size: 0.8rem; padding: 0.3rem 0.8rem;" 
+                            onclick="openUpload('\${item.word}', '\${item.category}')">
+                            \${item.has_image ? 'Replace' : 'Upload'}
+                        </button>
+                        <div style="margin-top: 5px;"></div>
+                        <a href="https://www.freepik.com/search?format=search&last_filter=selection&last_value=1&query=\${encodeURIComponent(item.word)}+png&selection=1" 
+                           target="_blank"
+                           style="display: inline-block; font-size: 0.7rem; color: #888; text-decoration: none; border: 1px solid #444; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.2);">
+                           🔍 Freepik
+                        </a>
+                    </td>
+                \`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterTable() {
+            const q = document.getElementById('search').value.toLowerCase();
+            const cat = document.getElementById('cat-filter').value;
+            const filtered = allData.filter(d => {
+                const wordVal = (d.word || "unknown").toString();
+                const matchQ = wordVal.toLowerCase().includes(q);
+                const matchC = cat === 'all' || d.category === cat;
+                return matchQ && matchC;
+            });
+            renderTable(filtered);
+        }
+
+        function openUpload(word, cat) {
+            document.getElementById('modal-word').innerText = word;
+            document.getElementById('target-word').value = word;
+            document.getElementById('target-cat').value = cat;
+            document.getElementById('upload-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('upload-modal').style.display = 'none';
+        }
+
+        async function submitUpload() {
+            const formData = new FormData();
+            formData.append('word', document.getElementById('target-word').value);
+            formData.append('category', document.getElementById('target-cat').value);
+            formData.append('image', document.getElementById('file-input').files[0]);
+
+            const btn = document.querySelector('#upload-form button');
+            btn.innerText = "Uploading...";
+            
+            try {
+                const res = await fetch('/api/upload_vocab_image', { method: 'POST', body: formData });
+                const json = await res.json();
+                if (json.success) {
+                    alert('Uploaded!');
+                    closeModal();
+                    loadData(); // Refresh
+                } else {
+                    alert('Error: ' + json.error);
+                }
+            } catch (e) { alert('Network error'); }
+            finally { btn.innerText = "Upload"; }
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
+  `);
+});
+
+app.get("/api/checklist_data", (req, res) => {
+  loadVocabulary(); // Refresh from disk to catch any sync updates
+  const words = [];
+  let done = 0;
+
+  vocabulary.forEach(v => {
+    // Check if file exists in assets
+    // NOTE: In vocabulary.json, 'word' IS the English term.
+    const wordValue = (v.word || "unknown").toString();
+    const cleanName = wordValue.toLowerCase().split(',')[0].trim().replace(/[^a-z0-9]/g, '_');
+    const filename = `${cleanName}.jpg`;
+    const fullPath = path.join(FLUTTER_ASSETS_ROOT, v.category, filename);
+    const hasImage = fs.existsSync(fullPath);
+
+    if (hasImage) done++;
+
+    words.push({
+      word: v.word, // In this JSON, 'word' is English
+      category: v.category,
+      has_image: hasImage,
+      path: fullPath
+    });
+  });
+
+  res.json({
+    total: words.length,
+    done,
+    remaining: words.length - done,
+    words
+  });
+});
+
+app.post("/api/upload_vocab_image", upload.single('image'), (req, res) => {
+  const { word, category } = req.body;
+  if (!req.file) return res.status(400).json({ success: false, error: "No file uploaded" });
+
+  try {
+    // 1. Find correct word data
+    // safety check: search in current vocabulary list
+    const vocabEntry = vocabulary.find(v => v.word === word || v.german === word);
+
+    let cleanName;
+    if (vocabEntry && vocabEntry.english) {
+      // Use English translation for filename (traditional)
+      cleanName = vocabEntry.english.toLowerCase().split(',')[0].trim().replace(/[^a-z0-9]/g, '_');
+    } else {
+      // Fallback: Use word itself (slugified)
+      cleanName = (word || "unknown").toString().toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
+    }
+
+    const targetFilename = `${cleanName}.jpg`;
+    // Use word category or fallback
+    const finalCategory = (vocabEntry ? vocabEntry.category : category) || "Uncategorized";
+    const targetDir = path.join(FLUTTER_ASSETS_ROOT, finalCategory);
+
+    // Ensure dir
+    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+
+    const targetPath = path.join(targetDir, targetFilename);
+
+    // Move (rename)
+    fs.renameSync(req.file.path, targetPath);
+
+    console.log(`[UPLOAD] Asset for '${word}' saved to ${targetPath}`);
+    res.json({ success: true, path: targetPath, filename: targetFilename });
+  } catch (err) {
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    console.error("[UPLOAD] Failed:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
@@ -1103,11 +1475,35 @@ app.get("/", (req, res) => {
                     html += '<div style="margin-top:1rem; text-align:center;">';
                     html += '<img src="/api/image_proxy?url=' + encodeURIComponent(data.imageUrl) + '&t=' + Date.now() + '" style="max-width:100%; border-radius:12px; border: 1px solid var(--border); shadow: 0 10px 30px rgba(0,0,0,0.5);">';
                     html += '<div style="font-size:0.6rem; color:#888; word-break:break-all;">' + data.imageUrl + '</div></div>';
+                    html += '<div style="margin-top:1rem; display:flex; gap:0.5rem;">';
+                    html += '<button onclick="syncToApp(\'' + data.word + '\', \'' + (data.vocab_info.category || 'General') + '\', \'' + data.imageUrl + '\')" style="background:linear-gradient(135deg, #00ff88 0%, #00d2ff 100%); color:#000;">Sync to App</button>';
+                    html += '</div>';
+                    html += '<div id="sync-status" style="font-size:0.7rem; margin-top:0.5rem; color:#00ff88;"></div>';
                     resDiv.innerHTML = html;
                 } else {
                     resDiv.innerHTML = '<pre style="text-align:left;">' + JSON.stringify(data, null, 2) + '</pre>';
                 }
             } catch (e) { resDiv.innerHTML = '<span style="color:#ff4757">Error: ' + e.message + '</span>'; }
+        }
+
+        async function syncToApp(word, category, imageUrl) {
+            const statusDiv = document.getElementById('sync-status');
+            statusDiv.innerText = "Syncing...";
+            try {
+                const res = await fetch('/api/sync_to_app', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ word, category, imageUrl })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    statusDiv.innerText = "✅ Successfully synced to: " + data.path.split('/').pop();
+                } else {
+                    statusDiv.innerText = "❌ Sync failed: " + data.error;
+                }
+            } catch (e) {
+                statusDiv.innerText = "❌ Network Error: " + e.message;
+            }
         }
 
         async function refreshImage() {
@@ -1907,16 +2303,25 @@ app.post("/admin/upload_release", upload.single("file"), (req, res) => {
 
   const { version, platform = "android", changelog = "" } = req.body;
   if (!version) {
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     return res.status(400).json({ success: false, error: "Version is required" });
   }
 
-  // 3. Generate Public URL
-  // Assuming the server is hosted at root, constructing URL protocol + host + /uploads/filename
-  const protocol = req.protocol;
-  const host = req.get("host");
-  const publicUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
-
   try {
+    // 3. Move/Rename temp file to versioned APK name
+    const finalFilename = `app-${version}.apk`;
+    const targetPath = path.join(STORAGE_ROOT, finalFilename);
+
+    // If it exists, overwrite (standard behavior for release updates)
+    if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+    fs.renameSync(req.file.path, targetPath);
+
+    // 4. Generate Public URL
+    const protocol = req.protocol;
+    const host = req.get("host");
+    const publicUrl = `${protocol}://${host}/uploads/${finalFilename}`;
+
+    console.log(`[RELEASE] ${platform} v${version} saved to ${targetPath}`);
     // 4. Update Manifest JSON
     let manifest = {
       android: { version: "0.0.0", url: "", force_update: false, changelog: "" },
@@ -1983,15 +2388,17 @@ server.listen(PORT, async () => {
   setTimeout(async () => {
     let populatedCount = 0;
     for (const entry of vocabulary) {
-      const word = entry.word.toLowerCase();
-      if (!imageCache[word]) {
-        try {
-          await getOrSearchImage(word, false);
-          populatedCount++;
-          // Minimal delay to avoid Pixabay rate limits during startup
-          await new Promise(resolve => setTimeout(resolve, 500));
-        } catch (err) {
-          console.error(`[CACHE] Failed to auto-populate ${word}:`, err.message);
+      if (entry && entry.word) {
+        const word = entry.word.toLowerCase();
+        if (!imageCache[word]) {
+          try {
+            await getOrSearchImage(word, false);
+            populatedCount++;
+            // Minimal delay to avoid Pixabay rate limits during startup
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } catch (err) {
+            console.error(`[CACHE] Failed to auto-populate ${word}:`, err.message);
+          }
         }
       }
     }
